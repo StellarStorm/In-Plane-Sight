@@ -3,6 +3,7 @@ from dataclasses import asdict
 import httpx
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, JSONResponse, Response
+from fastapi.staticfiles import StaticFiles
 
 from config import Config
 from sources import AdsbLolSource, CachedSource, LocalSource
@@ -21,6 +22,7 @@ config = Config.from_env()
 source = build_source(config)
 
 app = FastAPI()
+app.mount('/static', StaticFiles(directory='static'), name='static')
 
 
 @app.get('/')
