@@ -367,6 +367,17 @@
   </aside>
 
   <script>
+        var TIME_FORMAT = '24';
+
+        function formatTime(date) {
+          return date.toLocaleTimeString([], {
+            hour: TIME_FORMAT === '12' ? 'numeric' : '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: TIME_FORMAT === '12'
+          });
+        }
+
     var CENTER = null;
     var prevIcao = null;
 
@@ -394,6 +405,8 @@
       plane.style.display = 'block';
       plane.style.transform = 'rotate(' + ((heading || 0) - 45) + 'deg)';
     }
+
+
 
     function updateLogo(iata, heading) {
       if (!iata) {
@@ -490,7 +503,7 @@
           document.getElementById('aircraft-count').textContent =
             aircraft.length + ' AIRCRAFT IN RANGE';
           document.getElementById('updated').textContent =
-            'UPDATED ' + new Date().toLocaleTimeString();
+            'UPDATED ' + formatTime(new Date());
         })
         .catch(function(error) {
           document.getElementById('updated').textContent = 'FETCH FAILED';
@@ -502,6 +515,7 @@
       .then(function(response) { return response.json(); })
       .then(function (config) {
         CENTER = [config.lat, config.lon];
+        TIME_FORMAT = config.time_format === '12' ? '12' : '24';
 
         var board = document.getElementById('board');
         var strength = Math.max(

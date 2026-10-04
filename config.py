@@ -14,6 +14,7 @@ class Config:
     lat: float = 39.9526
     lon: float = -75.1652
     radius_nm: int = 20
+    time_format: str = '24'
     refresh_seconds: int = 15
     flicker_enabled: bool = True
     flicker_strength: float = 0.025
@@ -28,6 +29,7 @@ class Config:
             lat=float(os.environ.get('LAT', 39.9526)),
             lon=float(os.environ.get('LON', -75.1652)),
             radius_nm=int(os.environ.get('RADIUS_NM', 20)),
+            time_format=os.environ.get('TIME_FORMAT', '24'),
             refresh_seconds=int(os.environ.get('REFRESH_SECONDS', 15)),
             flicker_enabled=os.environ.get(
                 'FLICKER_ENABLED',
