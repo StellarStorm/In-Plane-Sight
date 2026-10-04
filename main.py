@@ -45,6 +45,8 @@ def get_config():
         'lon': config.lon,
         'radius_nm': config.radius_nm,
         'refresh_seconds': config.refresh_seconds,
+        'flicker_enabled': config.flicker_enabled,
+        'flicker_strength': config.flicker_strength,
     }
 
 

@@ -273,15 +273,44 @@
 
     #utility a:hover { color: #f4f5f7; }
 
-    @media (max-aspect-ratio: 4 / 3) {
-      #board { grid-template-rows: minmax(0, 1fr) 34%; }
-      #main-display {
-        grid-template-columns: 35% minmax(0, 1fr);
-        gap: 24px;
+    #board.flicker-enabled #callsign,
+    #board.flicker-enabled #aircraft-type,
+    #board.flicker-enabled #icao-line {
+      animation: primary-led-flicker 4.7s steps(1, end) infinite;
+    }
+
+    #board.flicker-enabled .metric-label,
+    #board.flicker-enabled .metric-value {
+      animation: telemetry-led-flicker 5.9s steps(1, end) infinite;
+    }
+
+    @keyframes primary-led-flicker {
+      0%, 18%, 20%, 53%, 55%, 81%, 83%, 100% {
+        opacity: 1;
       }
-      #telemetry {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        grid-template-rows: repeat(3, minmax(0, 1fr));
+
+      19%, 54%, 82% {
+        opacity: var(--flicker-low, 0.975);
+      }
+    }
+
+    @keyframes telemetry-led-flicker {
+      0%, 31%, 33%, 67%, 69%, 92%, 94%, 100% {
+        opacity: 1;
+      }
+
+      32%, 68%, 93% {
+        opacity: var(--flicker-mid, 0.985);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      #board.flicker-enabled #callsign,
+      #board.flicker-enabled #aircraft-type,
+      #board.flicker-enabled #icao-line,
+      #board.flicker-enabled .metric-label,
+      #board.flicker-enabled .metric-value {
+        animation: none;
       }
     }
   </style>
@@ -471,8 +500,29 @@
 
     fetch('/config')
       .then(function(response) { return response.json(); })
-      .then(function(config) {
+      .then(function (config) {
         CENTER = [config.lat, config.lon];
+
+        var board = document.getElementById('board');
+        var strength = Math.max(
+          0,
+          Math.min(config.flicker_strength || 0, 0.1)
+        );
+
+        board.style.setProperty(
+          '--flicker-low',
+          String(1 - strength)
+        );
+        board.style.setProperty(
+          '--flicker-mid',
+          String(1 - strength * 0.55)
+        );
+
+        board.classList.toggle(
+          'flicker-enabled',
+          config.flicker_enabled === true
+        );
+
         fetchAircraft();
         setInterval(fetchAircraft, config.refresh_seconds * 1000);
       })
