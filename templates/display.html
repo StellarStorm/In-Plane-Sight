@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlightWall - List</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background-color: #050510;
+      background-image: radial-gradient(circle, #0e0e22 1px, transparent 1px);
+      background-size: 6px 6px;
+      color: #4dffb4;
+      font-family: 'Share Tech Mono', monospace;
+      min-height: 100vh;
+      padding-bottom: 40px;
+    }
+    #header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 28px;
+      border-bottom: 1px solid rgba(77, 255, 180, 0.25);
+    }
+    #title {
+      font-size: 22px;
+      letter-spacing: 0.4em;
+      text-shadow: 0 0 18px rgba(77, 255, 180, 0.7);
+    }
+    #title span {
+      font-size: 13px;
+      color: rgba(77, 255, 180, 0.4);
+      letter-spacing: 0.15em;
+      margin-left: 16px;
+    }
+    #header-right {
+      text-align: right;
+      font-size: 13px;
+      color: rgba(77, 255, 180, 0.5);
+      line-height: 1.6;
+    }
+    #clock { font-size: 20px; color: rgba(77, 255, 180, 0.8); }
+    #aircraft-table { width: 100%; border-collapse: collapse; }
+    #aircraft-table thead tr { border-bottom: 1px solid rgba(77, 255, 180, 0.15); }
+    #aircraft-table thead th {
+      padding: 10px 16px;
+      font-size: 10px;
+      font-weight: normal;
+      letter-spacing: 0.2em;
+      color: rgba(77, 255, 180, 0.35);
+      text-align: left;
+    }
+    .aircraft-row {
+      border-bottom: 1px solid rgba(77, 255, 180, 0.06);
+      animation: rowIn 0.4s ease;
+      transition: background 0.15s;
+    }
+    .aircraft-row:hover { background: rgba(77, 255, 180, 0.04); }
+    .cell { padding: 8px 16px; font-size: 15px; white-space: nowrap; }
+    .cell-logo { padding: 4px 8px 4px 16px; width: 48px; }
+    .logo-img {
+      width: 36px;
+      height: 36px;
+      object-fit: contain;
+      display: block;
+      opacity: 0.9;
+    }
+    .logo-fallback {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: rgba(77, 255, 180, 0.5);
+    }
+    .cell-callsign {
+      font-size: 19px;
+      letter-spacing: 0.12em;
+      text-shadow: 0 0 10px rgba(77, 255, 180, 0.5);
+    }
+    .cell-type { color: rgba(77, 255, 180, 0.55); font-size: 13px; }
+    .cell-hdg  { color: rgba(77, 255, 180, 0.65); }
+    .cell-dist { color: rgba(77, 255, 180, 0.4); font-size: 13px; }
+    .alt-wrap  { display: flex; align-items: center; gap: 10px; }
+    .alt-bar   { width: 70px; height: 3px; background: rgba(77, 255, 180, 0.12); border-radius: 2px; }
+    .alt-bar-fill {
+      height: 100%;
+      background: #4dffb4;
+      border-radius: 2px;
+      box-shadow: 0 0 5px rgba(77, 255, 180, 0.7);
+    }
+    #empty {
+      display: none;
+      padding: 60px 28px;
+      color: rgba(77, 255, 180, 0.2);
+      font-size: 14px;
+      letter-spacing: 0.2em;
+    }
+    #status-bar {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      padding: 7px 28px;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      color: rgba(77, 255, 180, 0.25);
+      border-top: 1px solid rgba(77, 255, 180, 0.08);
+      background: rgba(5, 5, 16, 0.95);
+    }
+    #status-bar a { color: rgba(77, 255, 180, 0.25); text-decoration: none; }
+    @keyframes rowIn {
+      from { opacity: 0; transform: translateX(-6px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+  </style>
+</head>
+<body>
+  <div id="header">
+    <div>
+      <div id="title">FLIGHTWALL <span>LIVE TRAFFIC</span></div>
+    </div>
+    <div id="header-right">
+      <div id="clock">--:--:--</div>
+      <div id="location">--</div>
+    </div>
+  </div>
+
+  <table id="aircraft-table">
+    <thead>
+      <tr>
+        <th></th>
+        <th>CALLSIGN</th>
+        <th>TYPE</th>
+        <th>ALTITUDE</th>
+        <th>SPEED</th>
+        <th>HEADING</th>
+        <th>DISTANCE</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <div id="empty">NO AIRCRAFT IN RANGE</div>
+
+  <div id="status-bar">
+    <span id="count">--</span>
+    <span id="updated">--</span>
+    <span><a href="/">LED</a>&nbsp;&nbsp;<a href="/map">MAP</a></span>
+  </div>
+
+  <script>
+    var CENTER     = null;
+    var REFRESH_MS = 15000;
+
+    var ICAO_TO_IATA = {
+      'AAL': 'AA', 'UAL': 'UA', 'DAL': 'DL', 'SWA': 'WN', 'ASA': 'AS',
+      'JBU': 'B6', 'FFT': 'F9', 'NKS': 'NK', 'HAL': 'HA', 'SKW': 'OO',
+      'PDT': '9E', 'RPA': 'YX', 'EJA': 'EJ', 'FDX': 'FX', 'UPS': '5X',
+      'JAL': 'JL', 'ANA': 'NH', 'BAW': 'BA', 'DLH': 'LH', 'AFR': 'AF',
+      'KLM': 'KL', 'UAE': 'EK', 'QTR': 'QR', 'SIA': 'SQ', 'CPA': 'CX',
+      'KAL': 'KE', 'AAR': 'OZ', 'CSN': 'CZ', 'CCA': 'CA', 'CES': 'MU',
+      'THY': 'TK', 'ETH': 'ET', 'QFA': 'QF', 'ANZ': 'NZ', 'ACA': 'AC',
+      'WJA': 'WS', 'IBE': 'IB', 'VRD': 'VS', 'EIN': 'EI', 'RYR': 'FR',
+      'EZY': 'U2', 'VLG': 'VY', 'AZA': 'AZ', 'SAS': 'SK', 'FIN': 'AY',
+      'SVA': 'SV', 'ISR': 'LY', 'MSR': 'MS', 'RAM': 'AT', 'GIA': 'GA',
+      'MAS': 'MH', 'THA': 'TG', 'AIJ': 'AI', 'PAL': 'PR', 'AMX': 'AM',
+      'AVA': 'AV', 'TAM': 'LA', 'GLO': 'G3', 'VOE': 'VB'
+    };
+
+    function getIata(callsign) {
+      if (!callsign || callsign.length < 3) return null;
+      return ICAO_TO_IATA[callsign.substring(0, 3).toUpperCase()] || null;
+    }
+
+    function makeLogoCell(callsign) {
+      var td   = document.createElement('td');
+      td.className = 'cell-logo';
+      var iata = getIata(callsign);
+      if (iata) {
+        var img = document.createElement('img');
+        img.className = 'logo-img';
+        img.alt = iata;
+        img.onerror = function() {
+          td.innerHTML = '';
+          var fb = document.createElement('div');
+          fb.className = 'logo-fallback';
+          fb.textContent = '\u2708';
+          td.appendChild(fb);
+        };
+        img.src = 'https://pics.avs.io/200/200/' + iata + '.png';
+        td.appendChild(img);
+      } else {
+        var fb = document.createElement('div');
+        fb.className = 'logo-fallback';
+        fb.textContent = '\u2708';
+        td.appendChild(fb);
+      }
+      return td;
+    }
+
+    fetch('/config')
+      .then(function(r) { return r.json(); })
+      .then(function(cfg) {
+        CENTER     = [cfg.lat, cfg.lon];
+        REFRESH_MS = cfg.refresh_seconds * 1000;
+        document.getElementById('location').textContent =
+          cfg.lat.toFixed(4) + ', ' + cfg.lon.toFixed(4) + ' / ' + cfg.radius_nm + 'nm';
+        startClock();
+        refresh();
+        setInterval(refresh, REFRESH_MS);
+      })
+      .catch(function(err) { console.error(err); });
+
+    function startClock() {
+      function tick() { document.getElementById('clock').textContent = new Date().toLocaleTimeString(); }
+      tick();
+      setInterval(tick, 1000);
+    }
+
+    function distanceNm(lat1, lon1, lat2, lon2) {
+      var R    = 3440.065;
+      var dLat = (lat2 - lat1) * Math.PI / 180;
+      var dLon = (lon2 - lon1) * Math.PI / 180;
+      var a    = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                 Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                 Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function toCompass(heading) {
+      var dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+      return dirs[Math.round(heading / 45) % 8];
+    }
+
+    function refresh() {
+      fetch('/aircraft')
+        .then(function(r) { return r.json(); })
+        .then(function(aircraft) {
+          aircraft.forEach(function(a) {
+            a._dist = CENTER ? distanceNm(CENTER[0], CENTER[1], a.lat, a.lon) : null;
+          });
+          aircraft.sort(function(a, b) { return (a._dist || 9999) - (b._dist || 9999); });
+          renderRows(aircraft);
+          document.getElementById('count').textContent   = aircraft.length + ' AIRCRAFT';
+          document.getElementById('updated').textContent = 'UPDATED ' + new Date().toLocaleTimeString();
+        })
+        .catch(function(err) {
+          document.getElementById('updated').textContent = 'FETCH FAILED ' + new Date().toLocaleTimeString();
+          console.error(err);
+        });
+    }
+
+    function renderRows(aircraft) {
+      var tbody = document.getElementById('tbody');
+      var empty = document.getElementById('empty');
+      tbody.innerHTML = '';
+      if (aircraft.length === 0) { empty.style.display = 'block'; return; }
+      empty.style.display = 'none';
+
+      aircraft.forEach(function(a) {
+        var altPct  = a.altitude_ft != null ? Math.min(a.altitude_ft / 45000, 1) : 0;
+        var altTxt  = a.altitude_ft != null ? (a.altitude_ft / 1000).toFixed(1) + 'k ft' : '--';
+        var spdTxt  = a.speed_kts  != null ? a.speed_kts + ' kt' : '--';
+        var hdgTxt  = a.heading     != null ? toCompass(a.heading) + '  ' + Math.round(a.heading) + '\u00b0' : '--';
+        var distTxt = a._dist       != null ? Math.round(a._dist) + ' nm' : '--';
+
+        var tr = document.createElement('tr');
+        tr.className = 'aircraft-row';
+        tr.appendChild(makeLogoCell(a.callsign));
+
+        var tdCall = document.createElement('td');
+        tdCall.className = 'cell cell-callsign';
+        tdCall.textContent = a.callsign || a.icao.toUpperCase();
+
+        var tdType = document.createElement('td');
+        tdType.className = 'cell cell-type';
+        tdType.textContent = a.aircraft_type || '--';
+
+        var tdAlt  = document.createElement('td');
+        tdAlt.className = 'cell';
+        var altWrap = document.createElement('div');
+        altWrap.className = 'alt-wrap';
+        var altBar  = document.createElement('div');
+        altBar.className = 'alt-bar';
+        var altFill = document.createElement('div');
+        altFill.className = 'alt-bar-fill';
+        altFill.style.width = Math.round(altPct * 100) + '%';
+        var altSpan = document.createElement('span');
+        altSpan.textContent = altTxt;
+        altBar.appendChild(altFill);
+        altWrap.appendChild(altBar);
+        altWrap.appendChild(altSpan);
+        tdAlt.appendChild(altWrap);
+
+        var tdSpd  = document.createElement('td');
+        tdSpd.className = 'cell';
+        tdSpd.textContent = spdTxt;
+
+        var tdHdg  = document.createElement('td');
+        tdHdg.className = 'cell cell-hdg';
+        tdHdg.textContent = hdgTxt;
+
+        var tdDist = document.createElement('td');
+        tdDist.className = 'cell cell-dist';
+        tdDist.textContent = distTxt;
+
+        tr.appendChild(tdCall);
+        tr.appendChild(tdType);
+        tr.appendChild(tdAlt);
+        tr.appendChild(tdSpd);
+        tr.appendChild(tdHdg);
+        tr.appendChild(tdDist);
+        tbody.appendChild(tr);
+      });
+    }
+  </script>
+</body>
+</html>

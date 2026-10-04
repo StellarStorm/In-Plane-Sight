@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlightWall</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --board: #06070d;
+      --panel: #080910;
+      --pixel: #101529;
+      --frame: #171922;
+      --white: #f4f5f7;
+      --lavender: #949fff;
+      --cyan: #5df2ff;
+      --cyan-muted: #205866;
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #020308;
+    }
+
+    body {
+      font-family: 'Press Start 2P', monospace;
+      color: var(--white);
+    }
+
+    #board {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) 31%;
+      background-color: var(--board);
+      background-image:
+        radial-gradient(circle, rgba(28, 38, 78, 0.72) 0 1.45px, transparent 1.65px);
+      background-size: 15px 15px;
+      isolation: isolate;
+    }
+
+    #board::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      pointer-events: none;
+      background:
+        repeating-linear-gradient(
+          to bottom,
+          rgba(255, 255, 255, 0.018) 0,
+          rgba(255, 255, 255, 0.018) 1px,
+          transparent 1px,
+          transparent 4px
+        );
+      mix-blend-mode: screen;
+    }
+
+    #main-display {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 28.5% minmax(0, 1fr);
+      gap: clamp(28px, 6vw, 96px);
+      align-items: center;
+      padding: clamp(18px, 2.4vw, 36px);
+    }
+
+    #logo-frame {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      display: grid;
+      place-items: center;
+      background: rgba(6, 7, 13, 0.84);
+      border: clamp(4px, 0.55vw, 9px) solid var(--frame);
+      box-shadow:
+        inset 0 0 0 2px rgba(255, 255, 255, 0.025),
+        0 0 0 2px rgba(0, 0, 0, 0.9);
+      overflow: hidden;
+    }
+
+    #airline-logo {
+      display: none;
+      width: 76%;
+      height: 62%;
+      object-fit: contain;
+      opacity: 0.63;
+      filter: brightness(0.72) saturate(0.72) contrast(1.08);
+    }
+
+    #plane-fallback {
+      font-family: sans-serif;
+      font-size: clamp(72px, 10vw, 150px);
+      line-height: 1;
+      color: rgba(136, 153, 212, 0.62);
+      transform: rotate(-45deg);
+    }
+
+    /* Round LED text treatment. The radial pattern is clipped to each glyph. */
+    #callsign,
+    #aircraft-type,
+    #icao-line,
+    .metric-label,
+    .metric-value {
+      color: transparent;
+      -webkit-background-clip: text;
+      background-clip: text;
+      background-repeat: repeat;
+      text-shadow: none;
+    }
+
+    #callsign {
+      background-image: radial-gradient(
+        circle,
+        rgba(255, 255, 255, 0.98) 0 38%,
+        rgba(255, 255, 255, 0.16) 42%,
+        transparent 48%
+      );
+      background-size: 10px 10px;
+      filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.22));
+    }
+
+    #aircraft-type {
+      background-image: radial-gradient(
+        circle,
+        rgba(159, 170, 255, 0.98) 0 38%,
+        rgba(159, 170, 255, 0.15) 42%,
+        transparent 48%
+      );
+      background-size: 8px 8px;
+      filter: drop-shadow(0 0 5px rgba(148, 159, 255, 0.24));
+    }
+
+    #icao-line {
+      background-image: radial-gradient(
+        circle,
+        rgba(150, 157, 178, 0.58) 0 36%,
+        transparent 48%
+      );
+      background-size: 6px 6px;
+    }
+
+    .metric-label {
+      background-image: radial-gradient(
+        circle,
+        rgba(37, 103, 116, 0.92) 0 37%,
+        transparent 49%
+      );
+      background-size: 6px 6px;
+      filter: drop-shadow(0 0 4px rgba(40, 170, 190, 0.18));
+    }
+
+    .metric-value {
+      background-image: radial-gradient(
+        circle,
+        rgba(93, 242, 255, 0.98) 0 37%,
+        rgba(93, 242, 255, 0.14) 42%,
+        transparent 49%
+      );
+      background-size: 6px 6px;
+      filter: drop-shadow(0 0 5px rgba(93, 242, 255, 0.30));
+    }
+
+    #flight-summary {
+      min-width: 0;
+      align-self: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: clamp(20px, 4vh, 48px);
+      padding-right: clamp(10px, 4vw, 64px);
+    }
+
+    #callsign {
+      overflow: hidden;
+      font-size: clamp(44px, 7.4vw, 116px);
+      line-height: 1.08;
+      letter-spacing: 0.035em;
+      white-space: nowrap;
+      text-overflow: clip;
+    }
+
+    #aircraft-type {
+      font-size: clamp(26px, 4.1vw, 64px);
+      line-height: 1.1;
+      letter-spacing: 0.035em;
+    }
+
+    #icao-line {
+      font-size: clamp(15px, 2vw, 31px);
+      line-height: 1.1;
+      letter-spacing: 0.035em;
+    }
+
+    #telemetry {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-rows: repeat(2, minmax(0, 1fr));
+      column-gap: clamp(18px, 4vw, 72px);
+      align-items: center;
+      padding: clamp(16px, 2.4vw, 36px);
+      border-top: clamp(4px, 0.5vw, 8px) solid #11141d;
+      background: rgba(2, 4, 10, 0.16);
+    }
+
+    .metric {
+      min-width: 0;
+      display: flex;
+      align-items: baseline;
+      gap: clamp(10px, 1.5vw, 25px);
+      white-space: nowrap;
+    }
+
+    .metric-label,
+    .metric-value {
+      font-size: clamp(17px, 2.35vw, 38px);
+      line-height: 1.18;
+    }
+
+    #empty {
+      display: none;
+      grid-column: 1 / -1;
+      align-self: center;
+      justify-self: center;
+      color: rgba(255, 255, 255, 0.22);
+      font-size: clamp(18px, 2vw, 32px);
+      letter-spacing: 0.12em;
+    }
+
+    #utility {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 30;
+      min-height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px clamp(16px, 2.4vw, 36px);
+      border-top: 2px solid rgba(50, 75, 95, 0.42);
+      background: rgba(3, 5, 10, 0.94);
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(8px, 0.8vw, 12px);
+      letter-spacing: 0.06em;
+    }
+
+    #status-info {
+      display: flex;
+      align-items: center;
+      gap: clamp(14px, 2vw, 30px);
+      color: rgba(93, 242, 255, 0.48);
+    }
+
+    #nav-links {
+      display: flex;
+      align-items: center;
+      gap: clamp(18px, 2vw, 32px);
+    }
+
+    #utility a {
+      color: rgba(148, 159, 255, 0.72);
+      text-decoration: none;
+    }
+
+    #utility a:hover { color: #f4f5f7; }
+
+    @media (max-aspect-ratio: 4 / 3) {
+      #board { grid-template-rows: minmax(0, 1fr) 34%; }
+      #main-display {
+        grid-template-columns: 35% minmax(0, 1fr);
+        gap: 24px;
+      }
+      #telemetry {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-rows: repeat(3, minmax(0, 1fr));
+      }
+    }
+  </style>
+</head>
+<body>
+  <main id="board">
+    <section id="main-display">
+      <div id="logo-frame">
+        <img id="airline-logo" alt="Airline logo">
+        <span id="plane-fallback">&#9992;</span>
+      </div>
+
+      <div id="flight-summary">
+        <div id="callsign">------</div>
+        <div id="aircraft-type">----</div>
+        <div id="icao-line">------</div>
+      </div>
+    </section>
+
+    <section id="telemetry">
+      <div class="metric">
+        <span class="metric-label">Alt:</span>
+        <span class="metric-value" id="s-alt">--</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Spd:</span>
+        <span class="metric-value" id="s-spd">--</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Dist:</span>
+        <span class="metric-value" id="s-dist">--</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Trk:</span>
+        <span class="metric-value" id="s-trk">--</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Vr:</span>
+        <span class="metric-value" id="s-vr">--</span>
+      </div>
+      <div id="empty">NO AIRCRAFT IN RANGE</div>
+    </section>
+  </main>
+
+  <aside id="utility">
+    <div id="status-info">
+      <span id="aircraft-count">-- AIRCRAFT IN RANGE</span>
+      <span id="updated">UPDATED --</span>
+    </div>
+    <nav id="nav-links">
+      <a href="/list">LIST</a>
+      <a href="/map">MAP</a>
+    </nav>
+  </aside>
+
+  <script>
+    var CENTER = null;
+    var prevIcao = null;
+
+    var ICAO_TO_IATA = {
+      'AAL': 'AA', 'UAL': 'UA', 'DAL': 'DL', 'SWA': 'WN', 'ASA': 'AS',
+      'JBU': 'B6', 'FFT': 'F9', 'NKS': 'NK', 'HAL': 'HA', 'SKW': 'OO',
+      'PDT': '9E', 'RPA': 'YX', 'EJA': 'EJ', 'FDX': 'FX', 'UPS': '5X',
+      'JAL': 'JL', 'ANA': 'NH', 'BAW': 'BA', 'DLH': 'LH', 'AFR': 'AF',
+      'KLM': 'KL', 'UAE': 'EK', 'QTR': 'QR', 'SIA': 'SQ', 'CPA': 'CX',
+      'KAL': 'KE', 'AAR': 'OZ', 'CSN': 'CZ', 'CCA': 'CA', 'CES': 'MU',
+      'THY': 'TK', 'ETH': 'ET', 'QFA': 'QF', 'ANZ': 'NZ', 'ACA': 'AC',
+      'WJA': 'WS', 'IBE': 'IB', 'VIR': 'VS', 'EIN': 'EI', 'RYR': 'FR',
+      'EZY': 'U2', 'VLG': 'VY', 'ITY': 'AZ', 'SAS': 'SK', 'FIN': 'AY'
+    };
+
+    function getIata(callsign) {
+      if (!callsign || callsign.length < 3) return null;
+      return ICAO_TO_IATA[callsign.substring(0, 3).toUpperCase()] || null;
+    }
+
+    function showFallback(heading) {
+      var logo = document.getElementById('airline-logo');
+      var plane = document.getElementById('plane-fallback');
+      logo.style.display = 'none';
+      plane.style.display = 'block';
+      plane.style.transform = 'rotate(' + ((heading || 0) - 45) + 'deg)';
+    }
+
+    function updateLogo(iata, heading) {
+      if (!iata) {
+        showFallback(heading);
+        return;
+      }
+
+      var logo = document.getElementById('airline-logo');
+      var plane = document.getElementById('plane-fallback');
+      logo.style.display = 'none';
+      plane.style.display = 'block';
+
+      logo.onload = function() {
+        plane.style.display = 'none';
+        logo.style.display = 'block';
+      };
+      logo.onerror = function() {
+        showFallback(heading);
+      };
+      logo.src = 'https://pics.avs.io/200/200/' + iata + '.png';
+    }
+
+    function distanceNm(lat1, lon1, lat2, lon2) {
+      var radiusNm = 3440.065;
+      var dLat = (lat2 - lat1) * Math.PI / 180;
+      var dLon = (lon2 - lon1) * Math.PI / 180;
+      var value = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      return radiusNm * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
+    }
+
+    function formatAltitude(value) {
+      return value != null ? (value / 1000).toFixed(1) + 'k ft' : '--';
+    }
+
+    function formatVerticalRate(value) {
+      if (value == null) return '--';
+      return (value >= 0 ? '+' : '') + Math.round(value) + ' ft/m';
+    }
+
+    function render(aircraft) {
+      var empty = document.getElementById('empty');
+      var summary = document.getElementById('main-display');
+      var metrics = document.querySelectorAll('.metric');
+
+      if (aircraft.length === 0) {
+        summary.style.visibility = 'hidden';
+        metrics.forEach(function(metric) { metric.style.display = 'none'; });
+        empty.style.display = 'block';
+        prevIcao = null;
+        return;
+      }
+
+      summary.style.visibility = 'visible';
+      metrics.forEach(function(metric) { metric.style.display = 'flex'; });
+      empty.style.display = 'none';
+
+      var current = aircraft[0];
+      document.getElementById('callsign').textContent =
+        current.callsign || current.icao.toUpperCase();
+      document.getElementById('aircraft-type').textContent =
+        current.aircraft_type || 'UNKNOWN';
+      document.getElementById('icao-line').textContent = current.icao.toUpperCase();
+      document.getElementById('s-alt').textContent = formatAltitude(current.altitude_ft);
+      document.getElementById('s-spd').textContent =
+        current.speed_kts != null ? current.speed_kts + ' kt' : '--';
+      document.getElementById('s-dist').textContent =
+        current._dist != null ? Math.round(current._dist) + ' nm' : '--';
+      document.getElementById('s-trk').textContent =
+        current.heading != null ? Math.round(current.heading) + '\u00b0' : '--';
+      document.getElementById('s-vr').textContent =
+        formatVerticalRate(current.vertical_rate_fpm);
+
+      if (current.icao !== prevIcao) {
+        updateLogo(getIata(current.callsign), current.heading);
+        prevIcao = current.icao;
+      }
+    }
+
+    function fetchAircraft() {
+      fetch('/aircraft')
+        .then(function(response) { return response.json(); })
+        .then(function(aircraft) {
+          aircraft.forEach(function(item) {
+            item._dist = CENTER
+              ? distanceNm(CENTER[0], CENTER[1], item.lat, item.lon)
+              : null;
+          });
+          aircraft.sort(function(first, second) {
+            return (first._dist || 9999) - (second._dist || 9999);
+          });
+          render(aircraft);
+          document.getElementById('aircraft-count').textContent =
+            aircraft.length + ' AIRCRAFT IN RANGE';
+          document.getElementById('updated').textContent =
+            'UPDATED ' + new Date().toLocaleTimeString();
+        })
+        .catch(function(error) {
+          document.getElementById('updated').textContent = 'FETCH FAILED';
+          console.error(error);
+        });
+    }
+
+    fetch('/config')
+      .then(function(response) { return response.json(); })
+      .then(function(config) {
+        CENTER = [config.lat, config.lon];
+        fetchAircraft();
+        setInterval(fetchAircraft, config.refresh_seconds * 1000);
+      })
+      .catch(function(error) {
+        document.getElementById('updated').textContent = 'CONFIG FAILED';
+        console.error(error);
+      });
+  </script>
+</body>
+</html>

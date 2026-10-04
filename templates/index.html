@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlightWall - Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0d0d1a; }
+    #map { width: 100vw; height: 100vh; }
+
+    .aircraft-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: #4dffb4;
+      text-shadow: 0 0 8px rgba(77, 255, 180, 0.9);
+    }
+
+    .leaflet-popup-content-wrapper {
+      background: rgba(10, 10, 22, 0.95);
+      color: #ccc;
+      border: 1px solid #4dffb4;
+      border-radius: 4px;
+      box-shadow: 0 0 12px rgba(77, 255, 180, 0.3);
+    }
+    .leaflet-popup-tip-container { display: none; }
+    .leaflet-popup-content { margin: 10px 14px; }
+
+    .popup-callsign { font-size: 15px; font-weight: bold; color: #4dffb4; letter-spacing: 0.05em; }
+    .popup-type     { font-size: 12px; color: #888; margin-top: 1px; }
+    .popup-detail   { font-size: 12px; color: #aaa; margin-top: 4px; }
+
+    #status {
+      position: fixed;
+      bottom: 12px;
+      right: 14px;
+      font-family: monospace;
+      font-size: 11px;
+      color: #555;
+      z-index: 1000;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="status">loading...</div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    var status = document.getElementById('status');
+
+    fetch('/config')
+      .then(function(r) { return r.json(); })
+      .then(function(cfg) { init(cfg); })
+      .catch(function(err) {
+        status.textContent = 'config fetch failed';
+        console.error(err);
+      });
+
+    function init(cfg) {
+      var CENTER     = [cfg.lat, cfg.lon];
+      var RADIUS_NM  = cfg.radius_nm;
+      var REFRESH_MS = cfg.refresh_seconds * 1000;
+
+      var map = L.map('map', { zoomControl: true }).setView(CENTER, 8);
+
+      L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', {
+        attribution: 'Stadia Maps / OpenStreetMap contributors',
+        maxZoom: 19
+      }).addTo(map);
+
+      L.circle(CENTER, {
+        radius: RADIUS_NM * 1852,
+        color: '#4dffb4',
+        weight: 1,
+        opacity: 0.3,
+        fillOpacity: 0.02
+      }).addTo(map);
+
+      var markers = {};
+
+      function makeIcon(heading) {
+        return L.divIcon({
+          className: 'aircraft-icon',
+          html: '<div style="transform:rotate(' + ((heading || 0) - 90) + 'deg)">&#9992;</div>',
+          iconSize: [24, 24],
+          iconAnchor: [12, 12],
+          popupAnchor: [0, -14]
+        });
+      }
+
+      function makePopup(a) {
+        var alt  = a.altitude_ft != null ? a.altitude_ft.toLocaleString() + ' ft' : '-- ft';
+        var spd  = a.speed_kts   != null ? a.speed_kts + ' kts' : '';
+        var type = a.aircraft_type || '';
+        var detail = alt + (spd ? ' · ' + spd : '');
+        return '<div class="popup-callsign">' + (a.callsign || a.icao) + '</div>'
+             + '<div class="popup-type">'     + type                   + '</div>'
+             + '<div class="popup-detail">'   + detail                 + '</div>';
+      }
+
+      function refresh() {
+        fetch('/aircraft')
+          .then(function(r) { return r.json(); })
+          .then(function(aircraft) {
+            var seen = {};
+            aircraft.forEach(function(a) {
+              seen[a.icao] = true;
+              var icon  = makeIcon(a.heading);
+              var popup = makePopup(a);
+              if (markers[a.icao]) {
+                markers[a.icao].setLatLng([a.lat, a.lon]);
+                markers[a.icao].setIcon(icon);
+                markers[a.icao].setPopupContent(popup);
+              } else {
+                markers[a.icao] = L.marker([a.lat, a.lon], { icon: icon })
+                  .bindPopup(popup)
+                  .addTo(map);
+              }
+            });
+            Object.keys(markers).forEach(function(icao) {
+              if (!seen[icao]) {
+                map.removeLayer(markers[icao]);
+                delete markers[icao];
+              }
+            });
+            status.textContent = aircraft.length + ' aircraft · ' + new Date().toLocaleTimeString();
+          })
+          .catch(function(err) {
+            console.error(err);
+            status.textContent = 'fetch failed · ' + new Date().toLocaleTimeString();
+          });
+      }
+
+      refresh();
+      setInterval(refresh, REFRESH_MS);
+    }
+  </script>
+</body>
+</html>
