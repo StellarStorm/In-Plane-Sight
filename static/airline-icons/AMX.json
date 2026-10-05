@@ -1,0 +1,42 @@
+{
+  "code": "AMX",
+  "label": "Aeromexico",
+  "palette": {
+    "N": "#073b68",
+    "n": "#052441"
+  },
+  "rows": [
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "           nnNNNNNNNNNnn        ",
+    "          nNNNNNNNNNNNNNNn      ",
+    "          NNNNNNNNNNNnnnnn      ",
+    "         NNNNNNNNNNNNNnnNNNNN   ",
+    "       nNNNNNNNNNNNNNNNNNNNNNN  ",
+    "      nNNNNNNNNNNNNNNNNNNNNNNNN ",
+    "      nnnNNNNNNNNNNNnnn  nnnNNN ",
+    "    nnnnnNNNNNNNNNN nNn   n   n ",
+    "    NNNNNNNNNNNNNNN NNNNNNNn    ",
+    "  nnnnnnnNNNNNNNNNNnNNNNNNNN    ",
+    " nNNNNNNNNNNNNNNNNNnNNNNNNNNn   ",
+    " nnnnnnnnnnnnNNNNNNnNNNNNNNNN   ",
+    " NNNNNNNNNNNNNNNNNNnNNNNNNNNN   ",
+    "             NNNNNNnNNNNNNNn    ",
+    " NNNNNNNNNNNNNNNNNNnNNNNNNNn    ",
+    " nnnnnnnnnnnnnnnnNNnNNNNNNNn    ",
+    "     NNNNNNNNNNNNNNnNNNNNNNn    ",
+    "     nnnnnnnnnnnnNN NNNNNNN     ",
+    "     nNNNNNNNNNNNNn  nnnnn      ",
+    "     nnnnnnnnnnnnnn             ",
+    "         nnnnnnnnn              ",
+    "         nNNNNNNN               ",
+    "         nnnnnn                 ",
+    "         NNNNNn                 ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                "
+  ]
+}
