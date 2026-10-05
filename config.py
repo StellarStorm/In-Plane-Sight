@@ -18,12 +18,17 @@ class Config:
     refresh_seconds: int = 15
     flicker_enabled: bool = True
     flicker_strength: float = 0.025
+    font_thickness: str = 'normal'
     local_url: str = 'http://localhost:8080/data/aircraft.json'
     host: str = '0.0.0.0'
     port: int = 8000
 
     @classmethod
     def from_env(cls) -> 'Config':
+        font_thickness = os.environ.get('FONT_THICKNESS', 'normal').lower()
+        if font_thickness not in {'normal', 'broad'}:
+            raise ValueError('FONT_THICKNESS must be normal or broad')
+
         return cls(
             source=os.environ.get('SOURCE', 'internet'),
             lat=float(os.environ.get('LAT', 39.9526)),
@@ -40,8 +45,10 @@ class Config:
                 0.0,
                 min(float(os.environ.get('FLICKER_STRENGTH', 0.025)), 0.1),
             ),
+            font_thickness=font_thickness,
             local_url=os.environ.get(
-                'LOCAL_URL', 'http://localhost:8080/data/aircraft.json'
+                'LOCAL_URL',
+                'http://localhost:8080/data/aircraft.json',
             ),
             host=os.environ.get('HOST', '0.0.0.0'),
             port=int(os.environ.get('PORT', 8000)),

@@ -100,13 +100,13 @@
       transform: rotate(-45deg);
     }
 
-    /* Text remains in the document for layout and accessibility. Matching
-       overlay canvases render the visible characters as discrete LEDs. */
-    #callsign,
-    #aircraft-type,
-    #icao-line,
-    .metric-label,
-    .metric-value {
+    /* Normal uses the crisp bitmap canvas. Broad restores the original
+       CSS-clipped Press Start 2P LED treatment exactly. */
+    #board.font-normal #callsign,
+    #board.font-normal #aircraft-type,
+    #board.font-normal #icao-line,
+    #board.font-normal .metric-label,
+    #board.font-normal .metric-value {
       color: transparent;
       text-shadow: none;
     }
@@ -116,6 +116,70 @@
       z-index: 10;
       pointer-events: none;
       image-rendering: pixelated;
+    }
+
+    #board.font-broad #callsign,
+    #board.font-broad #aircraft-type,
+    #board.font-broad #icao-line,
+    #board.font-broad .metric-label,
+    #board.font-broad .metric-value {
+      color: transparent;
+      -webkit-background-clip: text;
+      background-clip: text;
+      background-repeat: repeat;
+      text-shadow: none;
+    }
+
+    #board.font-broad #callsign {
+      background-image: radial-gradient(
+        circle,
+        rgba(255, 255, 255, 0.98) 0 38%,
+        rgba(255, 255, 255, 0.16) 42%,
+        transparent 48%
+      );
+      background-size: 10px 10px;
+      filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.22));
+    }
+
+    #board.font-broad #aircraft-type {
+      background-image: radial-gradient(
+        circle,
+        rgba(159, 170, 255, 0.98) 0 38%,
+        rgba(159, 170, 255, 0.15) 42%,
+        transparent 48%
+      );
+      background-size: 8px 8px;
+      filter: drop-shadow(0 0 5px rgba(148, 159, 255, 0.24));
+    }
+
+    #board.font-broad #icao-line {
+      background-image: radial-gradient(
+        circle,
+        rgba(150, 157, 178, 0.58) 0 36%,
+        transparent 48%
+      );
+      background-size: 6px 6px;
+    }
+
+    #board.font-broad .metric-label {
+      background-image: radial-gradient(
+        circle,
+        rgba(37, 103, 116, 0.92) 0 37%,
+        transparent 49%
+      );
+      background-size: 6px 6px;
+      filter: drop-shadow(0 0 4px rgba(40, 170, 190, 0.18));
+    }
+
+    #board.font-broad .metric-value {
+      background-image: radial-gradient(
+        circle,
+        rgba(93, 242, 255, 0.98) 0 37%,
+        rgba(93, 242, 255, 0.14) 42%,
+        transparent 49%
+      );
+      background-size: 6px 6px;
+      filter: drop-shadow(0 0 5px rgba(93, 242, 255, 0.30));
     }
 
     #flight-summary {
@@ -292,6 +356,7 @@
 
     var ledTextRenderers = [];
     var ledRenderPending = false;
+    var fontThickness = 'normal';
 
     var LED_GLYPHS = {
       ' ': ['00000','00000','00000','00000','00000','00000','00000'],
@@ -371,6 +436,12 @@
     }
 
     function scheduleLedTextRender() {
+      if (fontThickness !== 'normal') {
+        ledTextRenderers.forEach(function (renderer) {
+          renderer.canvas.style.display = 'none';
+        });
+        return;
+      }
       if (ledRenderPending) return;
       ledRenderPending = true;
       window.requestAnimationFrame(function () {
@@ -431,6 +502,7 @@
 
       var opacity = style.opacity == null ? 1 : style.opacity;
       var radius = Math.max(1.25, pitch * style.radius);
+      var glow = style.glow;
       var color = style.color;
 
       for (var index = 0; index < text.length; index += 1) {
@@ -445,7 +517,7 @@
             output.globalAlpha = opacity;
             output.fillStyle = 'rgb(' + color.join(',') + ')';
             output.shadowColor = 'rgba(' + color.join(',') + ',0.26)';
-            output.shadowBlur = style.glow;
+            output.shadowBlur = glow;
             output.beginPath();
             output.arc(x, y, radius, 0, Math.PI * 2);
             output.fill();
@@ -575,13 +647,21 @@
         });
     }
 
-    fetch('/config')
+    var fontsReady = document.fonts && document.fonts.ready
+      ? document.fonts.ready
+      : Promise.resolve();
+
+    fontsReady
+      .then(function () { return fetch('/config'); })
       .then(function (response) { return response.json(); })
       .then(function (config) {
         CENTER = [config.lat, config.lon];
+        fontThickness = config.font_thickness === 'broad' ? 'broad' : 'normal';
         InPlaneSight.configure(config);
-        initializeLedText();
         var board = document.getElementById('board');
+        board.classList.toggle('font-normal', fontThickness === 'normal');
+        board.classList.toggle('font-broad', fontThickness === 'broad');
+        initializeLedText();
         var strength = Math.max(0, Math.min(config.flicker_strength || 0, 0.1));
         board.style.setProperty('--flicker-low', String(1 - strength));
         board.style.setProperty('--flicker-mid', String(1 - strength * 0.55));

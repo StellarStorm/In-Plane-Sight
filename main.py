@@ -23,7 +23,6 @@ def build_source(config: Config) -> AircraftSource:
 
 config = Config.from_env()
 source = build_source(config)
-
 app = FastAPI()
 app.mount('/static', StaticFiles(directory='static'), name='static')
 
@@ -53,6 +52,7 @@ def get_config():
         'refresh_seconds': config.refresh_seconds,
         'flicker_enabled': config.flicker_enabled,
         'flicker_strength': config.flicker_strength,
+        'font_thickness': config.font_thickness,
     }
 
 
@@ -65,10 +65,10 @@ def get_airline_icons():
 def get_aircraft():
     try:
         aircraft = source.fetch()
-    except httpx.HTTPError as e:
-        print(f'Upstream fetch failed: {e}')
+    except httpx.HTTPError as error:
+        print(f'Upstream fetch failed: {error}')
         return JSONResponse(content=[])
-    return [asdict(a) for a in aircraft]
+    return [asdict(item) for item in aircraft]
 
 
 @app.get('/favicon.ico')
@@ -78,4 +78,5 @@ def favicon():
 
 if __name__ == '__main__':
     import uvicorn
+
     uvicorn.run('main:app', host=config.host, port=config.port, reload=False)
