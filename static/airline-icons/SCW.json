@@ -1,0 +1,42 @@
+{
+  "code": "SCW",
+  "label": "SkyWest Charter",
+  "palette": {
+    "B": "#004a9f",
+    "G": "#514e4b"
+  },
+  "rows": [
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "     BBBBBBBBB       BB GGGGGGG ",
+    "    BBBBBBBBBB  B   BB GGGGGGG  ",
+    "   BB          BBB BB  G        ",
+    "   BBBBBBB BBBBBBB BB GG        ",
+    "    BBBBBB BBBB BBBB  GG        ",
+    "        BB BBB  BBBB GG         ",
+    "  BBBBBBB  BB    BB  GGGGGGG    ",
+    " BBBBBBB   B     B    GGGGGG    ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                "
+  ]
+}

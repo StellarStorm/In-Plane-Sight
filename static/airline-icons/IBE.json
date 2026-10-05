@@ -1,0 +1,43 @@
+{
+  "code": "IBE",
+  "label": "Iberia",
+  "palette": {
+    "R": "#E40037",
+    "W": "#FFFFFF",
+    "Y": "#FFC61E"
+  },
+  "rows": [
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                       YYYYYYYY ",
+    "                      YYYYYYYYY ",
+    "                     YYYYYYYYY  ",
+    "                    YYYYYYYYYY  ",
+    "                   YYYYYYWWWW   ",
+    "                  YYYYWWWWWWW   ",
+    "                 YYYWWWWWWWWW   ",
+    "                YYWWWWWWRRRR    ",
+    "               YWWWWWRRRRRRR    ",
+    "              YWWWRRRRRRRRRR    ",
+    "             WWWRRRRRRRRRRR     ",
+    "            WWRRRRRRRRRRRRR     ",
+    "           RRRRRRRRRRRRRRR      ",
+    "          RRRRRRRRRRRRRRRR      ",
+    "         RRRRRRRRRRRRRRRRR      ",
+    "        RRRRRRRRRRRRRRRRR       ",
+    "       RRRRRRRRRRRRRRRRR        ",
+    "      RRRRRRRRRRRRRRRRR         ",
+    "     RRRRRRRRRRRRRRRRR          ",
+    "    RRRRRRRRRRRRRRRRR           ",
+    "   RRRRRRRRRRRRRRRR             ",
+    "  RRRRRRRRRRRRRR                ",
+    " RRRRRRRRRRR                    ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                "
+  ]
+}

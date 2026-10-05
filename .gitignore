@@ -11,3 +11,6 @@ wheels/
 
 # User settings
 .env
+
+# macOS files
+.DS_Store

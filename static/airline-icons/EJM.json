@@ -1,0 +1,42 @@
+{
+  "code": "EJM",
+  "label": "Executive Jet Management",
+  "palette": {
+    "A": "#008FD5",
+    "a": "#005C91"
+  },
+  "rows": [
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "         AAA  AAA  A   A        ",
+    "         A      A  AA AA        ",
+    "         AA     A  A A A        ",
+    "         A    A A  A   A        ",
+    "         AAA  AAA  A   A        ",
+    "                                ",
+    "                                ",
+    "  A                          A  ",
+    "   a                        a   ",
+    "   Aa                      aA   ",
+    "    Aa                    aA    ",
+    "   A Aa                  aA A   ",
+    "    AaAa                aAaA    ",
+    "     Aa a              a aA     ",
+    "      AaaA            AaaA      ",
+    "     A Aaa            aaA A     ",
+    "      AAAaa          aaAAA      ",
+    "        AAAa        aAAA        ",
+    "          AAa      aAA          ",
+    "           AAa    aAA           ",
+    "             AA  AA             ",
+    "               AA               ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                "
+  ]
+}
