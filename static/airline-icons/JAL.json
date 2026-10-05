@@ -1,0 +1,42 @@
+{
+  "code": "JAL",
+  "label": "Japan Airlines",
+  "palette": {
+    "R": "#e6002d",
+    "D": "#8a001b"
+  },
+  "rows": [
+    "                                ",
+    "           DDDDDDDDDD           ",
+    "         DRD        DRD         ",
+    "       DRRD          DRRD       ",
+    "      DRR              RRR      ",
+    "     RRRD       DDRD   DRRR     ",
+    "    DRRD    DDDDRRRRD   DRRR    ",
+    "   DRRR DDDDDRRRRRRRRD   RRRD   ",
+    "   DRRR          DRRRD   RRRD   ",
+    "  DDRRD          DRRD    DRRDD  ",
+    "  RDRRD         DRR      DRRDR  ",
+    " DRDRRD        RRR       DRRDRD ",
+    " DRDRRD       RRR        DRRDRD ",
+    " DRRRRR      DRRD        RRRRRD ",
+    " DRRRRR     DRRR         RRRRRD ",
+    " RRRRRRD    RRRD        DRRRRRR ",
+    " RDRRRRRD  DRRRR        RRRRRDR ",
+    " RRRRRRRR  DRRRR       RRRRRRRR ",
+    " DRRRRRRRR DRRRRR    DRRRRRRRRD ",
+    " DRRRRRRRRRDRRRRRRRRRRRRRRRRRRD ",
+    " DRRRRRRRRRRRRRRRRRRRRRRRRRRRRD ",
+    "  RRRRRRRRRRRRRRRRRRRRRRRRRRRR  ",
+    "  DRRRRRRRRRRRRRRRRRRRRRRRRRRD  ",
+    "   RRRRRRRRR  RRD  RRD RRRRRR   ",
+    "   DRRRRRRRR DRDDD RR  RRRRRD   ",
+    "    RRRRRRRD RD D  RD DRRRRR    ",
+    "     RRRRD  DR RRD RD   DRR     ",
+    "      RRRRRRRRRRRRRRRRRRRR      ",
+    "       DRRRRRRRRRRRRRRRRD       ",
+    "         DRRRRRRRRRRRRD         ",
+    "           DRRRRRRRRD           ",
+    "                                "
+  ]
+}

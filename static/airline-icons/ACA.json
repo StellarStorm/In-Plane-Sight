@@ -1,0 +1,42 @@
+{
+  "code": "ACA",
+  "label": "Air Canada",
+  "palette": {
+    "R": "#e21b2d",
+    "D": "#8d1420"
+  },
+  "rows": [
+    "                                ",
+    "                                ",
+    "           DDRRRRRRDD           ",
+    "         DRRRRRDDRRRRRD         ",
+    "       DRRRD        DRRRD       ",
+    "      DRRD     DD     DRRD      ",
+    "     DRR       RR       RRD     ",
+    "    DRR       DRRD       RRD    ",
+    "   DRR       DRRRRD       RRD   ",
+    "   RRD       RRRRRRD      DRR   ",
+    "  DRR        RRRRRR        RRD  ",
+    "  DRD   DD   RRRRRR   DD   DRD  ",
+    "  RR DRRRRRD RRRRRR DRRRRRD RR  ",
+    "  RR  RRRRRRRRRRRRRRRRRRRR  RR  ",
+    " DRR  DRRRRRRRRRRRRRRRRRRD  RRD ",
+    " DRR  DRRRRRRRRRRRRRRRRRRD  RRD ",
+    " DRR  DRRRRRRRRRRRRRRRRRRD  RRD ",
+    "  RR     RRRRRRRRRRRRRR     RR  ",
+    "  RR     RRRRRRRRRRRRRR     RR  ",
+    "  DRD   RRRRRRRRRRRRRRRR   DRR  ",
+    "  DRR   DRRRRRRRRRRRRRRD   RRD  ",
+    "   RRD  RRRRRRDDD RRRRRR  DRR   ",
+    "   DRR  DDDRD  DD  DRDDD  RRD   ",
+    "    DRR        DD        RRD    ",
+    "     RRR       DD       RRR     ",
+    "      RRRD     DD     DRRR      ",
+    "       DRRRD   RD   DRRRD       ",
+    "         RRRRRDRDDRRRRR         ",
+    "           DRRRRDRRRD           ",
+    "              DR                ",
+    "                                ",
+    "                                "
+  ]
+}

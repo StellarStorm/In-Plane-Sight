@@ -1,0 +1,42 @@
+{
+  "code": "AFR",
+  "label": "Air France",
+  "palette": {
+    "R": "#ed1c2e",
+    "D": "#921421"
+  },
+  "rows": [
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                  DDDDDDDDDDD   ",
+    "                 DRRRRRRRRRRR   ",
+    "                DRRRRRRRRRRR    ",
+    "                RRRRRRRRRRRD    ",
+    "               RRRRRRRRRRRR     ",
+    "              DRRRRRRRRRRR      ",
+    "              RRRRRRRRRRRD      ",
+    "             RRRRRRRRRRRD       ",
+    "            DRRRRRRRRRRR        ",
+    "           DRRRRRRRRRRRD        ",
+    "           RRRRRRRRRRRD         ",
+    "          DRRRRRRRRRRR          ",
+    "         DRRRRRRRRRRR           ",
+    "         RRRRRRRRRRRD           ",
+    "        RRRRRRRRRRRD            ",
+    "       DRRRRRRRRRRR             ",
+    "      RRRRRRRRRRRR              ",
+    "   DDRRRRRRRRRRRD               ",
+    "   DDDDDDDDDDDD                 ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                "
+  ]
+}
