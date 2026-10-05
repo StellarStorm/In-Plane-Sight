@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>InPlaneSite</title>
+  <title>InPlaneSight</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <style>
@@ -403,13 +403,13 @@
         canvas.style.visibility = 'hidden';
         canvas.style.transform = 'none';
 
-        InPlaneSiteAirlines.getIcon(callsign).then(function (icon) {
+        InPlaneSightAirlines.getIcon(callsign).then(function (icon) {
         if (icon) {
           renderMainIcon(canvas, icon, 0);
           return;
         }
 
-          InPlaneSiteAirlines.load('GENERIC').then(function (genericIcon) {
+          InPlaneSightAirlines.load('GENERIC').then(function (genericIcon) {
           if (!genericIcon) {
             canvas.style.display = 'none';
             showFallback(heading);
@@ -422,7 +422,7 @@
             }
 
             function renderMainIcon(canvas, icon, rotation) {
-              InPlaneSiteAirlines.render(canvas, icon, {
+              InPlaneSightAirlines.render(canvas, icon, {
                 dotScale: 0.68,
                 showOffLeds: true,
                 glow: true
@@ -508,7 +508,7 @@
           document.getElementById('aircraft-count').textContent =
             aircraft.length + ' AIRCRAFT IN RANGE';
           document.getElementById('updated').textContent =
-            'UPDATED ' + InPlaneSite.formatTime(new Date());
+            'UPDATED ' + InPlaneSight.formatTime(new Date());
         })
         .catch(function(error) {
           document.getElementById('updated').textContent = 'FETCH FAILED';
@@ -520,7 +520,7 @@
       .then(function(response) { return response.json(); })
       .then(function (config) {
         CENTER = [config.lat, config.lon];
-        InPlaneSite.configure(config);
+        InPlaneSight.configure(config);
 
         var board = document.getElementById('board');
         var strength = Math.max(

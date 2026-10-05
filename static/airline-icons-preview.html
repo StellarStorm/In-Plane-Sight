@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>InPlaneSite Airline Icons</title>
+  <title>InPlaneSight Airline Icons</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -48,7 +48,7 @@
     })
     .then(function (codes) {
       codes.forEach(function (code) {
-        InPlaneSiteAirlines.load(code).then(function (icon) {
+        InPlaneSightAirlines.load(code).then(function (icon) {
           if (!icon) {
             return;
           }
@@ -63,7 +63,7 @@
           section.appendChild(label);
           preview.appendChild(section);
 
-          InPlaneSiteAirlines.render(canvas, icon);
+          InPlaneSightAirlines.render(canvas, icon);
         });
       });
     })

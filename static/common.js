@@ -1,4 +1,4 @@
-window.InPlaneSite = {
+window.InPlaneSight = {
     timeFormat: '24',
 
     configure(config) {
