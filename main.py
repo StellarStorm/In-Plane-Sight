@@ -1,4 +1,5 @@
 from dataclasses import asdict
+from pathlib import Path
 
 import httpx
 from fastapi import FastAPI
@@ -8,6 +9,8 @@ from fastapi.staticfiles import StaticFiles
 from config import Config
 from sources import AdsbLolSource, CachedSource, LocalSource
 from sources.base import AircraftSource
+
+AIRLINE_ICON_DIR = Path(__file__).resolve().parent / 'static' / 'airline-icons'
 
 
 def build_source(config: Config) -> AircraftSource:
@@ -51,6 +54,11 @@ def get_config():
         'flicker_enabled': config.flicker_enabled,
         'flicker_strength': config.flicker_strength,
     }
+
+
+@app.get('/airline-icons')
+def get_airline_icons():
+    return sorted(path.stem for path in AIRLINE_ICON_DIR.glob('*.json'))
 
 
 @app.get('/aircraft')

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlightWall Airline Icons</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 28px;
+      background: #020307;
+      color: #a9b8c8;
+      font: 14px monospace;
+    }
+    main {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+    }
+    section {
+      padding: 18px;
+      background: #05070d;
+      border: 1px solid #141b2a;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      aspect-ratio: 1;
+      background: #000;
+    }
+    p { margin: 14px 0 0; }
+  </style>
+</head>
+<body>
+  <main id="preview"></main>
+  <script src="/static/js/airline-icons.js"></script>
+  <script>
+    var preview = document.getElementById('preview');
+
+  fetch('/airline-icons')
+    .then(function (response) {
+      if (!response.ok) {
+        throw new Error('Unable to load airline icon list');
+      }
+
+      return response.json();
+    })
+    .then(function (codes) {
+      codes.forEach(function (code) {
+        FlightWallAirlines.load(code).then(function (icon) {
+          if (!icon) {
+            return;
+          }
+
+          var section = document.createElement('section');
+          var canvas = document.createElement('canvas');
+          var label = document.createElement('p');
+
+          label.textContent = icon.code + ' · ' + icon.label;
+
+          section.appendChild(canvas);
+          section.appendChild(label);
+          preview.appendChild(section);
+
+          FlightWallAirlines.render(canvas, icon);
+        });
+      });
+    })
+    .catch(function (error) {
+      console.error(error);
+    });
+  </script>
+</body>
+</html>

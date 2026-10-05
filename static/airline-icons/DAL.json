@@ -1,0 +1,42 @@
+{
+  "code": "DAL",
+  "label": "Delta Airlines",
+  "palette": {
+    "R": "#e31937",
+    "D": "#981b37"
+  },
+  "rows": [
+    "                                ",
+    "                                ",
+    "                                ",
+    "               RD               ",
+    "              RRDD              ",
+    "              RRDD              ",
+    "             RRRDDD             ",
+    "             RRRDDD             ",
+    "            RRRRDDDD            ",
+    "           RRRRRDDDDD           ",
+    "           RRRRRDDDDD           ",
+    "          RRRRRRDDDDDD          ",
+    "          RRRRRRDDDDDD          ",
+    "         RRRRRRRDDDDDDD         ",
+    "        RRRRRRRRDDDDDDDD        ",
+    "        RRRRRRRRDDDDDDDD        ",
+    "       RRRRRRRRRDDDDDDDDD       ",
+    "       RRRRRRRRRDDDDDDDDD       ",
+    "      RRRRRRRRRRDDDDDDDDDD      ",
+    "     RRRRRRRRRRRDDDDDDDDDDD     ",
+    "     RRRRRRRRRR  DDDDDDDDDD     ",
+    "    RRRRRRRR        DDDDDDDD    ",
+    "    RRRRR      RD      DDDDD    ",
+    "   RRR       RRRDDD       DDD   ",
+    "  R        RRRRRDDDDD        D  ",
+    "        RRRRRRRRDDDDDDDD        ",
+    "      RRRRRRRRRRDDDDDDDDDD      ",
+    "    RRRRRRRRRRRRDDDDDDDDDDDD    ",
+    "  RRRRRRRRRRRRRRDDDDDDDDDDDDDD  ",
+    "                                ",
+    "                                ",
+    "                                "
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "code": "FFT",
+  "label": "Frontier Airlines",
+  "palette": {
+    "G": "#176645",
+    "g": "#0b3d2c"
+  },
+  "rows": [
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "        GGGGGGGGGGGGGGGGGGGG    ",
+    "       gGGGGGGGGGGGGGGGGGGGG    ",
+    "       GGGGGGGGGGGGGGGGGGGGG    ",
+    "       GGGGGGGGGGGGGGGGGGGGg    ",
+    "      gGGGGGGGGGGGGGGGGGGGG     ",
+    "      GGGGGGGGGGGGGGGGGGGG      ",
+    "                                ",
+    "                                ",
+    "      GGGGGGGGGGGGGGGGGGG       ",
+    "      GGGGGGGGGGGGGGGGGGG       ",
+    "     gGGGGGGGGGGGGGGGGGGG       ",
+    "     GGGGGGGGGGGGGGGGGGGG       ",
+    "     GGGGGGGGGGGGGGGGGGG        ",
+    "    gGGGGGGGGGGGGGGGGGG         ",
+    "    GGGGGGGGGGGGGGGGGG          ",
+    "                                ",
+    "                                ",
+    "    GGGGGGGGGGG                 ",
+    "    GGGGGGGGGGG                 ",
+    "    GGGGGGGGGGG                 ",
+    "   gGGGGGGGGGGG                 ",
+    "   GGGGGGGGGGGG                 ",
+    "   GGGGGGGGGGG                  ",
+    "   GGGGGGGGGG                   ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                "
+  ]
+}
