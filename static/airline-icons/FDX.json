@@ -1,0 +1,43 @@
+{
+  "code": "FDX",
+  "label": "FedEx Express",
+  "palette": {
+    "P": "#4d148c",
+    "W": "#f2f2ee",
+    "O": "#ff6200"
+  },
+  "rows": [
+    "                                ",
+    "                                ",
+    "    PPPPPPPPPP                  ",
+    "    PPPPPPPPPPP                 ",
+    "    PPPPPPPPPPPP                ",
+    "    PPPPPPPPPPPP                ",
+    "     PPPPPPPPPPPP               ",
+    "     PPPPPPPPPPPP               ",
+    "     PPPPPPPPPPPPP              ",
+    "     PPPPPPPPPPPPP              ",
+    "     PPPPPPPPPPPPPP             ",
+    "     PPPPPPPPPPPPPP             ",
+    "     PPPPPPPPPPPPPPP            ",
+    "      PPWWWWWPPPOOOO            ",
+    "      PPWWWWWPPPOOOOP           ",
+    "      PPWPPPPPPPOPPPP           ",
+    "      PPWPPPPPPPOPPPPP          ",
+    "      PPWWWWPPPPOOOOPP          ",
+    "      PPWWWWPPPPOOOOPPP         ",
+    "      PPWPPPPPPPOPPPPPP         ",
+    "       PWPPPPPPPOPPPPPPP        ",
+    "       PWPPPPPPPOOOOOPPPP       ",
+    "       PWPPPPPPPOOOOOPPPPP      ",
+    "       PPPPPPPPPPPPPPPPPPP     ",
+    "       PPPPPPPPPPPPPPPPPPPP     ",
+    "       PPPPPPPPPPPPPPPPPPPPP    ",
+    "       PPPPPPPPPPPPPPPPPPPPPP   ",
+    "        PPPPPPPPPPPPPPPPPPPPPP  ",
+    "        PPPPPPPPPPPPPPPPPPPPPP  ",
+    "        PPPPPPPPPPPPPPPPPPPPPP  ",
+    "                                ",
+    "                                "
+  ]
+}
