@@ -1,0 +1,42 @@
+{
+  "code": "KLM",
+  "label": "KLM Royal Dutch Airlines",
+  "palette": {
+    "B": "#69bce4",
+    "b": "#327da6"
+  },
+  "rows": [
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "               bB               ",
+    "               BBb              ",
+    "         bbb bbbbbb bbb         ",
+    "         BBBbBBBBBBbBBB         ",
+    "         bBB BBbbBB BBB         ",
+    "          bbbbbbbbbbbb          ",
+    "          bBBBBBBBBBBb          ",
+    "          bbbbbbbbbbbb          ",
+    "                                ",
+    " bBBb bBBbbBBb    bBBBBb bBBBBb ",
+    " bBBbbBBb bBBb    bBBBBB bBBBBb ",
+    " bBBBBBb  bBBb    bBBBBB BBBBBb ",
+    " bBBBBBb  bBBb    bBBbBBbBBbBBb ",
+    " bBBBBBB  bBBb    bBBbBBBBBbBBb ",
+    " bBBbbBBB bBBBbbbbbBBbbBBBbbBBb ",
+    " bBBb bBBBbBBBBBBBbBBb BBB bBBb ",
+    "  bb   bbb bbbbbbb bb  bbb  bb  ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                "
+  ]
+}

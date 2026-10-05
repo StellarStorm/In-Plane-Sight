@@ -1,0 +1,42 @@
+{
+  "code": "SWR",
+  "label": "Swiss International Air Lines",
+  "palette": {
+    "R": "#e60000",
+    "D": "#8f0000"
+  },
+  "rows": [
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                   DDDDDDDDDD   ",
+    "                  RRRRRRRRRRR   ",
+    "                 RRRRRRRRRRRR   ",
+    "                RRRRRRRRRRRRR   ",
+    "               RRD   RRRRRRRD   ",
+    "              DRRD   RRRRRRR    ",
+    "              RRRD   RRRRRRR    ",
+    "             RRRRD   RRRRRRR    ",
+    "            RRDDD    DDDDRRD    ",
+    "           RR            DR     ",
+    "          DRR            DR     ",
+    "          RRR            DR     ",
+    "         RRRRRDDD    DDDDRD     ",
+    "        RRRRRRRRRD   RRRRR      ",
+    "       RRRRRRRRRRD   RRRRR      ",
+    "      DRRRRRRRRRRD   RRRRR      ",
+    "      RRRRRRRRRRRD   RRRRD      ",
+    "     RRRRRRRRRRRRRRRRRRRR       ",
+    "    RRRRRRRRRRRRRRRRRRRRR       ",
+    "   RRRRRRRRRRRRRRRRRRRRRR       ",
+    "   DDDDDDDDDDDDDDDDDDDDDD       ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                "
+  ]
+}
