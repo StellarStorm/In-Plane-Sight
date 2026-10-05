@@ -1,7 +1,7 @@
 [project]
 name = "in-plane-sight"
 version = "0.1.0"
-description = "Add your description here"
+description = "Display an LED-like information board of flights currently overhead"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
