@@ -160,7 +160,7 @@
     context.clearRect(0, 0, canvas.width, canvas.height);
   }
 
-  window.FlightWallAirlines = {
+  window.InPlaneSiteAirlines = {
     clear: clear,
     getCode: getCode,
     getIcon: getIcon,

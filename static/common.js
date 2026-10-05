@@ -1,4 +1,4 @@
-window.FlightWall = {
+window.InPlaneSite = {
     timeFormat: '24',
 
     configure(config) {

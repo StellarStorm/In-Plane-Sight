@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FlightWall - Map</title>
+  <title>InPlaneSite - Map</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -62,7 +62,7 @@
       });
 
     function init(cfg) {
-      FlightWall.configure(cfg);
+      InPlaneSite.configure(cfg);
       var CENTER     = [cfg.lat, cfg.lon];
       var RADIUS_NM  = cfg.radius_nm;
       var REFRESH_MS = cfg.refresh_seconds * 1000;
@@ -129,11 +129,11 @@
                 delete markers[icao];
               }
             });
-            status.textContent = aircraft.length + ' aircraft · ' + FlightWall.formatTime(new Date());
+            status.textContent = aircraft.length + ' aircraft · ' + InPlaneSite.formatTime(new Date());
           })
           .catch(function(err) {
             console.error(err);
-            status.textContent = 'fetch failed · ' + FlightWall.formatTime(new Date());
+            status.textContent = 'fetch failed · ' + InPlaneSite.formatTime(new Date());
           });
       }
 

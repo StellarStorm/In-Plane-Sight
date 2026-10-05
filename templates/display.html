@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FlightWall - List</title>
+  <title>InPlaneSite - List</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
   <style>
@@ -115,7 +115,7 @@
 </head>
 <body>
   <div id="header">
-    <div id="title">FLIGHTWALL <span>LIVE TRAFFIC</span></div>
+    <div id="title">IN PLANE SITE <span>LIVE TRAFFIC</span></div>
     <div id="header-right">
       <div id="clock">--:--:--</div>
       <div id="location">--</div>
@@ -192,12 +192,12 @@
     }
 
     function showLogoFallback(logo, heading) {
-      FlightWallAirlines.load('GENERIC').then(function (icon) {
+      InPlaneSiteAirlines.load('GENERIC').then(function (icon) {
         if (!icon) {
           return;
         }
 
-        FlightWallAirlines.render(logo.canvas, icon, {
+        InPlaneSiteAirlines.render(logo.canvas, icon, {
           dotScale: 0.72,
           showOffLeds: false,
           glow: true
@@ -210,12 +210,12 @@
     }
 
     function renderLogoCell(logo) {
-      FlightWallAirlines.getIcon(logo.callsign).then(function (icon) {
+      InPlaneSiteAirlines.getIcon(logo.callsign).then(function (icon) {
         if (!icon) {
           showLogoFallback(logo, logo.heading);
           return;
         }
-        FlightWallAirlines.render(logo.canvas, icon, {
+        InPlaneSiteAirlines.render(logo.canvas, icon, {
           dotScale: 0.72,
           showOffLeds: false,
           glow: true
