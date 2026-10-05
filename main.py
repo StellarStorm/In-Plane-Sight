@@ -7,6 +7,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from config import Config
+from services import AircraftService
 from sources import AdsbLolSource, CachedSource, LocalSource
 from sources.base import AircraftSource
 
@@ -15,15 +16,20 @@ AIRLINE_ICON_DIR = Path(__file__).resolve().parent / 'static' / 'airline-icons'
 
 def build_source(config: Config) -> AircraftSource:
     if config.source == 'local':
-        base = LocalSource(config.local_url)
+        source = LocalSource(config.local_url)
     else:
-        base = AdsbLolSource(config.lat, config.lon, config.radius_nm)
-    return CachedSource(base, ttl_seconds=config.refresh_seconds)
+        source = AdsbLolSource(config.lat, config.lon, config.radius_nm)
+    return CachedSource(source, ttl_seconds=config.refresh_seconds)
 
 
 config = Config.from_env()
 source = build_source(config)
-
+aircraft_service = AircraftService(
+    source=source,
+    center_lat=config.lat,
+    center_lon=config.lon,
+    radius_nm=config.radius_nm,
+)
 app = FastAPI()
 app.mount('/static', StaticFiles(directory='static'), name='static')
 
@@ -61,14 +67,25 @@ def get_airline_icons():
     return sorted(path.stem for path in AIRLINE_ICON_DIR.glob('*.json'))
 
 
+@app.get('/display-state')
+def get_display_state():
+    try:
+        return asdict(aircraft_service.snapshot())
+    except httpx.HTTPError as error:
+        print(f'Upstream fetch failed: {error}')
+        return JSONResponse(
+            status_code=502,
+            content={'detail': 'Aircraft source unavailable'},
+        )
+
+
 @app.get('/aircraft')
 def get_aircraft():
     try:
-        aircraft = source.fetch()
-    except httpx.HTTPError as e:
-        print(f'Upstream fetch failed: {e}')
+        return [asdict(item) for item in aircraft_service.snapshot().aircraft]
+    except httpx.HTTPError as error:
+        print(f'Upstream fetch failed: {error}')
         return JSONResponse(content=[])
-    return [asdict(a) for a in aircraft]
 
 
 @app.get('/favicon.ico')
@@ -78,4 +95,5 @@ def favicon():
 
 if __name__ == '__main__':
     import uvicorn
+
     uvicorn.run('main:app', host=config.host, port=config.port, reload=False)
