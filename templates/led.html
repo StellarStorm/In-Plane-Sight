@@ -87,9 +87,10 @@
     }
 
     #airline-logo {
-      display: none;
-      width: 88%;
-      height: 88%;
+    display: none;
+    width: 82%;
+    height: 82%;
+    transform-origin: center;
     }
 
     #plane-fallback {
@@ -393,59 +394,44 @@
       plane.style.display = 'block';
       plane.style.transform = 'rotate(' + ((heading || 0) - 45) + 'deg)';
     }
-
-
-
-      //   function updateLogo(callsign, heading) {
-      //     var canvas = document.getElementById('airline-logo');
-      //     var plane = document.getElementById('plane-fallback');
-
-      //     canvas.style.display = 'none';
-      //     plane.style.display = 'block';
-
-      //     FlightWallAirlines.getIcon(callsign).then(function (icon) {
-      //       if (!icon) {
-      //     showFallback(heading);
-      //     return;
-      //   }
-
-      //           FlightWallAirlines.render(canvas, icon, {
-      //             dotScale: 0.68,
-      //             showOffLeds: true,
-      //             glow: true
-      //           });
-
-      //           canvas.setAttribute('aria-label', icon.label);
-      //     plane.style.display = 'none';
-      //           canvas.style.display = 'block';
-      //         });
-      // }
       function updateLogo(callsign, heading) {
         var canvas = document.getElementById('airline-logo');
         var plane = document.getElementById('plane-fallback');
 
         plane.style.display = 'none';
-
         canvas.style.display = 'block';
         canvas.style.visibility = 'hidden';
+        canvas.style.transform = 'none';
 
         FlightWallAirlines.getIcon(callsign).then(function (icon) {
-          if (!icon) {
+        if (icon) {
+          renderMainIcon(canvas, icon, 0);
+          return;
+        }
+
+        FlightWallAirlines.load('GENERIC').then(function (genericIcon) {
+          if (!genericIcon) {
             canvas.style.display = 'none';
-            canvas.style.visibility = 'visible';
             showFallback(heading);
             return;
           }
 
-        FlightWallAirlines.render(canvas, icon, {
-          dotScale: 0.68,
-          showOffLeds: true,
-          glow: true
+          renderMainIcon(canvas, genericIcon, heading);
         });
-
-        canvas.setAttribute('aria-label', icon.label);
-        canvas.style.visibility = 'visible';
       });
+            }
+
+            function renderMainIcon(canvas, icon, rotation) {
+              FlightWallAirlines.render(canvas, icon, {
+                dotScale: 0.68,
+                showOffLeds: true,
+                glow: true
+              });
+
+              canvas.style.transform =
+                'rotate(' + (rotation != null ? rotation : 0) + 'deg)';
+              canvas.style.visibility = 'visible';
+              canvas.setAttribute('aria-label', icon.label);
     }
 
     function distanceNm(lat1, lon1, lat2, lon2) {

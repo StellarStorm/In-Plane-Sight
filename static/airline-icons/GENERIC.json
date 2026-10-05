@@ -1,0 +1,42 @@
+{
+  "code": "GENERIC",
+  "label": "Aircraft",
+  "palette": {
+    "W": "#eeeae0",
+    "S": "#9d9a92"
+  },
+  "rows": [
+    "                                ",
+    "               SS               ",
+    "               WW               ",
+    "               WWS              ",
+    "              SWWS              ",
+    "              SWWS              ",
+    "              SWWS              ",
+    "              SWWS              ",
+    "              SWWS              ",
+    "              SWWS              ",
+    "              WWWW              ",
+    "             SWWWWW             ",
+    "           SWWWWWWWWS           ",
+    "          WWWWWWWWWWWW          ",
+    "        SWWWWWWWWWWWWWWS        ",
+    "       WWWWWWWWWWWWWWWWWW       ",
+    "     SWWWWWWWWWWWWWWWWWWWWS     ",
+    "   SWWWWWWWWSSSWWSSSWWWWWWWWS   ",
+    "  SWWWWWWS    SWWS    SWWWWWWW  ",
+    " SWWWSS       SWWS       SSWWWS ",
+    " SS           SWWS           SS ",
+    "              SWWS              ",
+    "              SWWS              ",
+    "              SWWS              ",
+    "             WWWWWW             ",
+    "           SWWWWWWWWS           ",
+    "          WWWWWWWWWWWW          ",
+    "        SWWWWWSWWSWWWWWS        ",
+    "       SWWSS   WW    SWWS       ",
+    "               SS               ",
+    "                                ",
+    "                                "
+  ]
+}

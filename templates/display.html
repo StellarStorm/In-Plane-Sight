@@ -188,21 +188,31 @@
       canvas.className = 'logo-canvas';
       canvas.setAttribute('aria-label', 'Airline icon');
       cell.appendChild(canvas);
-      return { cell: cell, canvas: canvas, callsign: callsign };
+      return { cell: cell, canvas: canvas, callsign: callsign, heading: null };
     }
 
-    function showLogoFallback(logo) {
-      logo.canvas.remove();
-      var fallback = document.createElement('div');
-      fallback.className = 'logo-fallback';
-      fallback.textContent = '\u2708';
-      logo.cell.appendChild(fallback);
+    function showLogoFallback(logo, heading) {
+      FlightWallAirlines.load('GENERIC').then(function (icon) {
+        if (!icon) {
+          return;
+        }
+
+        FlightWallAirlines.render(logo.canvas, icon, {
+          dotScale: 0.72,
+          showOffLeds: false,
+          glow: true
+        });
+
+        logo.canvas.style.transform =
+          'rotate(' + (heading != null ? heading : 0) + 'deg)';
+        logo.canvas.setAttribute('aria-label', 'Aircraft heading icon');
+      });
     }
 
     function renderLogoCell(logo) {
       FlightWallAirlines.getIcon(logo.callsign).then(function (icon) {
         if (!icon) {
-          showLogoFallback(logo);
+          showLogoFallback(logo, logo.heading);
           return;
         }
         FlightWallAirlines.render(logo.canvas, icon, {
@@ -249,6 +259,7 @@
       aircraft.forEach(function (item) {
         var row = document.createElement('tr');
         var logo = makeLogoCell(item.callsign);
+        logo.heading = item.heading;
         var speed = item.speed_kts != null ? item.speed_kts + ' kt' : '--';
         var heading = item.heading != null
           ? toCompass(item.heading) + '  ' + Math.round(item.heading) + '\u00b0'
