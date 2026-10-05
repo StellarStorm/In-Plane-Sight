@@ -10,7 +10,6 @@
     if (!callsign || callsign.length < 3) {
       return null;
     }
-
     return callsign.slice(0, 3).toUpperCase();
   }
 
@@ -18,7 +17,6 @@
     if (availableCodes) {
       return Promise.resolve(availableCodes);
     }
-
     if (manifestRequest) {
       return manifestRequest;
     }
@@ -28,7 +26,6 @@
         if (!response.ok) {
           return [];
         }
-
         return response.json();
       })
       .then(function (codes) {
@@ -43,34 +40,85 @@
     return manifestRequest;
   }
 
+  function fetchIcon(code, codes) {
+    if (!codes.has(code)) {
+      return Promise.resolve(null);
+    }
+
+    return fetch('/static/airline-icons/' + code + '.json')
+      .then(function (response) {
+        if (!response.ok) {
+          return null;
+        }
+        return response.json();
+      });
+  }
+
+  function mergeAliasMetadata(icon, metadata) {
+    if (!metadata) {
+      return icon;
+    }
+
+    return Object.assign({}, icon, {
+      code: metadata.code,
+      label: metadata.label
+    });
+  }
+
+  function resolveAlias(code, codes, visitedCodes, metadata) {
+    if (visitedCodes.has(code)) {
+      return Promise.reject(
+        new Error('Circular airline icon alias: ' + code)
+      );
+    }
+
+    visitedCodes.add(code);
+
+    return fetchIcon(code, codes)
+      .then(function (icon) {
+        if (!icon) {
+          return null;
+        }
+
+        var displayMetadata = metadata || {
+          code: icon.code || code,
+          label: icon.label || code
+        };
+
+        if (!icon.alias) {
+          return mergeAliasMetadata(icon, displayMetadata);
+        }
+
+        return resolveAlias(
+          String(icon.alias).toUpperCase(),
+          codes,
+          visitedCodes,
+          displayMetadata
+        );
+      });
+  }
+
+  function resolveIcon(code, codes) {
+    return resolveAlias(code, codes, new Set(), null);
+  }
+
   function load(code) {
     if (!code) {
       return Promise.resolve(null);
     }
 
+    code = code.toUpperCase();
+
     if (cache.has(code)) {
       return Promise.resolve(cache.get(code));
     }
-
     if (pending.has(code)) {
       return pending.get(code);
     }
 
     var request = loadManifest()
       .then(function (codes) {
-        if (!codes.has(code)) {
-          cache.set(code, null);
-          return null;
-        }
-
-        return fetch('/static/airline-icons/' + code + '.json')
-          .then(function (response) {
-            if (!response.ok) {
-              return null;
-            }
-
-            return response.json();
-          });
+        return resolveIcon(code, codes);
       })
       .then(function (icon) {
         cache.set(code, icon);
