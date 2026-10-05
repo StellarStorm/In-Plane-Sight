@@ -1,679 +1,696 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>InPlaneSight</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --board: #06070d;
-      --panel: #080910;
-      --pixel: #101529;
-      --frame: #171922;
-      --white: #f4f5f7;
-      --lavender: #949fff;
-      --cyan: #5df2ff;
-      --cyan-muted: #205866;
-    }
-
-    * { box-sizing: border-box; }
-
-    html,
-    body {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      overflow: hidden;
-      background: #020308;
-    }
-
-    body {
-      font-family: 'Press Start 2P', monospace;
-      color: var(--white);
-    }
-
-    #board {
-      position: relative;
-      width: 100vw;
-      height: 100vh;
-      display: grid;
-      grid-template-rows: minmax(0, 1fr) 31%;
-      background-color: var(--board);
-      background-image:
-        radial-gradient(circle, rgba(28, 38, 78, 0.72) 0 1.45px, transparent 1.65px);
-      background-size: 15px 15px;
-      isolation: isolate;
-    }
-
-    #board::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      z-index: 20;
-      pointer-events: none;
-      background: repeating-linear-gradient(
-        to bottom,
-        rgba(255, 255, 255, 0.018) 0,
-        rgba(255, 255, 255, 0.018) 1px,
-        transparent 1px,
-        transparent 4px
-      );
-      mix-blend-mode: screen;
-    }
-
-    #main-display {
-      min-height: 0;
-      display: grid;
-      grid-template-columns: 28.5% minmax(0, 1fr);
-      gap: clamp(28px, 6vw, 96px);
-      align-items: center;
-      padding: clamp(18px, 2.4vw, 36px);
-    }
-
-    #logo-frame {
-      width: 100%;
-      aspect-ratio: 1 / 1;
-      display: grid;
-      place-items: center;
-      background: rgba(6, 7, 13, 0.84);
-      border: clamp(4px, 0.55vw, 9px) solid var(--frame);
-      box-shadow:
-        inset 0 0 0 2px rgba(255, 255, 255, 0.025),
-        0 0 0 2px rgba(0, 0, 0, 0.9);
-      overflow: hidden;
-    }
-
-    #airline-logo {
-      display: none;
-      width: 82%;
-      height: 82%;
-      transform-origin: center;
-    }
-
-    #plane-fallback {
-      font-family: sans-serif;
-      font-size: clamp(72px, 10vw, 150px);
-      line-height: 1;
-      color: rgba(136, 153, 212, 0.62);
-      transform: rotate(-45deg);
-    }
-
-    /* Normal uses the crisp bitmap canvas. Broad restores the original
-       CSS-clipped Press Start 2P LED treatment exactly. */
-    #board.font-normal #callsign,
-    #board.font-normal #aircraft-type,
-    #board.font-normal #icao-line,
-    #board.font-normal .metric-label,
-    #board.font-normal .metric-value {
-      color: transparent;
-      text-shadow: none;
-    }
-
-    .led-text-canvas {
-      position: fixed;
-      z-index: 10;
-      pointer-events: none;
-      image-rendering: pixelated;
-    }
-
-    #board.font-broad #callsign,
-    #board.font-broad #aircraft-type,
-    #board.font-broad #icao-line,
-    #board.font-broad .metric-label,
-    #board.font-broad .metric-value {
-      color: transparent;
-      -webkit-background-clip: text;
-      background-clip: text;
-      background-repeat: repeat;
-      text-shadow: none;
-    }
-
-    #board.font-broad #callsign {
-      background-image: radial-gradient(
-        circle,
-        rgba(255, 255, 255, 0.98) 0 38%,
-        rgba(255, 255, 255, 0.16) 42%,
-        transparent 48%
-      );
-      background-size: 10px 10px;
-      filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.22));
-    }
-
-    #board.font-broad #aircraft-type {
-      background-image: radial-gradient(
-        circle,
-        rgba(159, 170, 255, 0.98) 0 38%,
-        rgba(159, 170, 255, 0.15) 42%,
-        transparent 48%
-      );
-      background-size: 8px 8px;
-      filter: drop-shadow(0 0 5px rgba(148, 159, 255, 0.24));
-    }
-
-    #board.font-broad #icao-line {
-      background-image: radial-gradient(
-        circle,
-        rgba(150, 157, 178, 0.58) 0 36%,
-        transparent 48%
-      );
-      background-size: 6px 6px;
-    }
-
-    #board.font-broad .metric-label {
-      background-image: radial-gradient(
-        circle,
-        rgba(37, 103, 116, 0.92) 0 37%,
-        transparent 49%
-      );
-      background-size: 6px 6px;
-      filter: drop-shadow(0 0 4px rgba(40, 170, 190, 0.18));
-    }
-
-    #board.font-broad .metric-value {
-      background-image: radial-gradient(
-        circle,
-        rgba(93, 242, 255, 0.98) 0 37%,
-        rgba(93, 242, 255, 0.14) 42%,
-        transparent 49%
-      );
-      background-size: 6px 6px;
-      filter: drop-shadow(0 0 5px rgba(93, 242, 255, 0.30));
-    }
-
-    #flight-summary {
-      min-width: 0;
-      align-self: center;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: clamp(20px, 4vh, 48px);
-      padding-right: clamp(10px, 4vw, 64px);
-    }
-
-    #callsign {
-      overflow: hidden;
-      font-size: clamp(44px, 7.4vw, 116px);
-      line-height: 1.08;
-      letter-spacing: 0.035em;
-      white-space: nowrap;
-      text-overflow: clip;
-    }
-
-    #aircraft-type {
-      font-size: clamp(26px, 4.1vw, 64px);
-      line-height: 1.1;
-      letter-spacing: 0.035em;
-    }
-
-    #icao-line {
-      font-size: clamp(15px, 2vw, 31px);
-      line-height: 1.1;
-      letter-spacing: 0.035em;
-    }
-
-    #telemetry {
-      min-height: 0;
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      grid-template-rows: repeat(2, minmax(0, 1fr));
-      column-gap: clamp(18px, 4vw, 72px);
-      align-items: center;
-      padding: clamp(16px, 2.4vw, 36px);
-      border-top: clamp(4px, 0.5vw, 8px) solid #11141d;
-      background: rgba(2, 4, 10, 0.16);
-    }
-
-    .metric {
-      min-width: 0;
-      display: flex;
-      align-items: baseline;
-      gap: clamp(10px, 1.5vw, 25px);
-      white-space: nowrap;
-    }
-
-    .metric-label,
-    .metric-value {
-      font-size: clamp(17px, 2.35vw, 38px);
-      line-height: 1.18;
-    }
-
-    #empty {
-      display: none;
-      grid-column: 1 / -1;
-      align-self: center;
-      justify-self: center;
-      color: rgba(255, 255, 255, 0.22);
-      font-size: clamp(18px, 2vw, 32px);
-      letter-spacing: 0.12em;
-    }
-
-    #utility {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      z-index: 30;
-      min-height: 34px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px clamp(16px, 2.4vw, 36px);
-      border-top: 2px solid rgba(50, 75, 95, 0.42);
-      background: rgba(3, 5, 10, 0.94);
-      font-family: 'Press Start 2P', monospace;
-      font-size: clamp(8px, 0.8vw, 12px);
-      letter-spacing: 0.06em;
-    }
-
-    #status-info {
-      display: flex;
-      align-items: center;
-      gap: clamp(14px, 2vw, 30px);
-      color: rgba(93, 242, 255, 0.48);
-    }
-
-    #nav-links {
-      display: flex;
-      align-items: center;
-      gap: clamp(18px, 2vw, 32px);
-    }
-
-    #utility a {
-      color: rgba(148, 159, 255, 0.72);
-      text-decoration: none;
-    }
-
-    #utility a:hover { color: #f4f5f7; }
-
-    #board.flicker-enabled #callsign,
-    #board.flicker-enabled #aircraft-type,
-    #board.flicker-enabled #icao-line {
-      animation: primary-led-flicker 4.7s steps(1, end) infinite;
-    }
-
-    #board.flicker-enabled .metric-label,
-    #board.flicker-enabled .metric-value {
-      animation: telemetry-led-flicker 5.9s steps(1, end) infinite;
-    }
-
-    @keyframes primary-led-flicker {
-      0%, 18%, 20%, 53%, 55%, 81%, 83%, 100% { opacity: 1; }
-      19%, 54%, 82% { opacity: var(--flicker-low, 0.975); }
-    }
-
-    @keyframes telemetry-led-flicker {
-      0%, 31%, 33%, 67%, 69%, 92%, 94%, 100% { opacity: 1; }
-      32%, 68%, 93% { opacity: var(--flicker-mid, 0.985); }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>InPlaneSight</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --board: #06070d;
+        --frame: #171922;
+        --white: #f4f5f7;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #020308;
+      }
+      body {
+        font-family: "Press Start 2P", monospace;
+        color: var(--white);
+      }
+      #board {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        display: grid;
+        grid-template-rows: minmax(0, 1fr) 31%;
+        background-color: var(--board);
+        background-image: radial-gradient(
+          circle,
+          rgba(28, 38, 78, 0.72) 0 1.45px,
+          transparent 1.65px
+        );
+        background-size: 15px 15px;
+        isolation: isolate;
+      }
+      #board::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 20;
+        pointer-events: none;
+        background: repeating-linear-gradient(
+          to bottom,
+          rgba(255, 255, 255, 0.018) 0,
+          rgba(255, 255, 255, 0.018) 1px,
+          transparent 1px,
+          transparent 4px
+        );
+        mix-blend-mode: screen;
+      }
+      #main-display {
+        min-height: 0;
+        display: grid;
+        grid-template-columns: 28.5% minmax(0, 1fr);
+        gap: clamp(28px, 6vw, 96px);
+        align-items: center;
+        padding: clamp(18px, 2.4vw, 36px);
+      }
+      #logo-frame {
+        width: 100%;
+        aspect-ratio: 1/1;
+        display: grid;
+        place-items: center;
+        background: transparent;
+        border: 0;
+        box-shadow: none;
+        overflow: visible;
+      }
+      #airline-logo {
+        display: none;
+        width: 88%;
+        height: 88%;
+        transform-origin: center;
+      }
+      #plane-fallback {
+        font-family: sans-serif;
+        font-size: clamp(72px, 10vw, 150px);
+        line-height: 1;
+        color: rgba(136, 153, 212, 0.62);
+        transform: rotate(-45deg);
+      }
+      #board.font-normal #callsign,
+      #board.font-normal #aircraft-type,
+      #board.font-normal #icao-line,
+      #board.font-normal .metric-label,
+      #board.font-normal .metric-value {
+        color: transparent;
+        text-shadow: none;
+      }
+      .led-text-canvas {
+        position: fixed;
+        z-index: 10;
+        pointer-events: none;
+        image-rendering: pixelated;
+      }
+      #board.font-broad #callsign,
+      #board.font-broad #aircraft-type,
+      #board.font-broad #icao-line,
+      #board.font-broad .metric-label,
+      #board.font-broad .metric-value {
+        color: transparent;
+        -webkit-background-clip: text;
+        background-clip: text;
+        background-repeat: repeat;
+        text-shadow: none;
+      }
+      #board.font-broad #callsign {
+        background-image: radial-gradient(
+          circle,
+          rgba(255, 255, 255, 0.98) 0 38%,
+          rgba(255, 255, 255, 0.16) 42%,
+          transparent 48%
+        );
+        background-size: 10px 10px;
+        filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.22));
+      }
+      #board.font-broad #aircraft-type {
+        background-image: radial-gradient(
+          circle,
+          rgba(159, 170, 255, 0.98) 0 38%,
+          rgba(159, 170, 255, 0.15) 42%,
+          transparent 48%
+        );
+        background-size: 8px 8px;
+        filter: drop-shadow(0 0 5px rgba(148, 159, 255, 0.24));
+      }
+      #board.font-broad #icao-line {
+        background-image: radial-gradient(
+          circle,
+          rgba(150, 157, 178, 0.58) 0 36%,
+          transparent 48%
+        );
+        background-size: 6px 6px;
+      }
+      #board.font-broad .metric-label {
+        background-image: radial-gradient(
+          circle,
+          rgba(37, 103, 116, 0.92) 0 37%,
+          transparent 49%
+        );
+        background-size: 6px 6px;
+        filter: drop-shadow(0 0 4px rgba(40, 170, 190, 0.18));
+      }
+      #board.font-broad .metric-value {
+        background-image: radial-gradient(
+          circle,
+          rgba(93, 242, 255, 0.98) 0 37%,
+          rgba(93, 242, 255, 0.14) 42%,
+          transparent 49%
+        );
+        background-size: 6px 6px;
+        filter: drop-shadow(0 0 5px rgba(93, 242, 255, 0.3));
+      }
+      #flight-summary {
+        min-width: 0;
+        align-self: center;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: clamp(20px, 4vh, 48px);
+        padding-right: clamp(10px, 4vw, 64px);
+      }
+      #callsign {
+        overflow: hidden;
+        font-size: clamp(44px, 7.4vw, 116px);
+        line-height: 1.08;
+        letter-spacing: 0.035em;
+        white-space: nowrap;
+        text-overflow: clip;
+      }
+      #aircraft-type {
+        font-size: clamp(26px, 4.1vw, 64px);
+        line-height: 1.1;
+        letter-spacing: 0.035em;
+      }
+      #icao-line {
+        font-size: clamp(15px, 2vw, 31px);
+        line-height: 1.1;
+        letter-spacing: 0.035em;
+      }
+      #telemetry {
+        min-height: 0;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-rows: repeat(2, minmax(0, 1fr));
+        column-gap: clamp(18px, 4vw, 72px);
+        align-items: center;
+        padding: clamp(16px, 2.4vw, 36px);
+        border-top: clamp(4px, 0.5vw, 8px) solid #11141d;
+        background: rgba(2, 4, 10, 0.16);
+      }
+      .metric {
+        min-width: 0;
+        display: flex;
+        align-items: baseline;
+        gap: clamp(10px, 1.5vw, 25px);
+        white-space: nowrap;
+      }
+      .metric-label,
+      .metric-value {
+        font-size: clamp(17px, 2.35vw, 38px);
+        line-height: 1.18;
+      }
+      #empty {
+        display: none;
+        grid-column: 1/-1;
+        align-self: center;
+        justify-self: center;
+        color: rgba(255, 255, 255, 0.22);
+        font-size: clamp(18px, 2vw, 32px);
+        letter-spacing: 0.12em;
+      }
+      #utility {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 30;
+        min-height: 34px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px clamp(16px, 2.4vw, 36px);
+        border-top: 2px solid rgba(50, 75, 95, 0.42);
+        background: rgba(3, 5, 10, 0.94);
+        font-size: clamp(8px, 0.8vw, 12px);
+        letter-spacing: 0.06em;
+      }
+      #status-info,
+      #nav-links {
+        display: flex;
+        align-items: center;
+        gap: clamp(14px, 2vw, 30px);
+      }
+      #status-info {
+        color: rgba(93, 242, 255, 0.48);
+      }
+      #utility a {
+        color: rgba(148, 159, 255, 0.72);
+        text-decoration: none;
+      }
+      #utility a:hover {
+        color: #f4f5f7;
+      }
       #board.flicker-enabled #callsign,
       #board.flicker-enabled #aircraft-type,
-      #board.flicker-enabled #icao-line,
+      #board.flicker-enabled #icao-line {
+        animation: primary-led-flicker 4.7s steps(1, end) infinite;
+      }
       #board.flicker-enabled .metric-label,
       #board.flicker-enabled .metric-value {
-        animation: none;
+        animation: telemetry-led-flicker 5.9s steps(1, end) infinite;
       }
-    }
-  </style>
-</head>
-<body>
-  <main id="board">
-    <section id="main-display">
-      <div id="logo-frame">
-        <canvas id="airline-logo" width="320" height="320" aria-label="Airline logo"></canvas>
-        <span id="plane-fallback">&#9992;</span>
-      </div>
-      <div id="flight-summary">
-        <div id="callsign">------</div>
-        <div id="aircraft-type">----</div>
-        <div id="icao-line">------</div>
-      </div>
-    </section>
-    <section id="telemetry">
-      <div class="metric"><span class="metric-label">Alt:</span><span class="metric-value" id="s-alt">--</span></div>
-      <div class="metric"><span class="metric-label">Spd:</span><span class="metric-value" id="s-spd">--</span></div>
-      <div class="metric"><span class="metric-label">Dist:</span><span class="metric-value" id="s-dist">--</span></div>
-      <div class="metric"><span class="metric-label">Trk:</span><span class="metric-value" id="s-trk">--</span></div>
-      <div class="metric"><span class="metric-label">Vr:</span><span class="metric-value" id="s-vr">--</span></div>
-      <div id="empty">NO AIRCRAFT IN RANGE</div>
-    </section>
-  </main>
-  <aside id="utility">
-    <div id="status-info">
-      <span id="aircraft-count">-- AIRCRAFT IN RANGE</span>
-      <span id="updated">UPDATED --</span>
-    </div>
-    <nav id="nav-links"><a href="/list">LIST</a><a href="/map">MAP</a></nav>
-  </aside>
-  <script src="/static/common.js"></script>
-  <script src="/static/js/airline-icons.js"></script>
-  <script>
-    var CENTER = null;
-    var prevIcao = null;
-
-    var ledTextRenderers = [];
-    var ledRenderPending = false;
-    var fontThickness = 'normal';
-
-    var LED_GLYPHS = {
-      ' ': ['00000','00000','00000','00000','00000','00000','00000'],
-      '-': ['00000','00000','00000','11111','00000','00000','00000'],
-      '.': ['00000','00000','00000','00000','00000','00100','00100'],
-      ',': ['00000','00000','00000','00000','00100','00100','01000'],
-      ':': ['00000','00100','00100','00000','00100','00100','00000'],
-      '+': ['00000','00100','00100','11111','00100','00100','00000'],
-      '/': ['00001','00010','00100','01000','10000','00000','00000'],
-      '0': ['01110','10001','10011','10101','11001','10001','01110'],
-      '1': ['00100','01100','00100','00100','00100','00100','01110'],
-      '2': ['01110','10001','00001','00010','00100','01000','11111'],
-      '3': ['11110','00001','00001','01110','00001','00001','11110'],
-      '4': ['00010','00110','01010','10010','11111','00010','00010'],
-      '5': ['11111','10000','10000','11110','00001','00001','11110'],
-      '6': ['01110','10000','10000','11110','10001','10001','01110'],
-      '7': ['11111','00001','00010','00100','01000','01000','01000'],
-      '8': ['01110','10001','10001','01110','10001','10001','01110'],
-      '9': ['01110','10001','10001','01111','00001','00001','01110'],
-      'A': ['01110','10001','10001','11111','10001','10001','10001'],
-      'B': ['11110','10001','10001','11110','10001','10001','11110'],
-      'C': ['01111','10000','10000','10000','10000','10000','01111'],
-      'D': ['11110','10001','10001','10001','10001','10001','11110'],
-      'E': ['11111','10000','10000','11110','10000','10000','11111'],
-      'F': ['11111','10000','10000','11110','10000','10000','10000'],
-      'G': ['01111','10000','10000','10111','10001','10001','01111'],
-      'H': ['10001','10001','10001','11111','10001','10001','10001'],
-      'I': ['11111','00100','00100','00100','00100','00100','11111'],
-      'J': ['00111','00010','00010','00010','10010','10010','01100'],
-      'K': ['10001','10010','10100','11000','10100','10010','10001'],
-      'L': ['10000','10000','10000','10000','10000','10000','11111'],
-      'M': ['10001','11011','10101','10101','10001','10001','10001'],
-      'N': ['10001','11001','10101','10011','10001','10001','10001'],
-      'O': ['01110','10001','10001','10001','10001','10001','01110'],
-      'P': ['11110','10001','10001','11110','10000','10000','10000'],
-      'Q': ['01110','10001','10001','10001','10101','10010','01101'],
-      'R': ['11110','10001','10001','11110','10100','10010','10001'],
-      'S': ['01111','10000','10000','01110','00001','00001','11110'],
-      'T': ['11111','00100','00100','00100','00100','00100','00100'],
-      'U': ['10001','10001','10001','10001','10001','10001','01110'],
-      'V': ['10001','10001','10001','10001','10001','01010','00100'],
-      'W': ['10001','10001','10001','10101','10101','10101','01010'],
-      'X': ['10001','10001','01010','00100','01010','10001','10001'],
-      'Y': ['10001','10001','01010','00100','00100','00100','00100'],
-      'Z': ['11111','00001','00010','00100','01000','10000','11111']
-    };
-
-    var LED_TEXT_STYLES = {
-      callsign: { color: [255, 255, 255], scale: 0.84, radius: 0.24, glow: 1.2 },
-      'aircraft-type': { color: [159, 170, 255], scale: 0.82, radius: 0.23, glow: 1.0 },
-      'icao-line': { color: [150, 157, 178], scale: 0.80, radius: 0.22, glow: 0.6, opacity: 0.58 },
-      'metric-label': { color: [37, 103, 116], scale: 0.80, radius: 0.22, glow: 0.7, opacity: 0.92 },
-      'metric-value': { color: [93, 242, 255], scale: 0.80, radius: 0.22, glow: 0.9 }
-    };
-
-    function createLedTextRenderer(element, styleName) {
-      var canvas = document.createElement('canvas');
-      canvas.className = 'led-text-canvas';
-      canvas.setAttribute('aria-hidden', 'true');
-      document.body.appendChild(canvas);
-      return { element: element, canvas: canvas, style: LED_TEXT_STYLES[styleName] };
-    }
-
-    function initializeLedText() {
-      ledTextRenderers.push(
-        createLedTextRenderer(document.getElementById('callsign'), 'callsign'),
-        createLedTextRenderer(document.getElementById('aircraft-type'), 'aircraft-type'),
-        createLedTextRenderer(document.getElementById('icao-line'), 'icao-line')
-      );
-      document.querySelectorAll('.metric-label').forEach(function (element) {
-        ledTextRenderers.push(createLedTextRenderer(element, 'metric-label'));
-      });
-      document.querySelectorAll('.metric-value').forEach(function (element) {
-        ledTextRenderers.push(createLedTextRenderer(element, 'metric-value'));
-      });
-      scheduleLedTextRender();
-    }
-
-    function scheduleLedTextRender() {
-      if (fontThickness !== 'normal') {
-        ledTextRenderers.forEach(function (renderer) {
-          renderer.canvas.style.display = 'none';
-        });
-        return;
-      }
-      if (ledRenderPending) return;
-      ledRenderPending = true;
-      window.requestAnimationFrame(function () {
-        ledRenderPending = false;
-        ledTextRenderers.forEach(renderLedText);
-      });
-    }
-
-    function renderLedText(renderer) {
-      var element = renderer.element;
-      var canvas = renderer.canvas;
-      var style = renderer.style;
-      var computed = window.getComputedStyle(element);
-      var rect = element.getBoundingClientRect();
-      var hidden = computed.display === 'none' ||
-        computed.visibility === 'hidden' ||
-        rect.width <= 0 || rect.height <= 0;
-
-      if (hidden) {
-        canvas.style.display = 'none';
-        return;
-      }
-
-      var text = normalizeLedText(element.textContent);
-      var fontSize = parseFloat(computed.fontSize);
-      var measuringCanvas = document.createElement('canvas');
-      var measuringContext = measuringCanvas.getContext('2d');
-      measuringContext.font = computed.font;
-
-      var letterSpacing = parseFloat(computed.letterSpacing);
-      if (!Number.isFinite(letterSpacing)) letterSpacing = 0;
-      var measuredTextWidth = measuringContext.measureText(text).width;
-      var selectableWidth = measuredTextWidth +
-        Math.max(0, text.length - 1) * letterSpacing;
-      var characterAdvance = text.length > 0
-        ? selectableWidth / text.length
-        : 0;
-      var pitchFromHeight = Math.max(3, fontSize * style.scale / 7);
-      var pitchFromWidth = characterAdvance > 0
-        ? characterAdvance / 6
-        : pitchFromHeight;
-      var pitch = Math.min(pitchFromHeight, pitchFromWidth);
-      var drawingHeight = 7 * pitch;
-      var top = Math.max(0, (rect.height - drawingHeight) / 2);
-
-      canvas.style.display = 'block';
-      canvas.style.left = rect.left + 'px';
-      canvas.style.top = rect.top + 'px';
-      canvas.style.width = rect.width + 'px';
-      canvas.style.height = rect.height + 'px';
-
-      var ratio = window.devicePixelRatio || 1;
-      canvas.width = Math.max(1, Math.ceil(rect.width * ratio));
-      canvas.height = Math.max(1, Math.ceil(rect.height * ratio));
-      var output = canvas.getContext('2d');
-      output.setTransform(ratio, 0, 0, ratio, 0, 0);
-      output.clearRect(0, 0, rect.width, rect.height);
-
-      var opacity = style.opacity == null ? 1 : style.opacity;
-      var radius = Math.max(1.25, pitch * style.radius);
-      var glow = style.glow;
-      var color = style.color;
-
-      for (var index = 0; index < text.length; index += 1) {
-        var cursor = index * characterAdvance;
-        var glyph = LED_GLYPHS[text[index]] || LED_GLYPHS[' '];
-        for (var row = 0; row < 7; row += 1) {
-          for (var column = 0; column < 5; column += 1) {
-            if (glyph[row][column] !== '1') continue;
-            var x = cursor + column * pitch + pitch / 2;
-            var y = top + row * pitch + pitch / 2;
-            output.save();
-            output.globalAlpha = opacity;
-            output.fillStyle = 'rgb(' + color.join(',') + ')';
-            output.shadowColor = 'rgba(' + color.join(',') + ',0.26)';
-            output.shadowBlur = glow;
-            output.beginPath();
-            output.arc(x, y, radius, 0, Math.PI * 2);
-            output.fill();
-            output.restore();
-          }
+      @keyframes primary-led-flicker {
+        0%,
+        18%,
+        20%,
+        53%,
+        55%,
+        81%,
+        83%,
+        100% {
+          opacity: 1;
+        }
+        19%,
+        54%,
+        82% {
+          opacity: var(--flicker-low, 0.975);
         }
       }
-    }
-
-    function normalizeLedText(value) {
-      return String(value)
-        .toUpperCase()
-        .replace(/°/g, '')
-        .replace(/[^A-Z0-9 +\-.,:/]/g, ' ');
-    }
-
-    function showFallback(heading) {
-      var logo = document.getElementById('airline-logo');
-      var plane = document.getElementById('plane-fallback');
-      logo.style.display = 'none';
-      plane.style.display = 'block';
-      plane.style.transform = 'rotate(' + ((heading || 0) - 45) + 'deg)';
-    }
-
-    function updateLogo(callsign, heading) {
-      var canvas = document.getElementById('airline-logo');
-      var plane = document.getElementById('plane-fallback');
-      plane.style.display = 'none';
-      canvas.style.display = 'block';
-      canvas.style.visibility = 'hidden';
-      canvas.style.transform = 'none';
-      InPlaneSightAirlines.getIcon(callsign).then(function (icon) {
-        if (icon) {
-          renderMainIcon(canvas, icon, 0);
+      @keyframes telemetry-led-flicker {
+        0%,
+        31%,
+        33%,
+        67%,
+        69%,
+        92%,
+        94%,
+        100% {
+          opacity: 1;
+        }
+        32%,
+        68%,
+        93% {
+          opacity: var(--flicker-mid, 0.985);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #board.flicker-enabled #callsign,
+        #board.flicker-enabled #aircraft-type,
+        #board.flicker-enabled #icao-line,
+        #board.flicker-enabled .metric-label,
+        #board.flicker-enabled .metric-value {
+          animation: none;
+        }
+      }
+    </style>
+    </head>
+    
+    <body>
+      <main id="board">
+        <section id="main-display">
+          <div id="logo-frame">
+          <canvas id="airline-logo" width="320" height="320" aria-label="Airline logo"></canvas><span
+            id="plane-fallback">&#9992;</span>
+          </div>
+          <div id="flight-summary">
+            <div id="callsign">------</div>
+            <div id="aircraft-type">----</div>
+            <div id="icao-line">------</div>
+          </div>
+          </section>
+          <section id="telemetry">
+        <div class="metric">
+          <span class="metric-label">Alt:</span><span class="metric-value" id="s-alt">--</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Spd:</span><span class="metric-value" id="s-spd">--</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Dist:</span><span class="metric-value" id="s-dist">--</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Trk:</span><span class="metric-value" id="s-trk">--</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Vr:</span><span class="metric-value" id="s-vr">--</span>
+        </div>
+        <div id="empty">NO AIRCRAFT IN RANGE</div>
+        </section>
+        </main>
+        <aside id="utility">
+          <div id="status-info">
+        <span id="aircraft-count">-- AIRCRAFT IN RANGE</span><span id="updated">UPDATED --</span>
+        </div>
+        <nav id="nav-links"><a href="/list">LIST</a><a href="/map">MAP</a></nav>
+        </aside>
+        <script src="/static/common.js"></script>
+        <script src="/static/js/airline-icons.js"></script>
+        <script>
+        var CENTER = null,
+          prevIcao = null,
+          ledTextRenderers = [],
+          ledRenderPending = false,
+          fontThickness = "normal";
+        var G = {
+          " ": ["00000", "00000", "00000", "00000", "00000", "00000", "00000"],
+          "-": ["00000", "00000", "00000", "11111", "00000", "00000", "00000"],
+          ".": ["00000", "00000", "00000", "00000", "00000", "00100", "00100"],
+          ",": ["00000", "00000", "00000", "00000", "00100", "00100", "01000"],
+          ":": ["00000", "00100", "00100", "00000", "00100", "00100", "00000"],
+          "+": ["00000", "00100", "00100", "11111", "00100", "00100", "00000"],
+          "/": ["00001", "00010", "00100", "01000", "10000", "00000", "00000"],
+          0: ["01110", "10001", "10011", "10101", "11001", "10001", "01110"],
+          1: ["00100", "01100", "00100", "00100", "00100", "00100", "01110"],
+          2: ["01110", "10001", "00001", "00010", "00100", "01000", "11111"],
+          3: ["11110", "00001", "00001", "01110", "00001", "00001", "11110"],
+          4: ["00010", "00110", "01010", "10010", "11111", "00010", "00010"],
+          5: ["11111", "10000", "10000", "11110", "00001", "00001", "11110"],
+          6: ["01110", "10000", "10000", "11110", "10001", "10001", "01110"],
+          7: ["11111", "00001", "00010", "00100", "01000", "01000", "01000"],
+          8: ["01110", "10001", "10001", "01110", "10001", "10001", "01110"],
+          9: ["01110", "10001", "10001", "01111", "00001", "00001", "01110"],
+          A: ["01110", "10001", "10001", "11111", "10001", "10001", "10001"],
+          B: ["11110", "10001", "10001", "11110", "10001", "10001", "11110"],
+          C: ["01111", "10000", "10000", "10000", "10000", "10000", "01111"],
+          D: ["11110", "10001", "10001", "10001", "10001", "10001", "11110"],
+          E: ["11111", "10000", "10000", "11110", "10000", "10000", "11111"],
+          F: ["11111", "10000", "10000", "11110", "10000", "10000", "10000"],
+          G: ["01111", "10000", "10000", "10111", "10001", "10001", "01111"],
+          H: ["10001", "10001", "10001", "11111", "10001", "10001", "10001"],
+          I: ["11111", "00100", "00100", "00100", "00100", "00100", "11111"],
+          J: ["00111", "00010", "00010", "00010", "10010", "10010", "01100"],
+          K: ["10001", "10010", "10100", "11000", "10100", "10010", "10001"],
+          L: ["10000", "10000", "10000", "10000", "10000", "10000", "11111"],
+          M: ["10001", "11011", "10101", "10101", "10001", "10001", "10001"],
+          N: ["10001", "11001", "10101", "10011", "10001", "10001", "10001"],
+          O: ["01110", "10001", "10001", "10001", "10001", "10001", "01110"],
+          P: ["11110", "10001", "10001", "11110", "10000", "10000", "10000"],
+          Q: ["01110", "10001", "10001", "10001", "10101", "10010", "01101"],
+          R: ["11110", "10001", "10001", "11110", "10100", "10010", "10001"],
+          S: ["01111", "10000", "10000", "01110", "00001", "00001", "11110"],
+          T: ["11111", "00100", "00100", "00100", "00100", "00100", "00100"],
+          U: ["10001", "10001", "10001", "10001", "10001", "10001", "01110"],
+          V: ["10001", "10001", "10001", "10001", "10001", "01010", "00100"],
+          W: ["10001", "10001", "10001", "10101", "10101", "10101", "01010"],
+          X: ["10001", "10001", "01010", "00100", "01010", "10001", "10001"],
+          Y: ["10001", "10001", "01010", "00100", "00100", "00100", "00100"],
+          Z: ["11111", "00001", "00010", "00100", "01000", "10000", "11111"],
+        };
+        var ST = {
+          callsign: {
+            color: [255, 255, 255],
+            scale: 0.84,
+            radius: 0.24,
+            glow: 1.2,
+          },
+          "aircraft-type": {
+            color: [159, 170, 255],
+            scale: 0.82,
+            radius: 0.23,
+            glow: 1,
+          },
+          "icao-line": {
+            color: [150, 157, 178],
+            scale: 0.8,
+            radius: 0.22,
+            glow: 0.6,
+            opacity: 0.58,
+          },
+          "metric-label": {
+            color: [37, 103, 116],
+            scale: 0.8,
+            radius: 0.22,
+            glow: 0.7,
+            opacity: 0.92,
+          },
+          "metric-value": {
+            color: [93, 242, 255],
+            scale: 0.8,
+            radius: 0.22,
+            glow: 0.9,
+          },
+        };
+        function addRenderer(el, name) {
+          var c = document.createElement("canvas");
+          c.className = "led-text-canvas";
+          c.setAttribute("aria-hidden", "true");
+          document.body.appendChild(c);
+          ledTextRenderers.push({ element: el, canvas: c, style: ST[name] });
+        }
+        function initializeLedText() {
+        addRenderer(callsign, "callsign");
+        addRenderer(document.getElementById("aircraft-type"), "aircraft-type");
+        addRenderer(document.getElementById("icao-line"), "icao-line");
+        document.querySelectorAll(".metric-label").forEach(function (e) {
+          addRenderer(e, "metric-label");
+        });
+        document.querySelectorAll(".metric-value").forEach(function (e) {
+          addRenderer(e, "metric-value");
+        });
+        scheduleLedTextRender();
+      }
+        function scheduleLedTextRender() {
+        if (fontThickness !== "normal") {
+          ledTextRenderers.forEach(function (r) {
+            r.canvas.style.display = "none";
+          });
           return;
         }
-        InPlaneSightAirlines.load('GENERIC').then(function (genericIcon) {
-          if (!genericIcon) {
-            canvas.style.display = 'none';
-            showFallback(heading);
+        if (ledRenderPending) return;
+        ledRenderPending = true;
+        requestAnimationFrame(function () {
+          ledRenderPending = false;
+          ledTextRenderers.forEach(renderLedText);
+        });
+      }
+        function renderLedText(r) {
+          var e = r.element,
+            c = r.canvas,
+            s = r.style,
+            cs = getComputedStyle(e),
+            b = e.getBoundingClientRect();
+          if (
+            cs.display === "none" ||
+            cs.visibility === "hidden" ||
+            b.width <= 0 ||
+            b.height <= 0
+          ) {
+            c.style.display = "none";
+            return;
+        }
+        var t = String(e.textContent)
+          .toUpperCase()
+          .replace(/°/g, "")
+          .replace(/[^A-Z0-9 +\-.,:/]/g, " "),
+          fs = parseFloat(cs.fontSize),
+          m = document.createElement("canvas").getContext("2d");
+        m.font = cs.font;
+        var ls = parseFloat(cs.letterSpacing);
+        if (!Number.isFinite(ls)) ls = 0;
+        var sw = m.measureText(t).width + Math.max(0, t.length - 1) * ls,
+          adv = t.length ? sw / t.length : 0,
+          p = Math.min(
+            Math.max(3, (fs * s.scale) / 7),
+            adv ? adv / 6 : Infinity,
+          ),
+          top = Math.max(0, (b.height - 7 * p) / 2),
+          ratio = devicePixelRatio || 1;
+        c.style.cssText +=
+          ";display:block;left:" +
+          b.left +
+          "px;top:" +
+          b.top +
+          "px;width:" +
+          b.width +
+          "px;height:" +
+          b.height +
+          "px";
+        c.width = Math.max(1, Math.ceil(b.width * ratio));
+        c.height = Math.max(1, Math.ceil(b.height * ratio));
+        var o = c.getContext("2d");
+        o.setTransform(ratio, 0, 0, ratio, 0, 0);
+        o.clearRect(0, 0, b.width, b.height);
+        var opacity = s.opacity == null ? 1 : s.opacity,
+          rad = Math.max(1.25, p * s.radius),
+          color = s.color;
+        for (var i = 0; i < t.length; i++) {
+          var glyph = G[t[i]] || G[" "],
+            cursor = i * adv;
+          for (var y = 0; y < 7; y++)
+            for (var x = 0; x < 5; x++)
+              if (glyph[y][x] === "1") {
+                o.save();
+                o.globalAlpha = opacity;
+                o.fillStyle = "rgb(" + color.join(",") + ")";
+                o.shadowColor = "rgba(" + color.join(",") + ",.26)";
+                o.shadowBlur = s.glow;
+                o.beginPath();
+                o.arc(
+                  cursor + x * p + p / 2,
+                  top + y * p + p / 2,
+                  rad,
+                  0,
+                  Math.PI * 2,
+                );
+                o.fill();
+                o.restore();
+              }
+        }
+      }
+        function showFallback(h) {
+          airlineLogo.style.display = "none";
+          planeFallback.style.display = "block";
+          planeFallback.style.transform = "rotate(" + ((h || 0) - 45) + "deg)";
+        }
+        var airlineLogo = document.getElementById("airline-logo"),
+          planeFallback = document.getElementById("plane-fallback"),
+          callsign = document.getElementById("callsign");
+        function updateLogo(cs, h) {
+          planeFallback.style.display = "none";
+          airlineLogo.style.display = "block";
+          airlineLogo.style.visibility = "hidden";
+          airlineLogo.style.transform = "none";
+          InPlaneSightAirlines.getIcon(cs).then(function (icon) {
+            if (icon) {
+            renderMainIcon(icon, 0);
             return;
           }
-          renderMainIcon(canvas, genericIcon, heading);
+          InPlaneSightAirlines.load("GENERIC").then(function (g) {
+            if (!g) {
+              showFallback(h);
+              return;
+            }
+            renderMainIcon(g, h);
+          });
         });
-      });
-    }
-
-    function renderMainIcon(canvas, icon, rotation) {
-      InPlaneSightAirlines.render(canvas, icon, {
-        dotScale: 0.68,
-        showOffLeds: true,
-        glow: true
-      });
-      canvas.style.transform = 'rotate(' + (rotation != null ? rotation : 0) + 'deg)';
-      canvas.style.visibility = 'visible';
-      canvas.setAttribute('aria-label', icon.label);
-    }
-
-    function distanceNm(lat1, lon1, lat2, lon2) {
-      var radiusNm = 3440.065;
-      var dLat = (lat2 - lat1) * Math.PI / 180;
-      var dLon = (lon2 - lon1) * Math.PI / 180;
-      var value = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
-      return radiusNm * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
-    }
-
-    function formatAltitude(value) {
-      return value != null ? (value / 1000).toFixed(1) + 'k ft' : '--';
-    }
-
-    function formatVerticalRate(value) {
-      if (value == null) return '--';
-      return (value >= 0 ? '+' : '') + Math.round(value) + ' ft/m';
-    }
-
-    function render(aircraft) {
-      var empty = document.getElementById('empty');
-      var summary = document.getElementById('main-display');
-      var metrics = document.querySelectorAll('.metric');
-      if (aircraft.length === 0) {
-        summary.style.visibility = 'hidden';
-        metrics.forEach(function (metric) { metric.style.display = 'none'; });
-        empty.style.display = 'block';
-        prevIcao = null;
+      }
+        function renderMainIcon(icon, rotation) {
+          InPlaneSightAirlines.render(airlineLogo, icon, {
+            dotScale: 0.58,
+            showOffLeds: false,
+            glow: true,
+          });
+        airlineLogo.style.transform =
+          "rotate(" + (rotation != null ? rotation : 0) + "deg)";
+        airlineLogo.style.visibility = "visible";
+        airlineLogo.setAttribute("aria-label", icon.label);
+      }
+        function distanceNm(a, b, c, d) {
+          var R = 3440.065,
+            x = ((c - a) * Math.PI) / 180,
+            y = ((d - b) * Math.PI) / 180,
+            v =
+              Math.sin(x / 2) ** 2 +
+              Math.cos((a * Math.PI) / 180) *
+              Math.cos((c * Math.PI) / 180) *
+              Math.sin(y / 2) ** 2;
+          return R * 2 * Math.atan2(Math.sqrt(v), Math.sqrt(1 - v));
+        }
+        function render(ac) {
+          var empty = document.getElementById("empty"),
+            summary = document.getElementById("main-display"),
+            metrics = document.querySelectorAll(".metric");
+          if (!ac.length) {
+            summary.style.visibility = "hidden";
+            metrics.forEach(function (e) {
+              e.style.display = "none";
+            });
+            empty.style.display = "block";
+            prevIcao = null;
+            scheduleLedTextRender();
+            return;
+          }
+        summary.style.visibility = "visible";
+        metrics.forEach(function (e) {
+          e.style.display = "flex";
+        });
+        empty.style.display = "none";
+        var a = ac[0];
+        callsign.textContent = a.callsign || a.icao.toUpperCase();
+        document.getElementById("aircraft-type").textContent =
+          a.aircraft_type || "UNKNOWN";
+        document.getElementById("icao-line").textContent = a.icao.toUpperCase();
+        document.getElementById("s-alt").textContent =
+          a.altitude_ft != null
+            ? (a.altitude_ft / 1000).toFixed(1) + "k ft"
+            : "--";
+        document.getElementById("s-spd").textContent =
+          a.speed_kts != null ? a.speed_kts + " kt" : "--";
+        document.getElementById("s-dist").textContent =
+          a._dist != null ? Math.round(a._dist) + " nm" : "--";
+        document.getElementById("s-trk").textContent =
+          a.heading != null ? Math.round(a.heading) + "°" : "--";
+        document.getElementById("s-vr").textContent =
+          a.vertical_rate_fpm != null
+            ? (a.vertical_rate_fpm >= 0 ? "+" : "") +
+            Math.round(a.vertical_rate_fpm) +
+            " ft/m"
+            : "--";
         scheduleLedTextRender();
-        return;
+        if (a.icao !== prevIcao) {
+          updateLogo(a.callsign, a.heading);
+          prevIcao = a.icao;
+        }
       }
-
-      summary.style.visibility = 'visible';
-      metrics.forEach(function (metric) { metric.style.display = 'flex'; });
-      empty.style.display = 'none';
-      var current = aircraft[0];
-      document.getElementById('callsign').textContent = current.callsign || current.icao.toUpperCase();
-      document.getElementById('aircraft-type').textContent = current.aircraft_type || 'UNKNOWN';
-      document.getElementById('icao-line').textContent = current.icao.toUpperCase();
-      document.getElementById('s-alt').textContent = formatAltitude(current.altitude_ft);
-      document.getElementById('s-spd').textContent = current.speed_kts != null ? current.speed_kts + ' kt' : '--';
-      document.getElementById('s-dist').textContent = current._dist != null ? Math.round(current._dist) + ' nm' : '--';
-      document.getElementById('s-trk').textContent = current.heading != null ? Math.round(current.heading) + '\u00b0' : '--';
-      document.getElementById('s-vr').textContent = formatVerticalRate(current.vertical_rate_fpm);
-      scheduleLedTextRender();
-      if (current.icao !== prevIcao) {
-        updateLogo(current.callsign, current.heading);
-        prevIcao = current.icao;
+        function fetchAircraft() {
+        fetch("/aircraft")
+          .then(function (r) {
+            return r.json();
+          })
+          .then(function (ac) {
+            ac.forEach(function (a) {
+              a._dist = CENTER
+                ? distanceNm(CENTER[0], CENTER[1], a.lat, a.lon)
+                : null;
+            });
+            ac.sort(function (a, b) {
+              return (a._dist || 9999) - (b._dist || 9999);
+            });
+            render(ac);
+            document.getElementById("aircraft-count").textContent =
+              ac.length + " AIRCRAFT IN RANGE";
+            document.getElementById("updated").textContent =
+              "UPDATED " + InPlaneSight.formatTime(new Date());
+          })
+          .catch(function (e) {
+            document.getElementById("updated").textContent = "FETCH FAILED";
+            console.error(e);
+          });
       }
-    }
-
-    function fetchAircraft() {
-      fetch('/aircraft')
-        .then(function (response) { return response.json(); })
-        .then(function (aircraft) {
-          aircraft.forEach(function (item) {
-            item._dist = CENTER ? distanceNm(CENTER[0], CENTER[1], item.lat, item.lon) : null;
-          });
-          aircraft.sort(function (first, second) {
-            return (first._dist || 9999) - (second._dist || 9999);
-          });
-          render(aircraft);
-          document.getElementById('aircraft-count').textContent = aircraft.length + ' AIRCRAFT IN RANGE';
-          document.getElementById('updated').textContent = 'UPDATED ' + InPlaneSight.formatTime(new Date());
+        (document.fonts && document.fonts.ready
+          ? document.fonts.ready
+        : Promise.resolve()
+      )
+        .then(function () {
+          return fetch("/config");
         })
-        .catch(function (error) {
-          document.getElementById('updated').textContent = 'FETCH FAILED';
-          console.error(error);
+        .then(function (r) {
+          return r.json();
+        })
+        .then(function (cfg) {
+          CENTER = [cfg.lat, cfg.lon];
+          fontThickness = cfg.font_thickness === "broad" ? "broad" : "normal";
+          InPlaneSight.configure(cfg);
+          var board = document.getElementById("board");
+          board.classList.toggle("font-normal", fontThickness === "normal");
+          board.classList.toggle("font-broad", fontThickness === "broad");
+          initializeLedText();
+          var s = Math.max(0, Math.min(cfg.flicker_strength || 0, 0.1));
+          board.style.setProperty("--flicker-low", String(1 - s));
+          board.style.setProperty("--flicker-mid", String(1 - s * 0.55));
+          board.classList.toggle(
+            "flicker-enabled",
+            cfg.flicker_enabled === true,
+          );
+          fetchAircraft();
+          setInterval(fetchAircraft, cfg.refresh_seconds * 1000);
+        })
+        .catch(function (e) {
+          document.getElementById("updated").textContent = "CONFIG FAILED";
+          console.error(e);
         });
-    }
-
-    var fontsReady = document.fonts && document.fonts.ready
-      ? document.fonts.ready
-      : Promise.resolve();
-
-    fontsReady
-      .then(function () { return fetch('/config'); })
-      .then(function (response) { return response.json(); })
-      .then(function (config) {
-        CENTER = [config.lat, config.lon];
-        fontThickness = config.font_thickness === 'broad' ? 'broad' : 'normal';
-        InPlaneSight.configure(config);
-        var board = document.getElementById('board');
-        board.classList.toggle('font-normal', fontThickness === 'normal');
-        board.classList.toggle('font-broad', fontThickness === 'broad');
-        initializeLedText();
-        var strength = Math.max(0, Math.min(config.flicker_strength || 0, 0.1));
-        board.style.setProperty('--flicker-low', String(1 - strength));
-        board.style.setProperty('--flicker-mid', String(1 - strength * 0.55));
-        board.classList.toggle('flicker-enabled', config.flicker_enabled === true);
-        fetchAircraft();
-        setInterval(fetchAircraft, config.refresh_seconds * 1000);
-      })
-      .catch(function (error) {
-        document.getElementById('updated').textContent = 'CONFIG FAILED';
-        console.error(error);
-      });
-    window.addEventListener('resize', scheduleLedTextRender);
-  </script>
-</body>
+        addEventListener("resize", scheduleLedTextRender);
+      </script>
+    </body>
 </html>
