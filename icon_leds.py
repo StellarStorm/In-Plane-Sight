@@ -53,7 +53,7 @@ def parse_args() -> argparse.Namespace:
         metavar='#RRGGBB',
         help='Add a one-LED border; defaults to white when no color is given',
     )
-    parser.add_argument('--preview', type=Path)
+    parser.add_argument('--preview', action='store_true')
     return parser.parse_args()
 
 
@@ -442,11 +442,10 @@ def main() -> None:
     validate_icon(written)
 
     if args.preview:
-        write_preview(icon, args.preview)
+        path = Path(f'{code}.png')
+        write_preview(icon, path=path)
 
     print(f'Wrote {output}')
-    if args.preview:
-        print(f'Preview: {args.preview}')
 
 
 if __name__ == '__main__':
