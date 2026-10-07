@@ -351,7 +351,8 @@
           prevIcao = null,
           ledTextRenderers = [],
           ledRenderPending = false,
-          fontThickness = "normal";
+          fontThickness = "normal",
+          genericIcon = false;
         var G = {
           " ": ["00000", "00000", "00000", "00000", "00000", "00000", "00000"],
           "-": ["00000", "00000", "00000", "11111", "00000", "00000", "00000"],
@@ -539,6 +540,7 @@
         }
       }
         function showFallback(h) {
+          genericIcon = false;
           airlineLogo.style.display = "none";
           planeFallback.style.display = "block";
           planeFallback.style.transform = "rotate(" + ((h || 0) - 45) + "deg)";
@@ -553,6 +555,7 @@
           airlineLogo.style.transform = "none";
           InPlaneSightAirlines.getIcon(cs).then(function (icon) {
             if (icon) {
+            genericIcon = false;
             renderMainIcon(icon, 0);
             return;
           }
@@ -561,6 +564,7 @@
               showFallback(h);
               return;
             }
+            genericIcon = true;
             renderMainIcon(g, h);
           });
         });
@@ -631,6 +635,11 @@
         if (a.icao !== prevIcao) {
           updateLogo(a.callsign, a.heading);
           prevIcao = a.icao;
+        } else if (genericIcon) {
+          airlineLogo.style.transform = "rotate(" + (a.heading || 0) + "deg)";
+        } else if (planeFallback.style.display !== "none") {
+          planeFallback.style.transform =
+            "rotate(" + ((a.heading || 0) - 45) + "deg)";
         }
       }
         function fetchAircraft() {
