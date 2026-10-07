@@ -1,0 +1,42 @@
+{
+  "code": "WUP",
+  "label": "Wheels Up",
+  "palette": {
+    "B": "#304068",
+    "W": "#ffffff"
+  },
+  "rows": [
+    "                                ",
+    "                                ",
+    "  BBBBBBBBBBBBBB                ",
+    "  BBBBBBBBBBBBBBBB              ",
+    "  BBBBBBBBBBBBBBBB              ",
+    "  BBBBBBBBBBBBBBBBB             ",
+    "   BBBBBBBBBBBBBBBBB            ",
+    "   BBBBBBBBBBBBBBBBB            ",
+    "   BBBBBBBBBBBBBBBBBB           ",
+    "   BBBBBBBBBBBBBBBBBBB          ",
+    "   BBBBBBBBBBBBBBBBBBB          ",
+    "    BBBBBBBBBBBBBBBBBBB         ",
+    "    BBBBWBBBWBWWWWWBBBBB        ",
+    "    BBBBWBBBWBBWBBBWBBBB        ",
+    "    BBBBWBBBWBBWBBBWBBBBB       ",
+    "    BBBBWBBBWBBWWWWWBBBBBB      ",
+    "    BBBBWBBBWBBWBBBBBBBBBB      ",
+    "     BBBWBBBWBBWBBBBBBBBBBB     ",
+    "     BBBWWWWWBBWBBBBBBBBBBBB    ",
+    "     BBBBWWWBBBWBBBBBBBBBBBB    ",
+    "     BBBBBBBBBBBBBBBBBBBBBBBB   ",
+    "      BBBBBBBBBBBBBBBBBBBBBBBB  ",
+    "      BBBBBBBBBBBBBBBBBBBBBBBB  ",
+    "       BBBBBBBBBBBBBBBBBBBBBBB  ",
+    "        BBBBBBBBBBBBBBBBBBBBB   ",
+    "         BBBBBBBBBBBBBBBBBBB    ",
+    "          BBBBBBBBBBBBBBBBB     ",
+    "            BBBBBBBBBBBBB       ",
+    "              BBBBBBBBB         ",
+    "                                ",
+    "                                ",
+    "                                "
+  ]
+}
