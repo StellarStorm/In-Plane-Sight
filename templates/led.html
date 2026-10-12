@@ -352,7 +352,9 @@
           ledTextRenderers = [],
           ledRenderPending = false,
           fontThickness = "normal",
-          genericIcon = false;
+          genericIcon = false,
+          logoRequestId = 0,
+          currentHeading = null;
         var G = {
           " ": ["00000", "00000", "00000", "00000", "00000", "00000", "00000"],
           "-": ["00000", "00000", "00000", "11111", "00000", "00000", "00000"],
@@ -549,23 +551,28 @@
           planeFallback = document.getElementById("plane-fallback"),
           callsign = document.getElementById("callsign");
         function updateLogo(cs, h) {
+          var requestId = ++logoRequestId;
+          currentHeading = h;
+          genericIcon = false;
           planeFallback.style.display = "none";
           airlineLogo.style.display = "block";
           airlineLogo.style.visibility = "hidden";
           airlineLogo.style.transform = "none";
           InPlaneSightAirlines.getIcon(cs).then(function (icon) {
+            if (requestId !== logoRequestId) return;
             if (icon) {
             genericIcon = false;
             renderMainIcon(icon, 0);
             return;
           }
           InPlaneSightAirlines.load("GENERIC").then(function (g) {
+            if (requestId !== logoRequestId) return;
             if (!g) {
-              showFallback(h);
+              showFallback(currentHeading);
               return;
             }
             genericIcon = true;
-            renderMainIcon(g, h);
+            renderMainIcon(g, currentHeading);
           });
         });
       }
@@ -602,6 +609,9 @@
             });
             empty.style.display = "block";
             prevIcao = null;
+            logoRequestId += 1;
+            currentHeading = null;
+            genericIcon = false;
             scheduleLedTextRender();
             return;
           }
@@ -611,6 +621,7 @@
         });
         empty.style.display = "none";
         var a = ac[0];
+        currentHeading = a.heading;
         callsign.textContent = a.callsign || a.icao.toUpperCase();
         document.getElementById("aircraft-type").textContent =
           a.aircraft_type || "UNKNOWN";
