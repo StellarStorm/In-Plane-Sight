@@ -15,7 +15,11 @@ class AdsbLolSource(AircraftSource):
 
     def fetch(self) -> list[Aircraft]:
         url = f'https://api.adsb.lol/v2/lat/{self._lat}/lon/{self._lon}/dist/{self._radius_nm}'
-        with httpx.Client(timeout=10, headers=_HEADERS) as client:
+        transport = httpx.HTTPTransport(retries=3)
+
+        with httpx.Client(
+            timeout=10, headers=_HEADERS, transport=transport
+        ) as client:
             response = client.get(url)
             response.raise_for_status()
         raw = response.json().get('ac', [])
