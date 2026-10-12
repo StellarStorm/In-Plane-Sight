@@ -29,7 +29,7 @@ def parse_aircraft(raw: dict) -> Aircraft:
         altitude_ft=int(alt) if isinstance(alt, (int, float)) else None,
         speed_kts=round(speed) if isinstance(speed, (int, float)) else None,
         heading=raw.get('track'),
-        aircraft_type=raw.get('t') or raw.get('type'),
+        aircraft_type=raw.get('t'),
         vertical_rate_fpm=int(vr) if isinstance(vr, (int, float)) else None,
     )
 
