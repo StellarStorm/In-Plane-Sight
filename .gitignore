@@ -17,3 +17,7 @@ jumpstart-python-latest/
 
 # macOS files
 .DS_Store
+
+# Don't include local route-specific files
+.in-plane-sight/
+solace-ca/
