@@ -27,7 +27,6 @@ class Config:
     swift_username: str = ''
     swift_password: str = ''
     swift_ca_dir: str = ''
-    route_cache_path: str = str(Path.home() / '.in-plane-sight' / 'routes.sqlite3')
     host: str = '0.0.0.0'
     port: int = 8000
 
@@ -88,10 +87,6 @@ class Config:
             swift_username=swift_settings['SWIFT_USERNAME'],
             swift_password=swift_settings['SWIFT_PASSWORD'],
             swift_ca_dir=swift_settings['SWIFT_CA_DIR'],
-            route_cache_path=os.environ.get(
-                'ROUTE_CACHE_PATH',
-                str(Path.home() / '.in-plane-sight' / 'routes.sqlite3'),
-            ),
             host=os.environ.get('HOST', '0.0.0.0'),
             port=int(os.environ.get('PORT', 8000)),
         )

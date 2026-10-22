@@ -22,13 +22,12 @@ SWIFT_VPN=FDPS
 SWIFT_USERNAME=your-subscription-username
 SWIFT_PASSWORD=your-subscription-password
 SWIFT_CA_DIR=/path/to/hashed/solace-ca
-ROUTE_CACHE_PATH=~/.in-plane-sight/routes.sqlite3
 ```
 
 `SWIFT_CA_DIR` must contain the certificate authorities needed to validate the FAA broker's TLS certificate. Keep certificate validation enabled. The subscriber consumes the configured persistent queue; do not run the Jumpstart consumer against the same exclusive queue at the same time.
 
 For the current `ems1.swim.faa.gov` endpoint, the server certificate chains to DigiCert Global Root G2. Include that root in the hashed CA directory and run `openssl rehash` after adding it. On macOS, it can be exported from the System Roots keychain; on Linux, use the system CA bundle or add the root to the configured directory.
 
-The route index retains active routes for up to 4 hours and is shared by all views. SCDS does not provide ADS-B position data, so existing ADS-B providers continue to supply aircraft positions. Some FIXM messages may not match a currently visible aircraft; ambiguous callsigns are left without a route rather than guessed.
+The in-memory route index is shared by all views and expires routes four hours after their last lookup or update. It is swept every minute and starts empty after an app restart. SCDS does not provide ADS-B position data, so existing ADS-B providers continue to supply aircraft positions. Some FIXM messages may not match a currently visible aircraft; ambiguous callsigns are left without a route rather than guessed.
 
 FAA SCDS data is for informational, non-operational use only and must not be used for aviation safety or operational decisions. SCDS is provided under the FAA Service Access Agreement; users are responsible for maintaining that agreement and observing its terms.

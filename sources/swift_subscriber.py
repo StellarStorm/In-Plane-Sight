@@ -51,6 +51,7 @@ class SwiftSubscriber:
     def _run(self) -> None:
         logger = logging.getLogger(__name__)
         while not self._stop_event.is_set():
+            self._route_index.expire()
             messaging_service = None
             receiver = None
             try:
@@ -112,6 +113,7 @@ class SwiftSubscriber:
 
                 while not self._stop_event.is_set():
                     message = receiver.receive_message(timeout=1000)
+                    self._route_index.expire()
                     if message is None:
                         continue
                     try:

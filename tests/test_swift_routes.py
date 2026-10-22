@@ -73,31 +73,34 @@ def test_parse_fixm_ignores_wrong_data_type_and_sensitive_messages():
     assert parse_fixm_message(ACTIVE_FIXM, {'FDPS_BlockAtFAA': 'true'}) == []
 
 
-def test_route_index_expires_and_avoids_ambiguous_callsigns(tmp_path):
+def test_route_index_expires_after_last_access_and_sweeps_unrequested_routes():
     now = [1000.0]
     route_index = RouteIndex(
-        tmp_path / 'routes.sqlite3',
         ttl_seconds=100,
+        cleanup_interval_seconds=1,
         clock=lambda: now[0],
     )
     route_index.apply(
         FlightRouteUpdate('gufi-1', 'SWA42', 'KPHL', 'KDEN', 'ACTIVE')
     )
-
-    assert route_index.lookup(' swa42 ') == ('KPHL', 'KDEN')
-
     route_index.apply(
-        FlightRouteUpdate('gufi-2', 'SWA42', 'KPHL', 'KSFO', 'ACTIVE')
+        FlightRouteUpdate('gufi-2', 'AAL1', 'KJFK', 'KLAX', 'ACTIVE')
     )
-    assert route_index.lookup('SWA42') is None
+
+    now[0] += 90
+    assert route_index.lookup(' swa42 ') == ('KPHL', 'KDEN')
+    now[0] += 99
+    assert route_index.expire() == 1
+    assert route_index.lookup('AAL1') is None
+    assert route_index.lookup('SWA42') == ('KPHL', 'KDEN')
 
     now[0] += 101
+    assert route_index.expire() == 1
     assert route_index.lookup('SWA42') is None
 
 
-def test_route_index_ignores_non_active_and_persists(tmp_path):
-    database = tmp_path / 'routes.sqlite3'
-    route_index = RouteIndex(database)
+def test_route_index_ignores_non_active_and_is_memory_only():
+    route_index = RouteIndex()
     route_index.apply(
         FlightRouteUpdate('gufi-0', 'AAL1', 'KJFK', 'KLAX', 'PLANNED')
     )
@@ -105,8 +108,8 @@ def test_route_index_ignores_non_active_and_persists(tmp_path):
         FlightRouteUpdate('gufi-1', 'AAL1', 'KJFK', 'KLAX', 'ACTIVE')
     )
 
-    reopened = RouteIndex(database)
-    assert reopened.lookup('AAL1') == ('KJFK', 'KLAX')
+    assert route_index.lookup('AAL1') == ('KJFK', 'KLAX')
+    assert RouteIndex().lookup('AAL1') is None
 
 
 def test_airport_display_code_maps_iata_and_falls_back_to_icao():
@@ -118,7 +121,6 @@ def test_airport_display_code_maps_iata_and_falls_back_to_icao():
 
 def test_aircraft_endpoint_enriches_all_views_from_shared_route_index(
     monkeypatch,
-    tmp_path,
 ):
     aircraft = Aircraft(
         icao='abc123',
@@ -142,7 +144,7 @@ def test_aircraft_endpoint_enriches_all_views_from_shared_route_index(
     assert without_swift[0]['origin'] is None
     assert without_swift[0]['destination'] is None
 
-    route_index = RouteIndex(tmp_path / 'routes.sqlite3')
+    route_index = RouteIndex()
     route_index.apply(
         FlightRouteUpdate('flight-uuid-1', 'SWA42', 'KPHL', 'KDEN', 'ACTIVE')
     )

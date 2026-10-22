@@ -45,7 +45,7 @@ async def lifespan(app: FastAPI):
     global route_index
     subscriber = None
     if config.swift_enabled:
-        route_index = RouteIndex(config.route_cache_path)
+        route_index = RouteIndex()
         subscriber = SwiftSubscriber(config, route_index)
         subscriber.start()
         logging.getLogger(__name__).info('SWIFT Flight FIXM subscriber enabled')

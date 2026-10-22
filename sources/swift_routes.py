@@ -1,10 +1,7 @@
-import sqlite3
 import time
 import xml.etree.ElementTree as ET
-from collections.abc import Generator, Mapping
-from contextlib import contextmanager
+from collections.abc import Mapping
 from dataclasses import dataclass
-from pathlib import Path
 from threading import Lock
 
 
@@ -99,81 +96,43 @@ def _child(element: ET.Element, name: str) -> ET.Element | None:
 
 class RouteIndex:
     TERMINAL_STATUSES = {'CANCELLED', 'COMPLETED', 'ARRIVED', 'INACTIVE'}
+    CLEANUP_INTERVAL_SECONDS = 60
 
     def __init__(
         self,
-        database_path: str | Path,
         ttl_seconds: int = 4 * 60 * 60,
-        persist_interval_seconds: int = 60,
+        cleanup_interval_seconds: int = CLEANUP_INTERVAL_SECONDS,
         clock=time.time,
     ):
-        self._database_path = Path(database_path).expanduser()
         self._ttl_seconds = ttl_seconds
-        self._persist_interval_seconds = persist_interval_seconds
+        self._cleanup_interval_seconds = cleanup_interval_seconds
         self._clock = clock
         self._lock = Lock()
         self._routes: dict[str, tuple[FlightRouteUpdate, float]] = {}
         self._flight_ids_by_callsign: dict[str, set[str]] = {}
-        self._persisted_at: dict[str, float] = {}
-        self._database_path.parent.mkdir(parents=True, exist_ok=True)
-        with self._connect() as connection:
-            connection.execute(
-                '''
-                CREATE TABLE IF NOT EXISTS flight_routes (
-                    flight_id TEXT PRIMARY KEY,
-                    callsign TEXT NOT NULL,
-                    origin TEXT NOT NULL,
-                    destination TEXT NOT NULL,
-                    status TEXT NOT NULL,
-                    seen_at REAL NOT NULL
-                )
-                '''
-            )
-            cutoff = self._clock() - self._ttl_seconds
-            connection.execute(
-                'DELETE FROM flight_routes WHERE seen_at <= ?',
-                (cutoff,),
-            )
-            rows = connection.execute(
-                '''
-                SELECT flight_id, callsign, origin, destination, status, seen_at
-                FROM flight_routes
-                '''
-            ).fetchall()
-        for flight_id, callsign, origin, destination, status, seen_at in rows:
-            update = FlightRouteUpdate(
-                flight_id=flight_id,
-                callsign=callsign,
-                origin=origin,
-                destination=destination,
-                status=status,
-            )
-            self._routes[flight_id] = (update, seen_at)
-            self._flight_ids_by_callsign.setdefault(callsign, set()).add(flight_id)
-            self._persisted_at[flight_id] = seen_at
+        self._last_cleanup_at = self._clock()
 
-    @contextmanager
-    def _connect(self) -> Generator[sqlite3.Connection]:
-        connection = sqlite3.connect(self._database_path, timeout=5)
-        try:
-            yield connection
-            connection.commit()
-        except Exception:
-            connection.rollback()
-            raise
-        finally:
-            connection.close()
+    def expire(self) -> int:
+        now = self._clock()
+        with self._lock:
+            if now - self._last_cleanup_at < self._cleanup_interval_seconds:
+                return 0
+            cutoff = now - self._ttl_seconds
+            expired_ids = [
+                flight_id
+                for flight_id, (_, last_accessed_at) in self._routes.items()
+                if last_accessed_at <= cutoff
+            ]
+            for flight_id in expired_ids:
+                self._remove(flight_id)
+            self._last_cleanup_at = now
+            return len(expired_ids)
 
     def apply(self, update: FlightRouteUpdate) -> None:
-        now = self._clock()
+        self.expire()
         with self._lock:
             if update.status in self.TERMINAL_STATUSES:
                 self._remove(update.flight_id)
-                with self._connect() as connection:
-                    connection.execute(
-                        'DELETE FROM flight_routes WHERE flight_id = ?',
-                        (update.flight_id,),
-                    )
                 return
             if (
                 update.status != 'ACTIVE'
@@ -183,28 +142,22 @@ class RouteIndex:
                 return
 
             previous = self._routes.get(update.flight_id)
-            route_changed = previous is None or previous[0] != update
             if previous is not None and previous[0].callsign != update.callsign:
-                self._flight_ids_by_callsign[previous[0].callsign].discard(
-                    update.flight_id
-                )
-            self._routes[update.flight_id] = (update, now)
+                previous_callsign = previous[0].callsign
+                self._flight_ids_by_callsign[previous_callsign].discard(update.flight_id)
+                if not self._flight_ids_by_callsign[previous_callsign]:
+                    self._flight_ids_by_callsign.pop(previous_callsign)
+            self._routes[update.flight_id] = (update, self._clock())
             self._flight_ids_by_callsign.setdefault(update.callsign, set()).add(
                 update.flight_id
             )
-
-            if (
-                route_changed
-                or now - self._persisted_at.get(update.flight_id, 0)
-                >= self._persist_interval_seconds
-            ):
-                self._save(update, now)
 
     def lookup(self, callsign: str | None) -> tuple[str, str] | None:
         results = self.lookup_many([callsign])
         return results.get(' '.join((callsign or '').split()).upper())
 
     def lookup_many(self, callsigns: list[str | None]) -> dict[str, tuple[str, str]]:
+        self.expire()
         normalized_callsigns = {
             ' '.join((callsign or '').split()).upper()
             for callsign in callsigns
@@ -226,51 +179,20 @@ class RouteIndex:
                     if seen_at <= cutoff:
                         expired_ids.add(flight_id)
                     elif update.status == 'ACTIVE':
+                        self._routes[flight_id] = (update, now)
                         route_sets.setdefault(callsign, set()).add(
                             (update.origin or '', update.destination or '')
                         )
             for flight_id in expired_ids:
                 self._remove(flight_id)
-            if expired_ids:
-                with self._connect() as connection:
-                    connection.executemany(
-                        'DELETE FROM flight_routes WHERE flight_id = ?',
-                        ((flight_id,) for flight_id in expired_ids),
-                    )
             return {
                 callsign: next(iter(routes))
                 for callsign, routes in route_sets.items()
                 if len(routes) == 1
             }
 
-    def _save(self, update: FlightRouteUpdate, seen_at: float) -> None:
-        with self._connect() as connection:
-            connection.execute(
-                '''
-                INSERT INTO flight_routes
-                    (flight_id, callsign, origin, destination, status, seen_at)
-                VALUES (?, ?, ?, ?, ?, ?)
-                ON CONFLICT (flight_id) DO UPDATE SET
-                    callsign = excluded.callsign,
-                    origin = excluded.origin,
-                    destination = excluded.destination,
-                    status = excluded.status,
-                    seen_at = excluded.seen_at
-                ''',
-                (
-                    update.flight_id,
-                    update.callsign,
-                    update.origin,
-                    update.destination,
-                    update.status,
-                    seen_at,
-                ),
-            )
-        self._persisted_at[update.flight_id] = seen_at
-
     def _remove(self, flight_id: str) -> None:
         record = self._routes.pop(flight_id, None)
-        self._persisted_at.pop(flight_id, None)
         if record is None:
             return
         callsign = record[0].callsign
