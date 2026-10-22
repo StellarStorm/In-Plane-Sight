@@ -4,12 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>InPlaneSight - Map</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.css" />
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #0d0d1a; }
     #map { width: 100vw; height: 100vh; }
-
     .home-marker {
       width: 14px;
       height: 14px;
@@ -20,6 +19,8 @@
     }
 
     .aircraft-icon {
+      width: 24px;
+      height: 24px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -28,15 +29,15 @@
       text-shadow: 0 0 8px rgba(77, 255, 180, 0.9);
     }
 
-    .leaflet-popup-content-wrapper {
+    .maplibregl-popup-content {
       background: rgba(10, 10, 22, 0.95);
       color: #ccc;
       border: 1px solid #4dffb4;
       border-radius: 4px;
       box-shadow: 0 0 12px rgba(77, 255, 180, 0.3);
+      padding: 10px 14px;
     }
-    .leaflet-popup-tip-container { display: none; }
-    .leaflet-popup-content { margin: 10px 14px; }
+    .maplibregl-popup-tip { display: none; }
 
     .popup-callsign { font-size: 15px; font-weight: bold; color: #4dffb4; letter-spacing: 0.05em; }
     .popup-type     { font-size: 12px; color: #888; margin-top: 1px; }
@@ -44,7 +45,7 @@
 
     #status {
       position: fixed;
-      bottom: 12px;
+      bottom: 38px;
       right: 14px;
       font-family: monospace;
       font-size: 11px;
@@ -57,7 +58,7 @@
   <div id="map"></div>
   <div id="status">loading...</div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.js"></script>
   <script src="/static/common.js"></script>
   <script>
     var status = document.getElementById('status');
@@ -76,49 +77,24 @@
       var RADIUS_NM  = cfg.radius_nm;
       var REFRESH_MS = cfg.refresh_seconds * 1000;
 
-      var map = L.map('map', { zoomControl: true }).setView(CENTER, 8);
-
-      L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', {
-        attribution: 'Stadia Maps / OpenStreetMap contributors',
-        maxZoom: 19
-      }).addTo(map);
-
-      var rangeCircle = L.circle(CENTER, {
-        radius: RADIUS_NM * 1852,
-        color: '#4dffb4',
-        weight: 1,
-        opacity: 0.3,
-        fillOpacity: 0.02
-      }).addTo(map);
-
-      var homeIcon = L.divIcon({
-        className: '',
-        html: '<div class="home-marker"></div>',
-        iconSize: [14, 14],
-        iconAnchor: [7, 7]
+      var map = new maplibregl.Map({
+        container: 'map',
+        style: 'https://tiles.openfreemap.org/styles/dark',
+        center: [CENTER[1], CENTER[0]],
+        zoom: 8
       });
-
-      L.marker(CENTER, {
-        icon: homeIcon,
-        interactive: false,
-        keyboard: false,
-        zIndexOffset: 1000
-      }).addTo(map);
-      map.fitBounds(rangeCircle.getBounds(), {
-        padding: [8, 8],
-        animate: false
-      });
+      map.addControl(new maplibregl.NavigationControl(), 'top-right');
 
       var markers = {};
 
       function makeIcon(heading) {
-        return L.divIcon({
-          className: 'aircraft-icon',
-          html: '<div style="transform:rotate(' + ((heading || 0) - 90) + 'deg)">&#9992;</div>',
-          iconSize: [24, 24],
-          iconAnchor: [12, 12],
-          popupAnchor: [0, -14]
-        });
+        var element = document.createElement('div');
+        var plane = document.createElement('div');
+        element.className = 'aircraft-icon';
+        plane.innerHTML = '&#9992;';
+        plane.style.transform = 'rotate(' + ((heading || 0) - 90) + 'deg)';
+        element.appendChild(plane);
+        return element;
       }
 
       function makePopup(a) {
@@ -131,6 +107,32 @@
              + '<div class="popup-detail">'   + detail                 + '</div>';
       }
 
+      function makeRangeFeature() {
+        var originLat = CENTER[0] * Math.PI / 180;
+        var originLon = CENTER[1] * Math.PI / 180;
+        var angularDistance = RADIUS_NM * 1852 / 6371008.8;
+        var coordinates = [];
+
+        for (var bearing = 0; bearing <= 360; bearing += 5) {
+          var direction = bearing * Math.PI / 180;
+          var latitude = Math.asin(
+            Math.sin(originLat) * Math.cos(angularDistance) +
+            Math.cos(originLat) * Math.sin(angularDistance) * Math.cos(direction)
+          );
+          var longitude = originLon + Math.atan2(
+            Math.sin(direction) * Math.sin(angularDistance) * Math.cos(originLat),
+            Math.cos(angularDistance) - Math.sin(originLat) * Math.sin(latitude)
+          );
+          coordinates.push([longitude * 180 / Math.PI, latitude * 180 / Math.PI]);
+        }
+
+        return {
+          type: 'Feature',
+          properties: {},
+          geometry: { type: 'Polygon', coordinates: [coordinates] }
+        };
+      }
+
       function refresh() {
         fetch('/aircraft')
           .then(function(r) { return r.json(); })
@@ -138,21 +140,25 @@
             var seen = {};
             aircraft.forEach(function(a) {
               seen[a.icao] = true;
-              var icon  = makeIcon(a.heading);
               var popup = makePopup(a);
               if (markers[a.icao]) {
-                markers[a.icao].setLatLng([a.lat, a.lon]);
-                markers[a.icao].setIcon(icon);
-                markers[a.icao].setPopupContent(popup);
+                markers[a.icao].setLngLat([a.lon, a.lat]);
+                markers[a.icao].getElement().firstChild.style.transform =
+                  'rotate(' + ((a.heading || 0) - 90) + 'deg)';
+                markers[a.icao].getPopup().setHTML(popup);
               } else {
-                markers[a.icao] = L.marker([a.lat, a.lon], { icon: icon })
-                  .bindPopup(popup)
+                markers[a.icao] = new maplibregl.Marker({
+                  element: makeIcon(a.heading),
+                  anchor: 'center'
+                })
+                  .setLngLat([a.lon, a.lat])
+                  .setPopup(new maplibregl.Popup({ offset: 14 }).setHTML(popup))
                   .addTo(map);
               }
             });
             Object.keys(markers).forEach(function(icao) {
               if (!seen[icao]) {
-                map.removeLayer(markers[icao]);
+                markers[icao].remove();
                 delete markers[icao];
               }
             });
@@ -164,8 +170,68 @@
           });
       }
 
-      refresh();
-      setInterval(refresh, REFRESH_MS);
+      map.on('load', function () {
+        [
+          'building',
+          'highway_path',
+          'highway_minor',
+          'highway_major_casing',
+          'highway_major_inner',
+          'highway_major_subtle',
+          'highway_name_other',
+          'water_name',
+          'railway_transit',
+          'railway_transit_dashline',
+          'railway_minor',
+          'railway_minor_dashline',
+          'railway',
+          'railway_dashline',
+          'place_other',
+          'place_suburb',
+          'place_village',
+          'place_state',
+          'place_country_other',
+          'place_country_minor',
+          'place_country_major'
+        ].forEach(function(layerId) {
+          if (map.getLayer(layerId)) {
+            map.setLayoutProperty(layerId, 'visibility', 'none');
+          }
+        });
+
+        map.addSource('aircraft-range', {
+          type: 'geojson',
+          data: makeRangeFeature()
+        });
+        map.addLayer({
+          id: 'aircraft-range-fill',
+          type: 'fill',
+          source: 'aircraft-range',
+          paint: { 'fill-color': '#4dffb4', 'fill-opacity': 0.02 }
+        });
+        map.addLayer({
+          id: 'aircraft-range-outline',
+          type: 'line',
+          source: 'aircraft-range',
+          paint: { 'line-color': '#4dffb4', 'line-width': 1, 'line-opacity': 0.3 }
+        });
+
+        var home = document.createElement('div');
+        home.className = 'home-marker';
+        new maplibregl.Marker({ element: home, anchor: 'center' })
+          .setLngLat([CENTER[1], CENTER[0]])
+          .addTo(map);
+
+        var latitudeDelta = RADIUS_NM / 60;
+        var longitudeDelta = latitudeDelta / Math.cos(CENTER[0] * Math.PI / 180);
+        map.fitBounds([
+          [CENTER[1] - longitudeDelta, CENTER[0] - latitudeDelta],
+          [CENTER[1] + longitudeDelta, CENTER[0] + latitudeDelta]
+        ], { padding: 8, duration: 0 });
+
+        refresh();
+        setInterval(refresh, REFRESH_MS);
+      });
     }
   </script>
 </body>
