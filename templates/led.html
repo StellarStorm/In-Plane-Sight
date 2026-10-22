@@ -665,7 +665,10 @@
             " ft/m"
             : "--";
         document.getElementById("route-line").textContent =
-          a.origin && a.destination ? a.origin + " > " + a.destination : "";
+          a.origin && a.destination
+            ? (a.origin_display || a.origin) + " > " +
+              (a.destination_display || a.destination)
+            : "";
         scheduleLedTextRender();
         if (a.icao !== prevIcao) {
           updateLogo(a.callsign, a.heading);

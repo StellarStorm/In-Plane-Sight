@@ -3,6 +3,7 @@ import pytest
 import main
 from config import Config
 from sources.base import Aircraft
+from sources.airport_codes import airport_display_code
 from sources.swift_routes import (
     FlightRouteUpdate,
     RouteIndex,
@@ -108,6 +109,13 @@ def test_route_index_ignores_non_active_and_persists(tmp_path):
     assert reopened.lookup('AAL1') == ('KJFK', 'KLAX')
 
 
+def test_airport_display_code_maps_iata_and_falls_back_to_icao():
+    assert airport_display_code('KPHL') == 'PHL'
+    assert airport_display_code('EGLL') == 'LHR'
+    assert airport_display_code('ZZZZ') == 'ZZZZ'
+    assert airport_display_code(None) is None
+
+
 def test_aircraft_endpoint_enriches_all_views_from_shared_route_index(
     monkeypatch,
     tmp_path,
@@ -143,3 +151,5 @@ def test_aircraft_endpoint_enriches_all_views_from_shared_route_index(
 
     assert with_swift[0]['origin'] == 'KPHL'
     assert with_swift[0]['destination'] == 'KDEN'
+    assert with_swift[0]['origin_display'] == 'PHL'
+    assert with_swift[0]['destination_display'] == 'DEN'

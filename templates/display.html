@@ -286,7 +286,8 @@
         row.appendChild(makeTextCell(
           'cell cell-route',
           item.origin && item.destination
-            ? item.origin + ' > ' + item.destination
+            ? (item.origin_display || item.origin) + ' > ' +
+              (item.destination_display || item.destination)
             : '',
         ));
         row.appendChild(makeTextCell('cell cell-type', item.aircraft_type || '--'));

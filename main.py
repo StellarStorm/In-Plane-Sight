@@ -17,6 +17,7 @@ from sources import (
     LocalSource,
 )
 from sources.base import AircraftSource
+from sources.airport_codes import airport_display_code
 from sources.swift_routes import RouteIndex
 from sources.swift_subscriber import SwiftSubscriber
 
@@ -107,11 +108,15 @@ def get_aircraft():
         enriched_aircraft = []
         for item in aircraft:
             route = routes.get(' '.join((item.callsign or '').split()).upper())
+            origin = route[0] if route is not None else None
+            destination = route[1] if route is not None else None
             enriched_aircraft.append(
                 replace(
-                item,
-                    origin=route[0] if route is not None else None,
-                    destination=route[1] if route is not None else None,
+                    item,
+                    origin=origin,
+                    destination=destination,
+                    origin_display=airport_display_code(origin),
+                    destination_display=airport_display_code(destination),
                 )
             )
         aircraft = enriched_aircraft

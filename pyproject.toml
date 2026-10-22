@@ -5,6 +5,7 @@ description = "Display an LED-like information board of flights currently overhe
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "airportsdata>=20260905",
     "fastapi>=0.142.2",
     "httpx>=0.28.1",
     "python-dotenv>=1.2.4",

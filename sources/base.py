@@ -15,6 +15,8 @@ class Aircraft:
     vertical_rate_fpm: int | None
     origin: str | None = None
     destination: str | None = None
+    origin_display: str | None = None
+    destination_display: str | None = None
 
 
 def parse_aircraft(raw: dict) -> Aircraft:

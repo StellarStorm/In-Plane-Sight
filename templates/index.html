@@ -103,8 +103,9 @@
         var type = a.aircraft_type || '';
         var detail = alt + (spd ? ' · ' + spd : '');
         var route = a.origin && a.destination
-          ? '<div class="popup-detail">Route: ' + escapeHtml(a.origin) + ' > ' +
-            escapeHtml(a.destination) + '</div>'
+          ? '<div class="popup-detail">Route: ' +
+            escapeHtml(a.origin_display || a.origin) + ' > ' +
+            escapeHtml(a.destination_display || a.destination) + '</div>'
           : '';
         return '<div class="popup-callsign">' + (a.callsign || a.icao) + '</div>'
              + '<div class="popup-type">'     + type                   + '</div>'
