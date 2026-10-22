@@ -7,7 +7,13 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from config import Config
-from sources import AdsbLolSource, CachedSource, LocalSource
+from sources import (
+    AdsbFiSource,
+    AdsbLolSource,
+    CachedSource,
+    FallbackSource,
+    LocalSource,
+)
 from sources.base import AircraftSource
 
 AIRLINE_ICON_DIR = Path(__file__).resolve().parent / 'static' / 'airline-icons'
@@ -17,7 +23,10 @@ def build_source(config: Config) -> AircraftSource:
     if config.source == 'local':
         base = LocalSource(config.local_url)
     else:
-        base = AdsbLolSource(config.lat, config.lon, config.radius_nm)
+        base = FallbackSource(
+            AdsbLolSource(config.lat, config.lon, config.radius_nm),
+            AdsbFiSource(config.lat, config.lon, config.radius_nm),
+        )
     return CachedSource(base, ttl_seconds=config.refresh_seconds)
 
 

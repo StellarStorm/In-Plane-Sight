@@ -24,3 +24,27 @@ class AdsbLolSource(AircraftSource):
             response.raise_for_status()
         raw = response.json().get('ac', [])
         return [parse_aircraft(a) for a in raw if a.get('lat') and a.get('lon')]
+
+
+class AdsbFiSource(AircraftSource):
+    """Fetches live aircraft data from the free adsb.fi public API."""
+
+    def __init__(self, lat: float, lon: float, radius_nm: int = 50):
+        self._lat = lat
+        self._lon = lon
+        self._radius_nm = radius_nm
+
+    def fetch(self) -> list[Aircraft]:
+        url = (
+            f'https://opendata.adsb.fi/api/v3/lat/{self._lat}'
+            f'/lon/{self._lon}/dist/{self._radius_nm}'
+        )
+        transport = httpx.HTTPTransport(retries=3)
+
+        with httpx.Client(
+            timeout=10, headers=_HEADERS, transport=transport
+        ) as client:
+            response = client.get(url)
+            response.raise_for_status()
+        raw = response.json().get('ac', [])
+        return [parse_aircraft(a) for a in raw if a.get('lat') and a.get('lon')]
