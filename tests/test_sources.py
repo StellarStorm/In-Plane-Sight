@@ -1,3 +1,5 @@
+from dataclasses import asdict
+
 import pytest
 
 from sources.base import Aircraft, AircraftSource, parse_aircraft
@@ -99,6 +101,18 @@ def test_parse_aircraft_handles_missing_and_ground_values():
         aircraft_type=None,
         vertical_rate_fpm=None,
     )
+
+    assert asdict(aircraft)['origin'] is None
+    assert asdict(aircraft)['destination'] is None
+
+
+def test_aircraft_route_fields_are_serializable():
+    aircraft = make_aircraft('abc123')
+    aircraft.origin = 'KPHL'
+    aircraft.destination = 'KDEN'
+
+    assert asdict(aircraft)['origin'] == 'KPHL'
+    assert asdict(aircraft)['destination'] == 'KDEN'
 
 
 @pytest.mark.parametrize(

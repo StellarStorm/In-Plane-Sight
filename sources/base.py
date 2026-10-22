@@ -13,6 +13,8 @@ class Aircraft:
     heading: float | None
     aircraft_type: str | None
     vertical_rate_fpm: int | None
+    origin: str | None = None
+    destination: str | None = None
 
 
 def parse_aircraft(raw: dict) -> Aircraft:

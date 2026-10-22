@@ -134,6 +134,11 @@ dependencies = [
     { name = "uvicorn" },
 ]
 
+[package.optional-dependencies]
+swift = [
+    { name = "solace-pubsubplus" },
+]
+
 [package.dev-dependencies]
 dev = [
     { name = "pytest" },
@@ -144,8 +149,10 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.142.2" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "python-dotenv", specifier = ">=1.2.4" },
+    { name = "solace-pubsubplus", marker = "extra == 'swift'", specifier = ">=1.11.0" },
     { name = "uvicorn", specifier = ">=0.54.0" },
 ]
+provides-extras = ["swift"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = ">=9.1.1" }]
@@ -292,6 +299,19 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/74/26/2fbeedb218a787a5eea551c7532cac4e009f83d689dd2faa0d0353473f86/python_dotenv-1.2.4.tar.gz", hash = "sha256:f0d53e69935a851c0dcc78f3ab7aaccd8cabef0b92382b576b824212902873c0", size = 60824, upload-time = "2026-10-01T05:36:10Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/60/d1/38f3a3405989a89ac18390803e70c6ad7c7760da4f9b83cbeca0c44a0c72/python_dotenv-1.2.4-py3-none-any.whl", hash = "sha256:42269a8a5b3fd54ffa6f3d84b18abed50064717576b4ecf03dc4a55d8aa04fdc", size = 23266, upload-time = "2026-10-01T05:36:08.633Z" },
+]
+
+[[package]]
+name = "solace-pubsubplus"
+version = "1.11.0"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0f/27/d9fd4378d75929b2002c5f536a58b3e7a8ced538fa40a048919d177dd53e/solace_pubsubplus-1.11.0-py36-none-macosx_11_0_universal2.whl", hash = "sha256:f9b58a3bc2c2780744399c63db7d5c062e23effa52665c4c6dc56b838311a254", size = 11345986, upload-time = "2025-12-05T18:19:30.286Z" },
+    { url = "https://files.pythonhosted.org/packages/40/af/1c754d7d819bdaf9952a429ac8309461ec5db5f87f6ca29bff6d0d35e8ae/solace_pubsubplus-1.11.0-py36-none-manylinux_2_12_x86_64.whl", hash = "sha256:6c0deb5016a4005b4f01b8f8a16c664c0b306ffb51da4ace4d24169ffbbfbdee", size = 4655424, upload-time = "2025-12-05T18:19:32.172Z" },
+    { url = "https://files.pythonhosted.org/packages/89/ec/0bc2c4e1d3b80e406e9983c61b871a71db42d8d5b28f34e8edb4e0c6a82b/solace_pubsubplus-1.11.0-py36-none-manylinux_2_17_aarch64.whl", hash = "sha256:114768fe365bc79abee90852dc483e9fa5bc3fb9a4bf218e85029f8d050d0de3", size = 2663052, upload-time = "2025-12-05T18:19:33.406Z" },
+    { url = "https://files.pythonhosted.org/packages/77/ff/b36c9a348b47c868e21128d1434affad8eb7351836f7987d4f21aec397a5/solace_pubsubplus-1.11.0-py36-none-musllinux_1_2_x86_64.whl", hash = "sha256:d63b75f154917e2f6e3f669b6d64bd8cf774bf37b301ab42b129ac21f7cbdb9d", size = 2507606, upload-time = "2025-12-05T18:19:34.829Z" },
+    { url = "https://files.pythonhosted.org/packages/b3/e4/eeda0c376fe0bd09b640cf657ca90b5b46e9f60902593670e77849df1ad8/solace_pubsubplus-1.11.0-py36-none-win32.whl", hash = "sha256:c313ecdaab7adb8fed547ae64749ab5b850f5c4370a4c7556ee38591ebdf3d05", size = 2615961, upload-time = "2025-12-05T18:19:35.965Z" },
+    { url = "https://files.pythonhosted.org/packages/5c/b2/90efcab59374ce0c7cd22e1850b2ecb965bb0c5adee1f7e1d09d7a15a242/solace_pubsubplus-1.11.0-py36-none-win_amd64.whl", hash = "sha256:207567d5251eff469f318ae55a40fda4e558db9bcf30a543322d5a4d396d64cd", size = 2986566, upload-time = "2025-12-05T18:19:37.402Z" },
 ]
 
 [[package]]

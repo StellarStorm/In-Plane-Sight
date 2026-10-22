@@ -1,4 +1,6 @@
-from dataclasses import asdict
+import logging
+from contextlib import asynccontextmanager
+from dataclasses import asdict, replace
 from pathlib import Path
 
 import httpx
@@ -15,6 +17,8 @@ from sources import (
     LocalSource,
 )
 from sources.base import AircraftSource
+from sources.swift_routes import RouteIndex
+from sources.swift_subscriber import SwiftSubscriber
 
 AIRLINE_ICON_DIR = Path(__file__).resolve().parent / 'static' / 'airline-icons'
 
@@ -32,7 +36,27 @@ def build_source(config: Config) -> AircraftSource:
 
 config = Config.from_env()
 source = build_source(config)
-app = FastAPI()
+route_index: RouteIndex | None = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global route_index
+    subscriber = None
+    if config.swift_enabled:
+        route_index = RouteIndex(config.route_cache_path)
+        subscriber = SwiftSubscriber(config, route_index)
+        subscriber.start()
+        logging.getLogger(__name__).info('SWIFT Flight FIXM subscriber enabled')
+    try:
+        yield
+    finally:
+        if subscriber is not None:
+            subscriber.stop()
+        route_index = None
+
+
+app = FastAPI(lifespan=lifespan)
 app.mount('/static', StaticFiles(directory='static'), name='static')
 
 
@@ -62,6 +86,7 @@ def get_config():
         'flicker_enabled': config.flicker_enabled,
         'flicker_strength': config.flicker_strength,
         'font_thickness': config.font_thickness,
+        'route_enrichment_enabled': config.swift_enabled,
     }
 
 
@@ -77,6 +102,19 @@ def get_aircraft():
     except httpx.HTTPError as error:
         print(f'Upstream fetch failed: {error}')
         return JSONResponse(content=[])
+    if route_index is not None:
+        routes = route_index.lookup_many([item.callsign for item in aircraft])
+        enriched_aircraft = []
+        for item in aircraft:
+            route = routes.get(' '.join((item.callsign or '').split()).upper())
+            enriched_aircraft.append(
+                replace(
+                item,
+                    origin=route[0] if route is not None else None,
+                    destination=route[1] if route is not None else None,
+                )
+            )
+        aircraft = enriched_aircraft
     return [asdict(item) for item in aircraft]
 
 

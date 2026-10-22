@@ -102,9 +102,26 @@
         var spd  = a.speed_kts   != null ? a.speed_kts + ' kts' : '';
         var type = a.aircraft_type || '';
         var detail = alt + (spd ? ' · ' + spd : '');
+        var route = a.origin && a.destination
+          ? '<div class="popup-detail">Route: ' + escapeHtml(a.origin) + ' > ' +
+            escapeHtml(a.destination) + '</div>'
+          : '';
         return '<div class="popup-callsign">' + (a.callsign || a.icao) + '</div>'
              + '<div class="popup-type">'     + type                   + '</div>'
-             + '<div class="popup-detail">'   + detail                 + '</div>';
+             + '<div class="popup-detail">'   + detail                 + '</div>'
+             + route;
+      }
+
+      function escapeHtml(value) {
+        return String(value).replace(/[&<>"']/g, function (character) {
+          return {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+          }[character];
+        });
       }
 
       function makeRangeFeature() {
