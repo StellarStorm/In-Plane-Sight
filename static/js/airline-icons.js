@@ -40,18 +40,16 @@
     return manifestRequest;
   }
 
-  function fetchIcon(code, codes) {
+  async function fetchIcon(code, codes) {
     if (!codes.has(code)) {
       return Promise.resolve(null);
     }
 
-    return fetch('/static/airline-icons/' + code + '.json')
-      .then(function (response) {
-        if (!response.ok) {
-          return null;
-        }
-        return response.json();
-      });
+    const response = await fetch('/static/airline-icons/' + code + '.json');
+    if (!response.ok) {
+      return null;
+    }
+    return response.json();
   }
 
   function mergeAliasMetadata(icon, metadata) {
