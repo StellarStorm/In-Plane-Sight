@@ -61,11 +61,11 @@ class Config:
 
         return cls(
             source=os.environ.get('SOURCE', 'internet'),
-            lat=float(os.environ.get('LAT', 39.9526)),
-            lon=float(os.environ.get('LON', -75.1652)),
-            radius_nm=int(os.environ.get('RADIUS_NM', 20)),
+            lat=float(os.environ.get('LAT', '39.9526')),
+            lon=float(os.environ.get('LON', '-75.1652')),
+            radius_nm=int(os.environ.get('RADIUS_NM', '20')),
             time_format=os.environ.get('TIME_FORMAT', '24'),
-            refresh_seconds=int(os.environ.get('REFRESH_SECONDS', 15)),
+            refresh_seconds=int(os.environ.get('REFRESH_SECONDS', '15')),
             flicker_enabled=os.environ.get(
                 'FLICKER_ENABLED',
                 'true',
@@ -73,7 +73,7 @@ class Config:
             in {'1', 'true', 'yes', 'on'},
             flicker_strength=max(
                 0.0,
-                min(float(os.environ.get('FLICKER_STRENGTH', 0.025)), 0.1),
+                min(float(os.environ.get('FLICKER_STRENGTH', '0.025')), 0.1),
             ),
             font_thickness=font_thickness,
             local_url=os.environ.get(
@@ -88,5 +88,5 @@ class Config:
             swift_password=swift_settings['SWIFT_PASSWORD'],
             swift_ca_dir=swift_settings['SWIFT_CA_DIR'],
             host=os.environ.get('HOST', '0.0.0.0'),
-            port=int(os.environ.get('PORT', 8000)),
+            port=int(os.environ.get('PORT', '8000')),
         )
