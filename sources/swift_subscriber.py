@@ -1,7 +1,7 @@
-import logging
 from threading import Event, Lock, Thread
 from typing import TYPE_CHECKING
 
+from sources.logging_config import get_logger
 from sources.swift_routes import RouteIndex, parse_fixm_message
 
 if TYPE_CHECKING:
@@ -22,6 +22,8 @@ class SwiftSubscriber:
             daemon=True,
         )
 
+        self._logger = get_logger(__name__, config.log_level)
+
     def start(self) -> None:
         self._thread.start()
 
@@ -34,7 +36,7 @@ class SwiftSubscriber:
             try:
                 receiver.terminate()
             except Exception:
-                logging.getLogger(__name__).debug(
+                self._logger.debug(
                     'Error terminating SWIFT receiver',
                     exc_info=True,
                 )
@@ -42,14 +44,13 @@ class SwiftSubscriber:
             try:
                 messaging_service.disconnect()
             except Exception:
-                logging.getLogger(__name__).debug(
+                self._logger.debug(
                     'Error disconnecting SWIFT messaging service',
                     exc_info=True,
                 )
         self._thread.join(timeout=5)
 
     def _run(self) -> None:
-        logger = logging.getLogger(__name__)
         while not self._stop_event.is_set():
             self._route_index.expire()
             messaging_service = None
@@ -109,7 +110,9 @@ class SwiftSubscriber:
                 receiver.start()
                 with self._connection_lock:
                     self._receiver = receiver
-                logger.info('Listening to SWIFT queue %s', self._config.swift_queue)
+                self._logger.info(
+                    f'Listening to SWIFT queue {self._config.swift_queue}'
+                )
 
                 while not self._stop_event.is_set():
                     message = receiver.receive_message(timeout=1000)
@@ -127,12 +130,16 @@ class SwiftSubscriber:
                         for update in updates:
                             self._route_index.apply(update)
                     except Exception:
-                        logger.exception('Unable to process a SWIFT Flight FIXM message')
+                        self._logger.exception(
+                            'Unable to process a SWIFT Flight FIXM message'
+                        )
                     finally:
                         receiver.ack(message)
             except Exception:
                 if not self._stop_event.is_set():
-                    logger.exception('SWIFT subscriber disconnected; retrying')
+                    self._logger.exception(
+                        'SWIFT subscriber disconnected; retrying'
+                    )
             finally:
                 with self._connection_lock:
                     self._receiver = None
@@ -141,12 +148,14 @@ class SwiftSubscriber:
                     try:
                         receiver.terminate()
                     except Exception:
-                        logger.debug('Error terminating SWIFT receiver', exc_info=True)
+                        self._logger.debug(
+                            'Error terminating SWIFT receiver', exc_info=True
+                        )
                 if messaging_service is not None:
                     try:
                         messaging_service.disconnect()
                     except Exception:
-                        logger.debug(
+                        self._logger.debug(
                             'Error disconnecting SWIFT messaging service',
                             exc_info=True,
                         )

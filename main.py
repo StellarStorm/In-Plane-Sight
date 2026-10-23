@@ -1,4 +1,3 @@
-import logging
 from contextlib import asynccontextmanager
 from dataclasses import asdict, replace
 from pathlib import Path
@@ -16,8 +15,9 @@ from sources import (
     FallbackSource,
     LocalSource,
 )
-from sources.base import AircraftSource
 from sources.airport_codes import airport_display_code
+from sources.base import AircraftSource
+from sources.logging_config import get_logger
 from sources.swift_routes import RouteIndex
 from sources.swift_subscriber import SwiftSubscriber
 
@@ -37,6 +37,7 @@ def build_source(config: Config) -> AircraftSource:
 
 config = Config.from_env()
 source = build_source(config)
+logger = get_logger(__name__, config.log_level)
 route_index: RouteIndex | None = None
 
 
@@ -48,7 +49,7 @@ async def lifespan(app: FastAPI):
         route_index = RouteIndex()
         subscriber = SwiftSubscriber(config, route_index)
         subscriber.start()
-        logging.getLogger(__name__).info('SWIFT Flight FIXM subscriber enabled')
+        logger.info('SWIFT Flight FIXM subscriber enabled')
     try:
         yield
     finally:
@@ -131,4 +132,10 @@ def favicon():
 if __name__ == '__main__':
     import uvicorn
 
-    uvicorn.run('main:app', host=config.host, port=config.port, reload=False)
+    uvicorn.run(
+        'main:app',
+        host=config.host,
+        port=config.port,
+        reload=False,
+        log_level=config.log_level.lower(),
+    )

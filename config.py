@@ -29,6 +29,7 @@ class Config:
     swift_ca_dir: str = ''
     host: str = '0.0.0.0'
     port: int = 8000
+    log_level: str = 'INFO'
 
     @classmethod
     def from_env(cls) -> 'Config':
@@ -89,4 +90,5 @@ class Config:
             swift_ca_dir=swift_settings['SWIFT_CA_DIR'],
             host=os.environ.get('HOST', '0.0.0.0'),
             port=int(os.environ.get('PORT', '8000')),
+            log_level=os.environ.get('LOG_LEVEL', 'INFO').upper(),
         )
