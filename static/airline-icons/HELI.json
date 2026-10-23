@@ -1,0 +1,42 @@
+{
+  "code": "HELI",
+  "label": "Helicopter",
+  "palette": {
+        "W": "#eeeae0",
+        "S": "#9d9a92"
+  },
+  "rows": [
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                  SS            ",
+    "       SWWWWWWWWWWWWWWWWWWWWWWS ",
+    "        SWWWWWWWWWWWWWWWWWWWWWS ",
+    " SWS                            ",
+    " SWS             SWWS           ",
+    " SWWS           SWWWS           ",
+    " SWWWWSSSSSSSSSWWWWWWWS         ",
+    " SWWWWWWWWWWWWWWWWWWWWWWWS      ",
+    " SWWWSSSWWWWWWWWWWWWWW  WWS     ",
+    "  SWS   SWWWWWWWWWWWWWW   WWS   ",
+    "  SW       SWWWWWWWWWWW     WS  ",
+    "            SWWWWWWWWWW      W  ",
+    "             SWWWWWWWWWWW    WS ",
+    "              SWWWWWWWWWWWWWWWS ",
+    "              SWWWWWWWWWWWWWWWS ",
+    "               SWWWWWWWWWWWWWS  ",
+    "                 SWWWWWWWWWW    ",
+    "                     WW   WW WW ",
+    "               SWWWWWWWWWWWWWS  ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                "
+  ]
+}

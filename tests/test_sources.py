@@ -68,6 +68,7 @@ def test_parse_aircraft_normalizes_adsb_fields():
             'gs': 210.6,
             'track': 179.5,
             't': 'B738',
+            'category': 'A3',
             'baro_rate': -512.8,
         }
     )
@@ -82,6 +83,7 @@ def test_parse_aircraft_normalizes_adsb_fields():
         heading=179.5,
         aircraft_type='B738',
         vertical_rate_fpm=-512,
+        category='A3',
     )
 
 

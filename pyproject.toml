@@ -19,6 +19,7 @@ swift = [
 
 [dependency-groups]
 dev = [
+    "pillow>=13.0.0",
     "pytest>=9.1.1",
 ]
 

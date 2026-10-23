@@ -572,7 +572,7 @@
         var airlineLogo = document.getElementById("airline-logo"),
           planeFallback = document.getElementById("plane-fallback"),
           callsign = document.getElementById("callsign");
-        function updateLogo(cs, h) {
+          function updateLogo(cs, h, category) {
           var requestId = ++logoRequestId;
           currentHeading = h;
           genericIcon = false;
@@ -580,6 +580,17 @@
           airlineLogo.style.display = "block";
           airlineLogo.style.visibility = "hidden";
           airlineLogo.style.transform = "none";
+          if (InPlaneSightAirlines.isHelicopter(category)) {
+            InPlaneSightAirlines.load("HELI").then(function (icon) {
+              if (requestId !== logoRequestId) return;
+              if (!icon) {
+                showFallback(null);
+                return;
+              }
+              renderMainIcon(icon, 0);
+            });
+            return;
+          }
           InPlaneSightAirlines.getIcon(cs).then(function (icon) {
             if (requestId !== logoRequestId) return;
             if (icon) {
@@ -671,7 +682,7 @@
             : "";
         scheduleLedTextRender();
         if (a.icao !== prevIcao) {
-          updateLogo(a.callsign, a.heading);
+          updateLogo(a.callsign, a.heading, a.category);
           prevIcao = a.icao;
         } else if (genericIcon) {
           airlineLogo.style.transform = "rotate(" + (a.heading || 0) + "deg)";

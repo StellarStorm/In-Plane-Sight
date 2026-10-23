@@ -87,13 +87,42 @@
 
       var markers = {};
 
-      function makeIcon(heading) {
+      function updateIcon(element, heading, category) {
+        var helicopter = InPlaneSightAirlines.isHelicopter(category);
+        var helicopterState = String(helicopter);
+        if (element.dataset.helicopter !== helicopterState) {
+          element.innerHTML = '';
+          element.dataset.helicopter = helicopterState;
+          if (helicopter) {
+            var canvas = document.createElement('canvas');
+            canvas.style.width = '24px';
+            canvas.style.height = '24px';
+            element.appendChild(canvas);
+            InPlaneSightAirlines.load('HELI').then(function (icon) {
+              if (icon && canvas.isConnected) {
+                InPlaneSightAirlines.render(canvas, icon, {
+                  dotScale: 0.68,
+                  showOffLeds: false,
+                  glow: true
+                });
+              }
+            });
+          } else {
+            var plane = document.createElement('div');
+            plane.innerHTML = '&#9992;';
+            element.appendChild(plane);
+          }
+        }
+        if (!helicopter) {
+          element.firstChild.style.transform =
+            'rotate(' + ((heading || 0) - 90) + 'deg)';
+        }
+      }
+
+      function makeIcon(heading, category) {
         var element = document.createElement('div');
-        var plane = document.createElement('div');
         element.className = 'aircraft-icon';
-        plane.innerHTML = '&#9992;';
-        plane.style.transform = 'rotate(' + ((heading || 0) - 90) + 'deg)';
-        element.appendChild(plane);
+        updateIcon(element, heading, category);
         return element;
       }
 
@@ -161,12 +190,11 @@
               var popup = makePopup(a);
               if (markers[a.icao]) {
                 markers[a.icao].setLngLat([a.lon, a.lat]);
-                markers[a.icao].getElement().firstChild.style.transform =
-                  'rotate(' + ((a.heading || 0) - 90) + 'deg)';
+                updateIcon(markers[a.icao].getElement(), a.heading, a.category);
                 markers[a.icao].getPopup().setHTML(popup);
               } else {
                 markers[a.icao] = new maplibregl.Marker({
-                  element: makeIcon(a.heading),
+                  element: makeIcon(a.heading, a.category),
                   anchor: 'center'
                 })
                   .setLngLat([a.lon, a.lat])

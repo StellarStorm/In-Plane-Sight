@@ -195,18 +195,25 @@
       return cell;
     }
 
-    function makeLogoCell(callsign) {
+      function makeLogoCell(callsign, category) {
       var cell = document.createElement('td');
       var canvas = document.createElement('canvas');
       cell.className = 'cell-logo';
       canvas.className = 'logo-canvas';
       canvas.setAttribute('aria-label', 'Airline icon');
       cell.appendChild(canvas);
-      return { cell: cell, canvas: canvas, callsign: callsign, heading: null };
+      return {
+        cell: cell,
+        canvas: canvas,
+        callsign: callsign,
+        category: category,
+        heading: null
+      };
     }
 
     function showLogoFallback(logo, heading) {
-      InPlaneSightAirlines.load('GENERIC').then(function (icon) {
+      var helicopter = InPlaneSightAirlines.isHelicopter(logo.category);
+      InPlaneSightAirlines.load(helicopter ? 'HELI' : 'GENERIC').then(function (icon) {
         if (!icon) {
           return;
         }
@@ -217,13 +224,19 @@
           glow: true
         });
 
-        logo.canvas.style.transform =
-          'rotate(' + (heading != null ? heading : 0) + 'deg)';
-        logo.canvas.setAttribute('aria-label', 'Aircraft heading icon');
+        if (!helicopter) {
+          logo.canvas.style.transform =
+            'rotate(' + (heading != null ? heading : 0) + 'deg)';
+        }
+        logo.canvas.setAttribute('aria-label', icon.label);
       });
     }
 
     function renderLogoCell(logo) {
+      if (InPlaneSightAirlines.isHelicopter(logo.category)) {
+        showLogoFallback(logo, null);
+        return;
+      }
       InPlaneSightAirlines.getIcon(logo.callsign).then(function (icon) {
         if (!icon) {
           showLogoFallback(logo, logo.heading);
@@ -272,7 +285,7 @@
 
       aircraft.forEach(function (item) {
         var row = document.createElement('tr');
-        var logo = makeLogoCell(item.callsign);
+        var logo = makeLogoCell(item.callsign, item.category);
         logo.heading = item.heading;
         var speed = item.speed_kts != null ? item.speed_kts + ' kt' : '--';
         var heading = item.heading != null
