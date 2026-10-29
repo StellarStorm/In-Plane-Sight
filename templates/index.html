@@ -60,14 +60,15 @@
 
   <script src="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.js"></script>
   <script src="/static/common.js"></script>
+  <script src="/static/js/airline-icons.js"></script>
   <script>
-    var status = document.getElementById('status');
+      var statusEl = document.getElementById('status');
 
     fetch('/config')
       .then(function(r) { return r.json(); })
       .then(function(cfg) { init(cfg); })
       .catch(function(err) {
-        status.textContent = 'config fetch failed';
+        statusEl.textContent = 'config fetch failed';
         console.error(err);
       });
 
@@ -208,11 +209,11 @@
                 delete markers[icao];
               }
             });
-            status.textContent = aircraft.length + ' aircraft · ' + InPlaneSight.formatTime(new Date());
+            statusEl.textContent = aircraft.length + ' aircraft · ' + InPlaneSight.formatTime(new Date());
           })
           .catch(function(err) {
             console.error(err);
-            status.textContent = 'fetch failed · ' + InPlaneSight.formatTime(new Date());
+            statusEl.textContent = 'fetch failed · ' + InPlaneSight.formatTime(new Date());
           });
       }
 
