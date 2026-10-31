@@ -11,8 +11,8 @@ load_dotenv(ENV_FILE)
 @dataclass
 class Config:
     source: str = 'internet'
-    lat: float = 39.9526
-    lon: float = -75.1652
+    lat: float = 40.7128
+    lon: float = -74.0060
     radius_nm: int = 20
     time_format: str = '24'
     refresh_seconds: int = 15
