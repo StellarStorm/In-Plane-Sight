@@ -75,6 +75,12 @@
       letter-spacing: 0.12em;
       text-shadow: 0 0 10px rgba(77, 255, 180, 0.5);
     }
+    .cell-route {
+      color: rgba(77, 255, 180, 0.65);
+      font-size: 14px;
+      letter-spacing: 0.08em;
+      text-shadow: none;
+    }
     .cell-type { color: rgba(77, 255, 180, 0.55); font-size: 13px; }
     .cell-hdg { color: rgba(77, 255, 180, 0.65); }
     .cell-dist { color: rgba(77, 255, 180, 0.4); font-size: 13px; }
@@ -127,6 +133,7 @@
       <tr>
         <th></th>
         <th>CALLSIGN</th>
+        <th>ROUTE</th>
         <th>TYPE</th>
         <th>ALTITUDE</th>
         <th>SPEED</th>
@@ -181,18 +188,32 @@
       return cell;
     }
 
-    function makeLogoCell(callsign) {
+    function buildCallsignCell(item) {
+      var cell = document.createElement('td');
+      cell.className = 'cell cell-callsign';
+      cell.textContent = item.callsign || item.icao.toUpperCase();
+      return cell;
+    }
+
+      function makeLogoCell(callsign, category) {
       var cell = document.createElement('td');
       var canvas = document.createElement('canvas');
       cell.className = 'cell-logo';
       canvas.className = 'logo-canvas';
       canvas.setAttribute('aria-label', 'Airline icon');
       cell.appendChild(canvas);
-      return { cell: cell, canvas: canvas, callsign: callsign, heading: null };
+      return {
+        cell: cell,
+        canvas: canvas,
+        callsign: callsign,
+        category: category,
+        heading: null
+      };
     }
 
     function showLogoFallback(logo, heading) {
-      InPlaneSightAirlines.load('GENERIC').then(function (icon) {
+      var helicopter = InPlaneSightAirlines.isHelicopter(logo.category);
+      InPlaneSightAirlines.load(helicopter ? 'HELI' : 'GENERIC').then(function (icon) {
         if (!icon) {
           return;
         }
@@ -203,13 +224,19 @@
           glow: true
         });
 
-        logo.canvas.style.transform =
-          'rotate(' + (heading != null ? heading : 0) + 'deg)';
-        logo.canvas.setAttribute('aria-label', 'Aircraft heading icon');
+        if (!helicopter) {
+          logo.canvas.style.transform =
+            'rotate(' + (heading != null ? heading : 0) + 'deg)';
+        }
+        logo.canvas.setAttribute('aria-label', icon.label);
       });
     }
 
     function renderLogoCell(logo) {
+      if (InPlaneSightAirlines.isHelicopter(logo.category)) {
+        showLogoFallback(logo, null);
+        return;
+      }
       InPlaneSightAirlines.getIcon(logo.callsign).then(function (icon) {
         if (!icon) {
           showLogoFallback(logo, logo.heading);
@@ -258,7 +285,7 @@
 
       aircraft.forEach(function (item) {
         var row = document.createElement('tr');
-        var logo = makeLogoCell(item.callsign);
+        var logo = makeLogoCell(item.callsign, item.category);
         logo.heading = item.heading;
         var speed = item.speed_kts != null ? item.speed_kts + ' kt' : '--';
         var heading = item.heading != null
@@ -268,7 +295,14 @@
 
         row.className = 'aircraft-row';
         row.appendChild(logo.cell);
-        row.appendChild(makeTextCell('cell cell-callsign', item.callsign || item.icao.toUpperCase()));
+        row.appendChild(buildCallsignCell(item));
+        row.appendChild(makeTextCell(
+          'cell cell-route',
+          item.origin && item.destination
+            ? (item.origin_display || item.origin) + '-' +
+              (item.destination_display || item.destination)
+            : '',
+        ));
         row.appendChild(makeTextCell('cell cell-type', item.aircraft_type || '--'));
         row.appendChild(buildAltitudeCell(item.altitude_ft));
         row.appendChild(makeTextCell('cell', speed));

@@ -5,14 +5,22 @@ description = "Display an LED-like information board of flights currently overhe
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "airportsdata>=20260905",
     "fastapi>=0.142.2",
     "httpx>=0.28.1",
     "python-dotenv>=1.2.4",
+    "rich>=15.0.0",
     "uvicorn>=0.54.0",
+]
+
+[project.optional-dependencies]
+swift = [
+    "solace-pubsubplus>=1.11.0",
 ]
 
 [dependency-groups]
 dev = [
+    "pillow>=13.0.0",
     "pytest>=9.1.1",
 ]
 

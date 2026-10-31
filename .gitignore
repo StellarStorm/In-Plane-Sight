@@ -12,5 +12,12 @@ wheels/
 # User settings
 .env
 
+# Obtain the FAA SWIFT JumpStart separately; its package carries a restricted-rights notice.
+jumpstart-python-latest/
+
 # macOS files
 .DS_Store
+
+# Don't include local route-specific files
+.in-plane-sight/
+solace-ca/

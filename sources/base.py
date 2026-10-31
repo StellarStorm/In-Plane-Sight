@@ -13,6 +13,11 @@ class Aircraft:
     heading: float | None
     aircraft_type: str | None
     vertical_rate_fpm: int | None
+    category: str | None = None
+    origin: str | None = None
+    destination: str | None = None
+    origin_display: str | None = None
+    destination_display: str | None = None
 
 
 def parse_aircraft(raw: dict) -> Aircraft:
@@ -31,6 +36,7 @@ def parse_aircraft(raw: dict) -> Aircraft:
         heading=raw.get('track'),
         aircraft_type=raw.get('t'),
         vertical_rate_fpm=int(vr) if isinstance(vr, (int, float)) else None,
+        category=raw.get('category'),
     )
 
 

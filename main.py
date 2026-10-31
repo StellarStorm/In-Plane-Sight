@@ -1,4 +1,5 @@
-from dataclasses import asdict
+from contextlib import asynccontextmanager
+from dataclasses import asdict, replace
 from pathlib import Path
 
 import httpx
@@ -14,7 +15,11 @@ from sources import (
     FallbackSource,
     LocalSource,
 )
+from sources.airport_codes import airport_display_code
 from sources.base import AircraftSource
+from sources.logging_config import get_logger
+from sources.swift_routes import RouteIndex
+from sources.swift_subscriber import SwiftSubscriber
 
 AIRLINE_ICON_DIR = Path(__file__).resolve().parent / 'static' / 'airline-icons'
 
@@ -32,7 +37,28 @@ def build_source(config: Config) -> AircraftSource:
 
 config = Config.from_env()
 source = build_source(config)
-app = FastAPI()
+logger = get_logger(__name__, config.log_level)
+route_index: RouteIndex | None = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global route_index
+    subscriber = None
+    if config.swift_enabled:
+        route_index = RouteIndex()
+        subscriber = SwiftSubscriber(config, route_index)
+        subscriber.start()
+        logger.info('SWIFT Flight FIXM subscriber enabled')
+    try:
+        yield
+    finally:
+        if subscriber is not None:
+            subscriber.stop()
+        route_index = None
+
+
+app = FastAPI(lifespan=lifespan)
 app.mount('/static', StaticFiles(directory='static'), name='static')
 
 
@@ -62,6 +88,7 @@ def get_config():
         'flicker_enabled': config.flicker_enabled,
         'flicker_strength': config.flicker_strength,
         'font_thickness': config.font_thickness,
+        'route_enrichment_enabled': config.swift_enabled,
     }
 
 
@@ -77,6 +104,23 @@ def get_aircraft():
     except httpx.HTTPError as error:
         print(f'Upstream fetch failed: {error}')
         return JSONResponse(content=[])
+    if route_index is not None:
+        routes = route_index.lookup_many([item.callsign for item in aircraft])
+        enriched_aircraft = []
+        for item in aircraft:
+            route = routes.get(' '.join((item.callsign or '').split()).upper())
+            origin = route[0] if route is not None else None
+            destination = route[1] if route is not None else None
+            enriched_aircraft.append(
+                replace(
+                    item,
+                    origin=origin,
+                    destination=destination,
+                    origin_display=airport_display_code(origin),
+                    destination_display=airport_display_code(destination),
+                )
+            )
+        aircraft = enriched_aircraft
     return [asdict(item) for item in aircraft]
 
 
@@ -88,4 +132,10 @@ def favicon():
 if __name__ == '__main__':
     import uvicorn
 
-    uvicorn.run('main:app', host=config.host, port=config.port, reload=False)
+    uvicorn.run(
+        'main:app',
+        host=config.host,
+        port=config.port,
+        reload=False,
+        log_level=config.log_level.lower(),
+    )

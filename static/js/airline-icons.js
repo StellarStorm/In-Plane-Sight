@@ -13,6 +13,10 @@
     return callsign.slice(0, 3).toUpperCase();
   }
 
+  function isHelicopter(category) {
+    return String(category || '').trim().toUpperCase() === 'A7';
+  }
+
   function loadManifest() {
     if (availableCodes) {
       return Promise.resolve(availableCodes);
@@ -210,6 +214,7 @@
     clear: clear,
     getCode: getCode,
     getIcon: getIcon,
+    isHelicopter: isHelicopter,
     load: load,
     render: render
   };

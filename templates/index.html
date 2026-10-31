@@ -60,14 +60,15 @@
 
   <script src="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.js"></script>
   <script src="/static/common.js"></script>
+  <script src="/static/js/airline-icons.js"></script>
   <script>
-    var status = document.getElementById('status');
+      var statusEl = document.getElementById('status');
 
     fetch('/config')
       .then(function(r) { return r.json(); })
       .then(function(cfg) { init(cfg); })
       .catch(function(err) {
-        status.textContent = 'config fetch failed';
+        statusEl.textContent = 'config fetch failed';
         console.error(err);
       });
 
@@ -87,13 +88,42 @@
 
       var markers = {};
 
-      function makeIcon(heading) {
+      function updateIcon(element, heading, category) {
+        var helicopter = InPlaneSightAirlines.isHelicopter(category);
+        var helicopterState = String(helicopter);
+        if (element.dataset.helicopter !== helicopterState) {
+          element.innerHTML = '';
+          element.dataset.helicopter = helicopterState;
+          if (helicopter) {
+            var canvas = document.createElement('canvas');
+            canvas.style.width = '24px';
+            canvas.style.height = '24px';
+            element.appendChild(canvas);
+            InPlaneSightAirlines.load('HELI').then(function (icon) {
+              if (icon && canvas.isConnected) {
+                InPlaneSightAirlines.render(canvas, icon, {
+                  dotScale: 0.68,
+                  showOffLeds: false,
+                  glow: true
+                });
+              }
+            });
+          } else {
+            var plane = document.createElement('div');
+            plane.innerHTML = '&#9992;';
+            element.appendChild(plane);
+          }
+        }
+        if (!helicopter) {
+          element.firstChild.style.transform =
+            'rotate(' + ((heading || 0) - 90) + 'deg)';
+        }
+      }
+
+      function makeIcon(heading, category) {
         var element = document.createElement('div');
-        var plane = document.createElement('div');
         element.className = 'aircraft-icon';
-        plane.innerHTML = '&#9992;';
-        plane.style.transform = 'rotate(' + ((heading || 0) - 90) + 'deg)';
-        element.appendChild(plane);
+        updateIcon(element, heading, category);
         return element;
       }
 
@@ -102,9 +132,27 @@
         var spd  = a.speed_kts   != null ? a.speed_kts + ' kts' : '';
         var type = a.aircraft_type || '';
         var detail = alt + (spd ? ' · ' + spd : '');
+        var route = a.origin && a.destination
+          ? '<div class="popup-detail">Route: ' +
+          escapeHtml(a.origin_display || a.origin) + '-' +
+            escapeHtml(a.destination_display || a.destination) + '</div>'
+          : '';
         return '<div class="popup-callsign">' + (a.callsign || a.icao) + '</div>'
              + '<div class="popup-type">'     + type                   + '</div>'
-             + '<div class="popup-detail">'   + detail                 + '</div>';
+             + '<div class="popup-detail">'   + detail                 + '</div>'
+             + route;
+      }
+
+      function escapeHtml(value) {
+        return String(value).replace(/[&<>"']/g, function (character) {
+          return {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+          }[character];
+        });
       }
 
       function makeRangeFeature() {
@@ -143,12 +191,11 @@
               var popup = makePopup(a);
               if (markers[a.icao]) {
                 markers[a.icao].setLngLat([a.lon, a.lat]);
-                markers[a.icao].getElement().firstChild.style.transform =
-                  'rotate(' + ((a.heading || 0) - 90) + 'deg)';
+                updateIcon(markers[a.icao].getElement(), a.heading, a.category);
                 markers[a.icao].getPopup().setHTML(popup);
               } else {
                 markers[a.icao] = new maplibregl.Marker({
-                  element: makeIcon(a.heading),
+                  element: makeIcon(a.heading, a.category),
                   anchor: 'center'
                 })
                   .setLngLat([a.lon, a.lat])
@@ -162,11 +209,11 @@
                 delete markers[icao];
               }
             });
-            status.textContent = aircraft.length + ' aircraft · ' + InPlaneSight.formatTime(new Date());
+            statusEl.textContent = aircraft.length + ' aircraft · ' + InPlaneSight.formatTime(new Date());
           })
           .catch(function(err) {
             console.error(err);
-            status.textContent = 'fetch failed · ' + InPlaneSight.formatTime(new Date());
+            statusEl.textContent = 'fetch failed · ' + InPlaneSight.formatTime(new Date());
           });
       }
 
