@@ -1,12 +1,19 @@
 # In-Plane-Sight
 
-In-Plane-Sight shows the aircraft currently flying near a chosen location. It uses live ADS-B position data. There are three browser views:
+Show the aircraft flying overhead, updating in real time.
+
+![main page](imgs/main.png)
+
+There are three browser views: the main page (shown above), a list (below), and
+a live map.
 
 | Path    | View                        |
 | ------- | --------------------------- |
 | `/`     | LED-style information board |
 | `/list` | List of aircraft            |
 | `/map`  | Map with aircraft positions |
+
+![list](imgs/list.png)
 
 By default, aircraft positions come from adsb.lol, with adsb.fi as a fallback. No account or API key is needed.
 
@@ -71,9 +78,9 @@ uv run pytest
 
 ## Route Data (Optional)
 
-You don't need route data. If it isn't configured, the app works normally and the origin and destination fields are `null`.
+Route data is not required for the flight pages to be displayed. All information except the origin and destination airports will be visible.
 
-If it is enabled, each aircraft's origin and destination come from the FAA SWIM Flight Data Publication Service (FDPS) Flight FIXM feed, via the SWIM Cloud Distribution Service (SCDS). The routes are added to the `/aircraft` response and appear in the LED, list, and map views.
+However, route info is really cool! Getting access takes a few minutes, but is mostly painless. Each aircraft's origin and destination come from the FAA SWIM Flight Data Publication Service (FDPS) Flight FIXM feed, via the SWIM Cloud Distribution Service (SCDS). The routes are added to the `/aircraft` response and appear in the LED, list, and map views. This is something you will have to sign up for yourself, but it's free and takes only a few minutes to get approval.
 
 ### Signing Up for the Feed
 
@@ -104,7 +111,7 @@ SWIFT_PASSWORD=your-subscription-password
 SWIFT_CA_DIR=/path/to/hashed/ca-dir
 ```
 
-When `SWIFT_ENABLED=true`, every `SWIFT_*` setting is required, and the app will not start if any are missing. Keep `.env` out of version control.
+When `SWIFT_ENABLED=true`, every `SWIFT_*` setting is required, and the app will not start if any are missing.
 
 `SWIFT_CA_DIR` must be a hashed directory of certificate authorities that can validate the broker's TLS certificate. The `ems1.swim.faa.gov` certificate currently chains to DigiCert Global Root G2. Put that root certificate in the directory, then run:
 
