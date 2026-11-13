@@ -35,8 +35,8 @@ def build_source(config: Config) -> AircraftSource:
         base = LocalSource(config.local_url)
     else:
         base = FallbackSource(
-            AdsbLolSource(config.lat, config.lon, config.radius_nm),
             AdsbFiSource(config.lat, config.lon, config.radius_nm),
+            AdsbLolSource(config.lat, config.lon, config.radius_nm),
         )
     return CachedSource(base, ttl_seconds=config.refresh_seconds)
 

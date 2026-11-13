@@ -15,7 +15,7 @@ a live map.
 
 ![list](imgs/list.png)
 
-By default, aircraft positions come from adsb.lol, with adsb.fi as a fallback. No account or API key is needed.
+By default, aircraft positions come from adsb.fi, with adsb.lol as a fallback. No account or API key is needed.
 
 ## Getting Started
 
