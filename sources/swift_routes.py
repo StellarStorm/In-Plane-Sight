@@ -1,7 +1,7 @@
 import time
 import xml.etree.ElementTree as ET
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from threading import Lock
 
 
@@ -12,6 +12,11 @@ class FlightRouteUpdate:
     origin: str | None
     destination: str | None
     status: str
+    # ISO 8601 UTC runway times; *_estimated is False for actual times.
+    departure_time: str | None = None
+    departure_estimated: bool = False
+    arrival_time: str | None = None
+    arrival_estimated: bool = False
 
 
 def parse_fixm_message(
@@ -61,6 +66,8 @@ def parse_fixm_message(
         destination = _header(properties, 'FDPS_DestId') or (
             arrival.get('arrivalPoint') if arrival is not None else None
         )
+        departure_time, departure_estimated = _runway_time(departure)
+        arrival_time, arrival_estimated = _runway_time(arrival)
         gufi = _child(flight, 'gufi')
         flight_id = (
             (gufi.text or '').strip() if gufi is not None else ''
@@ -73,9 +80,48 @@ def parse_fixm_message(
                 origin=origin.strip().upper() if origin else None,
                 destination=destination.strip().upper() if destination else None,
                 status=status.strip().upper(),
+                departure_time=departure_time,
+                departure_estimated=departure_estimated,
+                arrival_time=arrival_time,
+                arrival_estimated=arrival_estimated,
             )
         )
     return updates
+
+
+def _runway_time(point: ET.Element | None) -> tuple[str | None, bool]:
+    """Return (time, estimated) from departure/arrival runwayTime, preferring actual."""
+    if point is None:
+        return None, False
+    runway_position = _child(point, 'runwayPositionAndTime')
+    runway_time = (
+        _child(runway_position, 'runwayTime')
+        if runway_position is not None
+        else None
+    )
+    if runway_time is None:
+        return None, False
+    for kind, estimated in (('actual', False), ('estimated', True)):
+        element = _child(runway_time, kind)
+        value = (element.get('time') or '').strip() if element is not None else ''
+        if value:
+            return value, estimated
+    return None, False
+
+
+def _keep_known_times(
+    previous: FlightRouteUpdate,
+    update: FlightRouteUpdate,
+) -> FlightRouteUpdate:
+    """Carry times forward when an update for the same flight omits them."""
+    changes = {}
+    if update.departure_time is None and previous.origin == update.origin:
+        changes['departure_time'] = previous.departure_time
+        changes['departure_estimated'] = previous.departure_estimated
+    if update.arrival_time is None and previous.destination == update.destination:
+        changes['arrival_time'] = previous.arrival_time
+        changes['arrival_estimated'] = previous.arrival_estimated
+    return replace(update, **changes) if changes else update
 
 
 def _header(headers: Mapping[str, object], name: str) -> str:
@@ -142,6 +188,8 @@ class RouteIndex:
                 return
 
             previous = self._routes.get(update.flight_id)
+            if previous is not None:
+                update = _keep_known_times(previous[0], update)
             if previous is not None and previous[0].callsign != update.callsign:
                 previous_callsign = previous[0].callsign
                 self._flight_ids_by_callsign[previous_callsign].discard(update.flight_id)
@@ -152,11 +200,13 @@ class RouteIndex:
                 update.flight_id
             )
 
-    def lookup(self, callsign: str | None) -> tuple[str, str] | None:
+    def lookup(self, callsign: str | None) -> FlightRouteUpdate | None:
         results = self.lookup_many([callsign])
         return results.get(' '.join((callsign or '').split()).upper())
 
-    def lookup_many(self, callsigns: list[str | None]) -> dict[str, tuple[str, str]]:
+    def lookup_many(
+        self, callsigns: list[str | None]
+    ) -> dict[str, FlightRouteUpdate]:
         self.expire()
         normalized_callsigns = {
             ' '.join((callsign or '').split()).upper()
@@ -169,7 +219,7 @@ class RouteIndex:
         cutoff = now - self._ttl_seconds
         with self._lock:
             expired_ids = set()
-            route_sets: dict[str, set[tuple[str, str]]] = {}
+            matches: dict[str, list[FlightRouteUpdate]] = {}
             for callsign in normalized_callsigns:
                 for flight_id in self._flight_ids_by_callsign.get(callsign, ()):
                     record = self._routes.get(flight_id)
@@ -180,16 +230,20 @@ class RouteIndex:
                         expired_ids.add(flight_id)
                     elif update.status == 'ACTIVE':
                         self._routes[flight_id] = (update, now)
-                        route_sets.setdefault(callsign, set()).add(
-                            (update.origin or '', update.destination or '')
-                        )
+                        matches.setdefault(callsign, []).append(update)
             for flight_id in expired_ids:
                 self._remove(flight_id)
-            return {
-                callsign: next(iter(routes))
-                for callsign, routes in route_sets.items()
-                if len(routes) == 1
-            }
+            results = {}
+            for callsign, updates in matches.items():
+                routes = {(update.origin, update.destination) for update in updates}
+                if len(routes) != 1:
+                    continue
+                # Same route under several flight IDs: use the latest departure.
+                results[callsign] = max(
+                    updates,
+                    key=lambda update: update.departure_time or '',
+                )
+            return results
 
     def _remove(self, flight_id: str) -> None:
         record = self._routes.pop(flight_id, None)

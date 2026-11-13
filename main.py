@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from dataclasses import asdict, replace
+from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
@@ -15,7 +16,12 @@ from sources import (
     FallbackSource,
     LocalSource,
 )
-from sources.airport_codes import airport_display_code
+from sources.airport_codes import (
+    airport_display_code,
+    airport_location,
+    airport_timezone,
+)
+from sources.arrival_estimate import resolve_arrival
 from sources.base import AircraftSource
 from sources.logging_config import get_logger
 from sources.swift_routes import RouteIndex
@@ -97,6 +103,10 @@ def get_airline_icons():
     return sorted(path.stem for path in AIRLINE_ICON_DIR.glob('*.json'))
 
 
+def utc_now() -> datetime:
+    return datetime.now(UTC)
+
+
 @app.get('/aircraft')
 def get_aircraft():
     try:
@@ -106,18 +116,42 @@ def get_aircraft():
         return JSONResponse(content=[])
     if route_index is not None:
         routes = route_index.lookup_many([item.callsign for item in aircraft])
+        now = utc_now()
         enriched_aircraft = []
         for item in aircraft:
             route = routes.get(' '.join((item.callsign or '').split()).upper())
-            origin = route[0] if route is not None else None
-            destination = route[1] if route is not None else None
+            if route is None:
+                enriched_aircraft.append(item)
+                continue
+            arrival = resolve_arrival(
+                arrival_time=route.arrival_time,
+                arrival_estimated=route.arrival_estimated,
+                departure_time=route.departure_time,
+                origin=airport_location(route.origin),
+                destination=airport_location(route.destination),
+                position=(
+                    (item.lat, item.lon)
+                    if item.lat is not None and item.lon is not None
+                    else None
+                ),
+                ground_speed_kt=item.speed_kts,
+                category=item.category,
+                now=now,
+            )
             enriched_aircraft.append(
                 replace(
                     item,
-                    origin=origin,
-                    destination=destination,
-                    origin_display=airport_display_code(origin),
-                    destination_display=airport_display_code(destination),
+                    origin=route.origin,
+                    destination=route.destination,
+                    origin_display=airport_display_code(route.origin),
+                    destination_display=airport_display_code(route.destination),
+                    origin_timezone=airport_timezone(route.origin),
+                    destination_timezone=airport_timezone(route.destination),
+                    departure_time=route.departure_time,
+                    departure_estimated=route.departure_estimated,
+                    arrival_time=arrival.time,
+                    arrival_estimated=arrival.estimated,
+                    arrival_calculated=arrival.calculated,
                 )
             )
         aircraft = enriched_aircraft

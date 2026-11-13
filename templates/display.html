@@ -81,6 +81,11 @@
       letter-spacing: 0.08em;
       text-shadow: none;
     }
+    .cell-times {
+      color: rgba(77, 255, 180, 0.55);
+      font-size: 13px;
+      letter-spacing: 0.06em;
+    }
     .cell-type { color: rgba(77, 255, 180, 0.55); font-size: 13px; }
     .cell-hdg { color: rgba(77, 255, 180, 0.65); }
     .cell-dist { color: rgba(77, 255, 180, 0.4); font-size: 13px; }
@@ -134,6 +139,7 @@
         <th></th>
         <th>CALLSIGN</th>
         <th>ROUTE</th>
+        <th>TIMES</th>
         <th>TYPE</th>
         <th>ALTITUDE</th>
         <th>SPEED</th>
@@ -151,6 +157,7 @@
     <span><a href="/">LED</a>&nbsp;&nbsp;<a href="/map">MAP</a></span>
   </div>
 
+  <script src="/static/common.js"></script>
   <script src="/static/js/airline-icons.js"></script>
   <script>
     var CENTER = null;
@@ -303,6 +310,12 @@
               (item.destination_display || item.destination)
             : '',
         ));
+        row.appendChild(makeTextCell(
+          'cell cell-times',
+          item.origin && item.destination
+            ? InPlaneSight.formatFlightTimes(item)
+            : '',
+        ));
         row.appendChild(makeTextCell('cell cell-type', item.aircraft_type || '--'));
         row.appendChild(buildAltitudeCell(item.altitude_ft));
         row.appendChild(makeTextCell('cell', speed));
@@ -342,6 +355,7 @@
         CENTER = [config.lat, config.lon];
         REFRESH_MS = config.refresh_seconds * 1000;
         TIME_FORMAT = config.time_format === '12' ? '12' : '24';
+        InPlaneSight.configure(config);
         document.getElementById('location').textContent =
           config.lat.toFixed(4) + ', ' + config.lon.toFixed(4) + ' / ' + config.radius_nm + 'nm';
 

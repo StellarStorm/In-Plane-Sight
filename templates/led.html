@@ -92,6 +92,7 @@
       #board.font-normal #aircraft-type,
       #board.font-normal #icao-line,
       #board.font-normal #route-line,
+      #board.font-normal #times-line,
       #board.font-normal .metric-label,
       #board.font-normal .metric-value {
         color: transparent;
@@ -107,6 +108,7 @@
       #board.font-broad #aircraft-type,
       #board.font-broad #icao-line,
       #board.font-broad #route-line,
+      #board.font-broad #times-line,
       #board.font-broad .metric-label,
       #board.font-broad .metric-value {
         color: transparent;
@@ -116,7 +118,8 @@
         text-shadow: none;
       }
       #board.font-broad #callsign,
-      #board.font-broad #route-line {
+      #board.font-broad #route-line,
+      #board.font-broad #times-line {
         background-image: radial-gradient(
           circle,
           rgba(255, 255, 255, 0.98) 0 38%,
@@ -183,6 +186,16 @@
       #route-line {
         overflow: hidden;
         font-size: clamp(44px, 7.4vw, 80px);
+        line-height: 1.08;
+        letter-spacing: 0.035em;
+        white-space: nowrap;
+        text-overflow: clip;
+      }
+      /* Same font as #route-line, scaled by --times-scale so the times
+         span the same width as the route above them. */
+      #times-line {
+        overflow: hidden;
+        font-size: calc(clamp(44px, 7.4vw, 80px) * var(--times-scale, 1));
         line-height: 1.08;
         letter-spacing: 0.035em;
         white-space: nowrap;
@@ -331,6 +344,7 @@
             <div id="aircraft-type">----</div>
             <div id="icao-line">------</div>
             <div id="route-line"></div>
+            <div id="times-line"></div>
           </div>
           </section>
           <section id="telemetry">
@@ -441,6 +455,12 @@
             radius: 0.24,
             glow: 1.2,
           },
+          "times-line": {
+            color: [255, 255, 255],
+            scale: 0.84,
+            radius: 0.24,
+            glow: 1.2,
+          },
           "metric-label": {
             color: [37, 103, 116],
             scale: 0.8,
@@ -467,6 +487,7 @@
         addRenderer(document.getElementById("aircraft-type"), "aircraft-type");
         addRenderer(document.getElementById("icao-line"), "icao-line");
         addRenderer(document.getElementById("route-line"), "route-line");
+        addRenderer(document.getElementById("times-line"), "times-line");
         document.querySelectorAll(".metric-label").forEach(function (e) {
           addRenderer(e, "metric-label");
         });
@@ -680,6 +701,15 @@
           ? (a.origin_display || a.origin) + "-" +
               (a.destination_display || a.destination)
             : "";
+        var routeText = document.getElementById("route-line").textContent,
+          timesLine = document.getElementById("times-line"),
+          times = routeText ? InPlaneSight.formatFlightTimes(a) : "";
+        timesLine.textContent = times;
+        timesLine.style.display = times ? "" : "none";
+        timesLine.style.setProperty(
+          "--times-scale",
+          times ? Math.min(1, routeText.length / times.length) : 1,
+        );
         scheduleLedTextRender();
         if (a.icao !== prevIcao) {
           updateLogo(a.callsign, a.heading, a.category);
