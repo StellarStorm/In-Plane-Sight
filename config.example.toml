@@ -1,0 +1,37 @@
+# Copy to config.toml and edit. Every setting is optional; the values shown are
+# the defaults. Any setting can be overridden at run time with an environment
+# variable: IPS_ prefix and upper case, e.g.
+#   IPS_RADIUS_NM=30  IPS_TIME_FORMAT=12  IPS_SWIFT_PASSWORD=...
+
+# --- Search area ---
+lat = 40.7128
+lon = -74.0060
+radius_nm = 20
+
+# --- Aircraft data source ---
+# "internet" uses adsb.fi, with adsb.lol as a fallback.
+# "local" uses a running dump1090-fa or readsb instance (RTL-SDR) - not yet developed!
+source = "internet"
+local_url = "http://localhost:8080/data/aircraft.json"  # only used when source = "local"
+refresh_seconds = 15
+
+# --- Display ---
+time_format = "24"        # "12" or "24"
+font_thickness = "normal" # "normal" or "broad"
+flicker_enabled = true
+flicker_strength = 0.025  # 0 to 0.1
+
+# --- Server ---
+host = "0.0.0.0"
+port = 8000
+log_level = "INFO"        # DEBUG, INFO, WARNING, ERROR or CRITICAL
+
+# Optional FAA SWIFT/SCDS Flight FIXM route feed. Uncomment this section to
+# enable it; queue, username, password and ca_dir are then required.
+# [swift]
+# host = "tcps://ems1.swim.faa.gov:55443"
+# vpn = "FDPS"
+# queue = ""
+# username = ""
+# password = ""
+# ca_dir = ""  # hashed CA directory including DigiCert Global Root G2

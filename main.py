@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from config import Config
+from config import Config, ConfigError
 from sources import (
     AdsbFiSource,
     AdsbLolSource,
@@ -21,6 +21,17 @@ from sources.logging_config import get_logger
 from sources.swift_routes import RouteIndex
 from sources.swift_subscriber import SwiftSubscriber
 
+# Settings the browser pages may see. Never include anything from `swift`.
+PUBLIC_CONFIG_FIELDS = {
+    'lat',
+    'lon',
+    'radius_nm',
+    'refresh_seconds',
+    'time_format',
+    'font_thickness',
+    'flicker_enabled',
+    'flicker_strength',
+}
 AIRLINE_ICON_DIR = Path(__file__).resolve().parent / 'static' / 'airline-icons'
 
 
@@ -35,7 +46,10 @@ def build_source(config: Config) -> AircraftSource:
     return CachedSource(base, ttl_seconds=config.refresh_seconds)
 
 
-config = Config.from_env()
+try:
+    config = Config.load()
+except ConfigError as error:
+    raise SystemExit(f'Configuration error. {error}') from None
 source = build_source(config)
 logger = get_logger(__name__, config.log_level)
 route_index: RouteIndex | None = None
@@ -45,9 +59,11 @@ route_index: RouteIndex | None = None
 async def lifespan(app: FastAPI):
     global route_index
     subscriber = None
-    if config.swift_enabled:
+    if config.swift is not None:
         route_index = RouteIndex()
-        subscriber = SwiftSubscriber(config, route_index)
+        subscriber = SwiftSubscriber(
+            config.swift, route_index, config.log_level
+        )
         subscriber.start()
         logger.info('SWIFT Flight FIXM subscriber enabled')
     try:
@@ -80,15 +96,8 @@ def map_view():
 @app.get('/config')
 def get_config():
     return {
-        'lat': config.lat,
-        'lon': config.lon,
-        'radius_nm': config.radius_nm,
-        'time_format': config.time_format,
-        'refresh_seconds': config.refresh_seconds,
-        'flicker_enabled': config.flicker_enabled,
-        'flicker_strength': config.flicker_strength,
-        'font_thickness': config.font_thickness,
-        'route_enrichment_enabled': config.swift_enabled,
+        **config.model_dump(include=PUBLIC_CONFIG_FIELDS),
+        'route_enrichment_enabled': config.swift is not None,
     }
 
 
@@ -132,8 +141,10 @@ def favicon():
 if __name__ == '__main__':
     import uvicorn
 
+    # Pass the app object, not 'main:app': the string form makes uvicorn import
+    # this file a second time, which loads the config (and logs warnings) twice.
     uvicorn.run(
-        'main:app',
+        app,
         host=config.host,
         port=config.port,
         reload=False,

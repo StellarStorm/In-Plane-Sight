@@ -25,24 +25,14 @@ ACTIVE_FIXM = '''<?xml version="1.0" encoding="UTF-8"?>
 '''
 
 
-def test_swift_config_is_optional_and_validated(monkeypatch):
-    required_settings = (
-        'SWIFT_HOST',
-        'SWIFT_QUEUE',
-        'SWIFT_VPN',
-        'SWIFT_USERNAME',
-        'SWIFT_PASSWORD',
-        'SWIFT_CA_DIR',
-    )
-    for setting in required_settings:
-        monkeypatch.setenv(setting, '')
+def test_swift_config_is_optional_and_validated(tmp_path):
+    config_file = tmp_path / 'config.toml'
+    config_file.write_text('lat = 40.0\n')
+    assert Config.load(config_file).swift is None
 
-    monkeypatch.setenv('SWIFT_ENABLED', 'false')
-    assert Config.from_env().swift_enabled is False
-
-    monkeypatch.setenv('SWIFT_ENABLED', 'true')
-    with pytest.raises(ValueError, match='SWIFT_ENABLED requires'):
-        Config.from_env()
+    # An incomplete [swift] section turns route data off instead of failing.
+    config_file.write_text('[swift]\nqueue = "q"\nusername = ""\n')
+    assert Config.load(config_file).swift is None
 
 
 def test_parse_fixm_namespaced_message_and_header_fields():

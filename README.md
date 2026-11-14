@@ -37,29 +37,45 @@ uv sync
 Copy the example configuration and edit it:
 
 ```sh
-cp .env.example .env
+cp config.example.toml config.toml
 ```
 
 At minimum, set your location and search radius:
 
-```env
-LAT=40.7128
-LON=-74.0060
-RADIUS_NM=20
+```toml
+lat = 40.7128
+lon = -74.0060
+radius_nm = 20
 ```
+
+Every setting is optional. Without a `config.toml`, the defaults below are used.
 
 | Setting            | Default           | Description                                   |
 | ------------------ | ----------------- | --------------------------------------------- |
-| `SOURCE`           | `internet`        | ADS-B source. `local` is not yet implemented. |
-| `LAT`, `LON`       | New York City     | Center of the search area.                    |
-| `RADIUS_NM`        | `20`              | Search radius in nautical miles.              |
-| `REFRESH_SECONDS`  | `15`              | How often aircraft data is refreshed.         |
-| `TIME_FORMAT`      | `24`              | `12` or `24` hour clock.                      |
-| `FONT_THICKNESS`   | `normal`          | LED font weight: `normal` or `broad`.         |
-| `FLICKER_ENABLED`  | `true`            | LED flicker effect.                           |
-| `FLICKER_STRENGTH` | `0.025`           | Flicker amount, clamped to 0 to 0.1.          |
-| `HOST`, `PORT`     | `0.0.0.0`, `8000` | Address the server listens on.                |
-| `LOG_LEVEL`        | `INFO`            | Python logging level.                         |
+| `lat`, `lon`       | New York City     | Center of the search area.                    |
+| `radius_nm`        | `20`              | Search radius in nautical miles.              |
+| `source`           | `"internet"`      | ADS-B source. `local` is not yet implemented. |
+| `refresh_seconds`  | `15`              | How often aircraft data is refreshed.         |
+| `time_format`      | `"24"`            | `"12"` or `"24"` hour clock.                  |
+| `font_thickness`   | `"normal"`        | LED font weight: `normal` or `broad`.         |
+| `flicker_enabled`  | `true`            | LED flicker effect.                           |
+| `flicker_strength` | `0.025`           | Flicker amount, from 0 to 0.1.                |
+| `host`, `port`     | `0.0.0.0`, `8000` | Address the server listens on.                |
+| `log_level`        | `"INFO"`          | Python logging level.                         |
+
+The app will not start if `config.toml` contains an unknown setting or an invalid value. The error message lists each problem by setting name.
+
+#### Overriding settings with environment variables
+
+Any setting can be overridden at run time with an environment variable. Use the `IPS_` prefix and upper case:
+
+```sh
+IPS_RADIUS_NM=30 IPS_TIME_FORMAT=12 IPS_PORT=9000 python main.py
+```
+
+This also works for the `[swift]` settings, for example `IPS_SWIFT_PASSWORD` or `IPS_SWIFT_CA_DIR`.
+
+Environment variables take precedence over `config.toml`.
 
 ### Run
 
@@ -99,21 +115,23 @@ Install the optional dependency:
 uv sync --extra swift
 ```
 
-Add the subscription details to `.env`:
+Add a `[swift]` section with the subscription details at the end of `config.toml`:
 
-```env
-SWIFT_ENABLED=true
-SWIFT_HOST=tcps://ems1.swim.faa.gov:55443
-SWIFT_QUEUE=your-queue-name
-SWIFT_VPN=FDPS
-SWIFT_USERNAME=your-subscription-username
-SWIFT_PASSWORD=your-subscription-password
-SWIFT_CA_DIR=/path/to/hashed/ca-dir
+```toml
+[swift]
+host = "tcps://ems1.swim.faa.gov:55443"
+vpn = "FDPS"
+queue = "your-queue-name"
+username = "your-subscription-username"
+password = "your-subscription-password"
+ca_dir = "/path/to/hashed/ca-dir"
 ```
 
-When `SWIFT_ENABLED=true`, every `SWIFT_*` setting is required, and the app will not start if any are missing.
+Route data is enabled whenever the `[swift]` section is present. `queue`, `username`, `password` and `ca_dir` are required. If any are missing or empty, the app still starts, but with route data turned off, and it logs a warning listing what to fill in. `host` and `vpn` default to the values shown.
 
-`SWIFT_CA_DIR` must be a hashed directory of certificate authorities that can validate the broker's TLS certificate. The `ems1.swim.faa.gov` certificate currently chains to DigiCert Global Root G2. Put that root certificate in the directory, then run:
+You can leave `password` out of the file and set it with the `IPS_SWIFT_PASSWORD` environment variable instead.
+
+`ca_dir` must be a hashed directory of certificate authorities that can validate the broker's TLS certificate. The `ems1.swim.faa.gov` certificate currently chains to DigiCert Global Root G2. Put that root certificate in the directory, then run:
 
 ```sh
 openssl rehash /path/to/hashed/ca-dir

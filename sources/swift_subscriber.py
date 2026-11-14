@@ -5,11 +5,16 @@ from sources.logging_config import get_logger
 from sources.swift_routes import RouteIndex, parse_fixm_message
 
 if TYPE_CHECKING:
-    from config import Config
+    from config import SwiftConfig
 
 
 class SwiftSubscriber:
-    def __init__(self, config: 'Config', route_index: RouteIndex):
+    def __init__(
+        self,
+        config: 'SwiftConfig',
+        route_index: RouteIndex,
+        log_level: str = 'INFO',
+    ):
         self._config = config
         self._route_index = route_index
         self._stop_event = Event()
@@ -22,7 +27,7 @@ class SwiftSubscriber:
             daemon=True,
         )
 
-        self._logger = get_logger(__name__, config.log_level)
+        self._logger = get_logger(__name__, log_level)
 
     def start(self) -> None:
         self._thread.start()
@@ -74,21 +79,21 @@ class SwiftSubscriber:
                     MessagingService.builder()
                     .from_properties(
                         {
-                            transport_layer_properties.HOST: self._config.swift_host,
-                            service_properties.VPN_NAME: self._config.swift_vpn,
+                            transport_layer_properties.HOST: self._config.host,
+                            service_properties.VPN_NAME: self._config.vpn,
                         }
                     )
                     .with_authentication_strategy(
                         BasicUserNamePassword.of(
-                            self._config.swift_username,
-                            self._config.swift_password,
+                            self._config.username,
+                            self._config.password.get_secret_value(),
                         )
                     )
                     .with_transport_security_strategy(
                         TLS.create().with_certificate_validation(
                             False,
                             True,
-                            self._config.swift_ca_dir,
+                            self._config.ca_dir,
                         )
                     )
                     .with_connection_retry_strategy(
@@ -105,13 +110,13 @@ class SwiftSubscriber:
 
                 receiver = (
                     messaging_service.create_persistent_message_receiver_builder()
-                    .build(Queue.durable_exclusive_queue(self._config.swift_queue))
+                    .build(Queue.durable_exclusive_queue(self._config.queue))
                 )
                 receiver.start()
                 with self._connection_lock:
                     self._receiver = receiver
                 self._logger.info(
-                    f'Listening to SWIFT queue {self._config.swift_queue}'
+                    f'Listening to SWIFT queue {self._config.queue}'
                 )
 
                 while not self._stop_event.is_set():
