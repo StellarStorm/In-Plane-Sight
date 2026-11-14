@@ -189,9 +189,11 @@
         text-overflow: clip;
       }
       #aircraft-type {
+        overflow: hidden;
         font-size: clamp(26px, 4.1vw, 64px);
         line-height: 1.1;
         letter-spacing: 0.035em;
+        white-space: nowrap;
       }
       #icao-line {
         font-size: clamp(15px, 2vw, 31px);
@@ -475,6 +477,20 @@
         });
         scheduleLedTextRender();
       }
+        // Shrink an element's font until its text fits on one line. Clearing
+        // the inline size first lets the CSS size return when text gets shorter.
+        function fitTextToWidth(el, minPx) {
+          el.style.fontSize = "";
+          var available = el.clientWidth,
+            needed = el.scrollWidth;
+          if (!available || needed <= available) return;
+          var size = parseFloat(getComputedStyle(el).fontSize);
+          el.style.fontSize =
+            Math.max(minPx, Math.floor((size * available) / needed)) + "px";
+        }
+        function fitAircraftType() {
+          fitTextToWidth(document.getElementById("aircraft-type"), 12);
+        }
         function scheduleLedTextRender() {
         if (fontThickness !== "normal") {
           ledTextRenderers.forEach(function (r) {
@@ -657,7 +673,8 @@
         currentHeading = a.heading;
         callsign.textContent = a.callsign || a.icao.toUpperCase();
         document.getElementById("aircraft-type").textContent =
-          a.aircraft_type || "UNKNOWN";
+          InPlaneSight.aircraftType(a) || "UNKNOWN";
+        fitAircraftType();
         document.getElementById("icao-line").textContent = a.icao.toUpperCase();
         document.getElementById("s-alt").textContent =
           a.altitude_ft != null
@@ -748,7 +765,10 @@
           document.getElementById("updated").textContent = "CONFIG FAILED";
           console.error(e);
         });
-        addEventListener("resize", scheduleLedTextRender);
+        addEventListener("resize", function () {
+          fitAircraftType();
+          scheduleLedTextRender();
+        });
       </script>
     </body>
 </html>

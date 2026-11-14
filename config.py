@@ -90,6 +90,7 @@ class Config(BaseSettings):
     # Display
     time_format: Literal['12', '24'] = '24'
     font_thickness: Literal['normal', 'broad'] = 'normal'
+    aircraft_type_format: Literal['code', 'description'] = 'code'
     flicker_enabled: bool = True
     flicker_strength: float = Field(0.025, ge=0, le=0.1)
 

@@ -130,7 +130,7 @@
       function makePopup(a) {
         var alt  = a.altitude_ft != null ? a.altitude_ft.toLocaleString() + ' ft' : '-- ft';
         var spd  = a.speed_kts   != null ? a.speed_kts + ' kts' : '';
-        var type = a.aircraft_type || '';
+        var type = escapeHtml(InPlaneSight.aircraftType(a));
         var detail = alt + (spd ? ' · ' + spd : '');
         var route = a.origin && a.destination
           ? '<div class="popup-detail">Route: ' +

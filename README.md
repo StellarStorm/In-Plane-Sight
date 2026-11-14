@@ -58,6 +58,7 @@ Every setting is optional. Without a `config.toml`, the defaults below are used.
 | `refresh_seconds`  | `15`              | How often aircraft data is refreshed.         |
 | `time_format`      | `"24"`            | `"12"` or `"24"` hour clock.                  |
 | `font_thickness`   | `"normal"`        | LED font weight: `normal` or `broad`.         |
+| `aircraft_type_format` | `"code"`      | `code` (e.g. `B738`) or `description` (e.g. `BOEING 737-800`). |
 | `flicker_enabled`  | `true`            | LED flicker effect.                           |
 | `flicker_strength` | `0.025`           | Flicker amount, from 0 to 0.1.                |
 | `host`, `port`     | `0.0.0.0`, `8000` | Address the server listens on.                |

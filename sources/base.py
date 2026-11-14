@@ -14,6 +14,7 @@ class Aircraft:
     aircraft_type: str | None
     vertical_rate_fpm: int | None
     category: str | None = None
+    description: str | None = None
     origin: str | None = None
     destination: str | None = None
     origin_display: str | None = None
@@ -35,6 +36,7 @@ def parse_aircraft(raw: dict) -> Aircraft:
         speed_kts=round(speed) if isinstance(speed, (int, float)) else None,
         heading=raw.get('track'),
         aircraft_type=raw.get('t'),
+        description=raw.get('desc'),
         vertical_rate_fpm=int(vr) if isinstance(vr, (int, float)) else None,
         category=raw.get('category'),
     )
@@ -42,5 +44,4 @@ def parse_aircraft(raw: dict) -> Aircraft:
 
 class AircraftSource(ABC):
     @abstractmethod
-    def fetch(self) -> list[Aircraft]:
-        ...
+    def fetch(self) -> list[Aircraft]: ...

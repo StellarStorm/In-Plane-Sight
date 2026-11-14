@@ -18,6 +18,7 @@ refresh_seconds = 15
 # --- Display ---
 time_format = "24"        # "12" or "24"
 font_thickness = "normal" # "normal" or "broad"
+aircraft_type_format = "code" # "code" (e.g. B738) or "description" (e.g. BOEING 737-800)
 flicker_enabled = true
 flicker_strength = 0.025  # 0 to 0.1
 

@@ -29,6 +29,7 @@ PUBLIC_CONFIG_FIELDS = {
     'refresh_seconds',
     'time_format',
     'font_thickness',
+    'aircraft_type_format',
     'flicker_enabled',
     'flicker_strength',
 }
