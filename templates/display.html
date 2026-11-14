@@ -171,6 +171,25 @@
       }
       #status-bar a { display: inline-block; padding: 4px 0; }
     }
+    /* Wider cards (phone landscape, small tablets): move the stats onto the
+       callsign line so each card is shorter and more fit on screen. */
+    @media (min-width: 600px) and (max-width: 1000px) {
+      .aircraft-row {
+        grid-template-columns: 44px minmax(0, 1fr) 110px 80px 90px 56px;
+        grid-template-areas:
+          "logo callsign alt spd hdg dist"
+          "logo type type type type type"
+          "logo route route route route route";
+        padding: 8px 16px;
+      }
+      .aircraft-row > td:nth-child(n+5) { margin-top: 0; }
+    }
+    /* Phone landscape: little height to spare, so shrink the header. */
+    @media (max-height: 500px) and (orientation: landscape) and (max-width: 1000px) {
+      #header { padding: 8px 16px; }
+      #title span { display: inline; margin: 0 0 0 12px; }
+      #header-right { line-height: 1.3; }
+    }
     /* Narrow phones: drop the altitude bar so the stats line fits. */
     @media (max-width: 480px) {
       .aircraft-row { column-gap: 10px; }
