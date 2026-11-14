@@ -1,0 +1,41 @@
+{
+  "code": "CPA",
+  "label": "Cathay Pacific Airways",
+  "palette": {
+    "C": "#006060"
+  },
+  "rows": [
+    "                                ",
+    "                                ",
+    "                                ",
+    "                                ",
+    "    C                           ",
+    "    C                           ",
+    "    CC                          ",
+    "    CCC                         ",
+    "    CCC                         ",
+    "     CCC                        ",
+    "     CCCC                       ",
+    "     CCCCC                      ",
+    "      CCCC                      ",
+    "      CCCCC                     ",
+    "      CCCCCCC                   ",
+    "       CCCCCCC                  ",
+    "       CCCCCCCC                 ",
+    "        CCCCCCCCC               ",
+    "         CCCCCCCCCC             ",
+    "          CCCCCCCCCCC           ",
+    "          CCCCCCCCCCCCCC        ",
+    "           CCCCCCCCCCCCCCCCCC   ",
+    "             CCCCCCCCCCCCCCC    ",
+    "              CCCCCCCCCCCCC     ",
+    "               CCCCCCCCCC       ",
+    "               CCCCCCCC         ",
+    "              CCCCCC            ",
+    "            CCCCCC              ",
+    "           CCCC                 ",
+    "         CCCC                   ",
+    "       CCC                      ",
+    "       C                        "
+  ]
+}

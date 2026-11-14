@@ -1,0 +1,41 @@
+{
+  "code": "AVA",
+  "label": "Avianca",
+  "palette": {
+    "R": "#ff0000"
+  },
+  "rows": [
+    "    R                           ",
+    "   RR                           ",
+    "   RR                           ",
+    "  RRR                           ",
+    "  RRRR                          ",
+    " RRRRR                          ",
+    " RRRRRR                         ",
+    " RRRRRR                         ",
+    " RRRRRR                         ",
+    " RRRRRRR                        ",
+    " RRRRRRR                        ",
+    " RRRRRRRR                       ",
+    " RRRRRRRR                       ",
+    "  RRRRRRRR                      ",
+    "  RRRRRRRR                      ",
+    "   RRRRRRRR                     ",
+    "   RRRRRRRRR                    ",
+    "    RRRRRRRR                    ",
+    "     RRRRRRRR                   ",
+    "       RRRRRRR                  ",
+    "        RRRRRRR                 ",
+    "            RRRR                ",
+    "                RRRR            ",
+    "                 RRRRRR         ",
+    "                  RRRRR         ",
+    "       RRRRRRRRRRRR             ",
+    "            RRRRRRRR            ",
+    "              RRRRRRRR          ",
+    "                RRRRRRR         ",
+    "                  RRRRRRR       ",
+    "                    RRRRRRR     ",
+    "                       RRRRRR   "
+  ]
+}
