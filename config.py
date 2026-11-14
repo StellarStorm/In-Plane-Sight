@@ -102,7 +102,7 @@ class Config(BaseSettings):
     font_thickness: Literal['normal', 'broad'] = 'normal'
     aircraft_type_format: Literal['code', 'description'] = 'code'
     flicker_enabled: bool = True
-    flicker_strength: float = Field(0.025, ge=0, le=0.1)
+    flicker_strength: float = Field(0.1, ge=0, le=0.4)
 
     # Server
     host: str = '0.0.0.0'

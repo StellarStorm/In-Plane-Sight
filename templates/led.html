@@ -264,48 +264,51 @@
       #utility a:hover {
         color: #f4f5f7;
       }
-      #board.flicker-enabled #callsign,
-      #board.flicker-enabled #aircraft-type,
-      #board.flicker-enabled #icao-line,
-      #board.flicker-enabled #route-line {
+      /* addRenderer() tags both the text element and its LED canvas overlay
+         (which lives outside #board) with these classes. #logo-frame is
+         tagged in the markup so the icon dims along with the flight text. */
+      .flicker-enabled .flicker-primary {
         animation: primary-led-flicker 4.7s steps(1, end) infinite;
       }
-      #board.flicker-enabled .metric-label,
-      #board.flicker-enabled .metric-value {
+      .flicker-enabled .flicker-telemetry {
         animation: telemetry-led-flicker 5.9s steps(1, end) infinite;
       }
+      /* With steps(1, end) each keyframe's value holds until the next one.
+         Per cycle: one long dip, a quick double blink, and a softer sag. */
       @keyframes primary-led-flicker {
         0%,
-        18%,
         20%,
         53%,
-        55%,
-        81%,
-        83%,
+        55.5%,
+        84%,
         100% {
           opacity: 1;
         }
-        19%,
-        54%,
-        82% {
-          opacity: var(--flicker-low, 0.975);
+        17%,
+        52%,
+        54% {
+          opacity: var(--flicker-low, 0.9);
+        }
+        80% {
+          opacity: var(--flicker-soft, 0.95);
         }
       }
       @keyframes telemetry-led-flicker {
         0%,
-        31%,
         33%,
         67%,
-        69%,
-        92%,
+        69.5%,
         94%,
         100% {
           opacity: 1;
         }
-        32%,
-        68%,
-        93% {
-          opacity: var(--flicker-mid, 0.985);
+        30%,
+        66%,
+        68% {
+          opacity: var(--flicker-mid, 0.945);
+        }
+        91% {
+          opacity: var(--flicker-soft, 0.95);
         }
       }
       /* Small screens (phone portrait or landscape): put the utility bar in
@@ -457,12 +460,8 @@
         }
       }
       @media (prefers-reduced-motion: reduce) {
-        #board.flicker-enabled #callsign,
-        #board.flicker-enabled #aircraft-type,
-        #board.flicker-enabled #icao-line,
-        #board.flicker-enabled #route-line,
-        #board.flicker-enabled .metric-label,
-        #board.flicker-enabled .metric-value {
+        .flicker-enabled .flicker-primary,
+        .flicker-enabled .flicker-telemetry {
           animation: none;
         }
       }
@@ -472,7 +471,7 @@
     <body>
       <main id="board">
         <section id="main-display">
-          <div id="logo-frame">
+          <div id="logo-frame" class="flicker-primary">
           <canvas id="airline-logo" width="320" height="320" aria-label="Airline logo"></canvas><span
             id="plane-fallback">&#9992;</span>
           </div>
@@ -511,6 +510,8 @@
         <script src="/static/common.js"></script>
         <script src="/static/js/airline-icons.js"></script>
         <script>
+        // How much dimmer the weakest LED is than the brightest (0.18 = 18%).
+        var LED_BRIGHTNESS_VARIATION = 0.18;
         var CENTER = null,
           prevIcao = null,
           ledTextRenderers = [],
@@ -610,7 +611,17 @@
           c.className = "led-text-canvas";
           c.setAttribute("aria-hidden", "true");
           document.body.appendChild(c);
-          ledTextRenderers.push({ element: el, canvas: c, style: ST[name] });
+          var group = name.indexOf("metric-") === 0
+            ? "flicker-telemetry"
+            : "flicker-primary";
+          el.classList.add(group);
+          c.classList.add(group);
+          ledTextRenderers.push({
+            id: ledTextRenderers.length,
+            element: el,
+            canvas: c,
+            style: ST[name],
+          });
         }
         function initializeLedText() {
         addRenderer(callsign, "callsign");
@@ -744,7 +755,14 @@
             for (var x = 0; x < 5; x++)
               if (glyph[y][x] === "1") {
                 o.save();
-                o.globalAlpha = opacity;
+                o.globalAlpha =
+                  opacity *
+                  InPlaneSightAirlines.ledBrightness(
+                    r.id,
+                    i * 6 + x,
+                    y,
+                    LED_BRIGHTNESS_VARIATION,
+                  );
                 o.fillStyle = "rgb(" + color.join(",") + ")";
                 o.shadowColor = "rgba(" + color.join(",") + ",.26)";
                 o.shadowBlur = s.glow;
@@ -812,6 +830,7 @@
             dotScale: 0.58,
             showOffLeds: false,
             glow: true,
+            brightnessVariation: LED_BRIGHTNESS_VARIATION,
           });
         airlineLogo.style.transform =
           "rotate(" + (rotation != null ? rotation : 0) + "deg)";
@@ -933,10 +952,12 @@
           board.classList.toggle("font-normal", fontThickness === "normal");
           board.classList.toggle("font-broad", fontThickness === "broad");
           initializeLedText();
-          var s = Math.max(0, Math.min(cfg.flicker_strength || 0, 0.1));
-          board.style.setProperty("--flicker-low", String(1 - s));
-          board.style.setProperty("--flicker-mid", String(1 - s * 0.55));
-          board.classList.toggle(
+          var root = document.documentElement,
+            s = Math.max(0, Math.min(cfg.flicker_strength || 0, 1));
+          root.style.setProperty("--flicker-low", String(1 - s));
+          root.style.setProperty("--flicker-mid", String(1 - s * 0.55));
+          root.style.setProperty("--flicker-soft", String(1 - s * 0.5));
+          root.classList.toggle(
             "flicker-enabled",
             cfg.flicker_enabled === true,
           );

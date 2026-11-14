@@ -141,12 +141,25 @@
     return load(getCode(callsign));
   }
 
+  // Real LEDs vary slightly in brightness. Returns a fixed factor in
+  // [1 - amount, 1] for the LED at (panel, column, row), so a given dot is
+  // always the same brightness, whatever is shown on it.
+  function ledBrightness(panel, column, row, amount) {
+    var h = Math.imul(panel + 1, 73856093) ^
+      Math.imul(column + 1, 19349663) ^
+      Math.imul(row + 1, 83492791);
+    h = Math.imul(h ^ (h >>> 13), 1274126177);
+    h = (h ^ (h >>> 16)) >>> 0;
+    return 1 - amount * (h / 4294967296);
+  }
+
   function render(canvas, icon, options) {
     var settings = Object.assign({
       dotScale: 0.68,
       offColor: 'rgba(14, 19, 36, 0.42)',
       showOffLeds: true,
-      glow: true
+      glow: true,
+      brightnessVariation: 0
     }, options || {});
 
     var context = canvas.getContext('2d');
@@ -194,6 +207,15 @@
         context.arc(x, y, radius, 0, Math.PI * 2);
         context.fillStyle = color || settings.offColor;
 
+        if (color && settings.brightnessVariation) {
+          context.globalAlpha = ledBrightness(
+            -1,
+            columnIndex,
+            rowIndex,
+            settings.brightnessVariation
+          );
+        }
+
         if (color && settings.glow) {
           context.shadowColor = color;
           context.shadowBlur = cell * 0.65;
@@ -215,6 +237,7 @@
     getCode: getCode,
     getIcon: getIcon,
     isHelicopter: isHelicopter,
+    ledBrightness: ledBrightness,
     load: load,
     render: render
   };
