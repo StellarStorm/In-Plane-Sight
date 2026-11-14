@@ -15,13 +15,16 @@ a live map.
 
 ![list](imgs/list.png)
 
+<img src="imgs/phone.png" width="250" alt="Description">
+
+It also looks great on a phone!
+
 By default, aircraft positions come from adsb.fi, with adsb.lol as a fallback. No account or API key is needed.
 
 ## Getting Started
 
 ### Requirements
 
-- Python 3.13 or newer
 - [uv](https://docs.astral.sh/uv/)
 
 ### Install

@@ -308,6 +308,154 @@
           opacity: var(--flicker-mid, 0.985);
         }
       }
+      /* Small screens (phone portrait or landscape): put the utility bar in
+         the page flow so it never covers the telemetry. */
+      @media (max-width: 700px), (max-height: 500px) {
+        html,
+        body {
+          height: 100dvh;
+        }
+        body {
+          display: flex;
+          flex-direction: column;
+        }
+        #board {
+          flex: 1;
+          min-height: 0;
+          height: auto;
+          width: 100%;
+          background-size: 12px 12px;
+        }
+        #utility {
+          position: static;
+          min-height: 0;
+          font-size: 9px;
+        }
+      }
+      /* Phone landscape: keep the side-by-side layout but size by height.
+         Chosen by orientation, not width, because many phones are under
+         700px wide even when held sideways. */
+      @media (max-height: 500px) and (orientation: landscape) {
+        #main-display {
+          gap: 5vw;
+          padding: 3vh 4vw;
+        }
+        #logo-frame {
+          max-width: 52vh;
+          justify-self: center;
+        }
+        #plane-fallback {
+          font-size: 30vh;
+        }
+        #flight-summary {
+          gap: 3vh;
+        }
+        #callsign,
+        #route-line {
+          font-size: clamp(24px, 14vh, 116px);
+        }
+        #aircraft-type {
+          font-size: clamp(14px, 7.5vh, 64px);
+        }
+        #icao-line {
+          font-size: clamp(10px, 4vh, 31px);
+        }
+        #telemetry {
+          padding: 2vh 4vw;
+          border-top-width: 4px;
+        }
+        #telemetry {
+          column-gap: 3vw;
+        }
+        .metric {
+          gap: 1vw;
+        }
+        .metric-label,
+        .metric-value {
+          font-size: clamp(9px, min(5vh, 1.9vw), 38px);
+        }
+      }
+      /* Phone portrait: stack the logo above the flight details, and lay the
+         telemetry out as a 2-column grid of label-over-value cells. */
+      @media (max-width: 700px) and (orientation: portrait) {
+        #board {
+          grid-template-rows: minmax(0, 1fr) auto;
+        }
+        #main-display {
+          grid-template-columns: minmax(0, 1fr);
+          grid-template-rows: auto auto;
+          align-content: center;
+          justify-items: center;
+          gap: clamp(16px, 4vh, 40px);
+          padding: 20px 16px;
+        }
+        #logo-frame {
+          width: min(46vw, 28vh);
+        }
+        #plane-fallback {
+          font-size: min(30vw, 18vh);
+        }
+        #flight-summary {
+          width: 100%;
+          align-items: center;
+          gap: clamp(10px, 2.2vh, 24px);
+          padding-right: 0;
+        }
+        #flight-summary > div {
+          max-width: 100%;
+        }
+        #callsign,
+        #route-line {
+          font-size: clamp(24px, 10vw, 56px);
+        }
+        #aircraft-type {
+          font-size: clamp(14px, 5.6vw, 32px);
+        }
+        #icao-line {
+          font-size: clamp(10px, 3.4vw, 18px);
+        }
+        #telemetry {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          grid-template-rows: none;
+          gap: clamp(12px, 2.4vh, 24px) 16px;
+          padding: 16px 16px clamp(16px, 3vh, 28px);
+          border-top-width: 4px;
+        }
+        .metric {
+          flex-direction: column;
+          align-items: center;
+          gap: 6px;
+        }
+        .metric:nth-child(5) {
+          grid-column: 1 / -1;
+        }
+        .metric-label,
+        .metric-value {
+          font-size: clamp(11px, 4vw, 22px);
+        }
+        #empty {
+          font-size: 12px;
+          line-height: 1.6;
+          text-align: center;
+          padding: 12px 0;
+        }
+        #utility {
+          flex-wrap: wrap;
+          gap: 8px 16px;
+          padding: 8px 16px;
+        }
+        #status-info {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 4px;
+        }
+        #nav-links {
+          gap: 20px;
+        }
+        #utility a {
+          padding: 6px 0;
+        }
+      }
       @media (prefers-reduced-motion: reduce) {
         #board.flicker-enabled #callsign,
         #board.flicker-enabled #aircraft-type,
@@ -489,7 +637,41 @@
             Math.max(minPx, Math.floor((size * available) / needed)) + "px";
         }
         function fitAircraftType() {
-          fitTextToWidth(document.getElementById("aircraft-type"), 12);
+          fitTextToWidth(document.getElementById("aircraft-type"), 9);
+        }
+        var SUMMARY_LINES = ["callsign", "aircraft-type", "icao-line", "route-line"];
+        // If the logo and flight lines are taller than the space above the
+        // telemetry (e.g. a phone held sideways, with a route showing), shrink
+        // the flight lines until they fit rather than letting them overflow.
+        function fitSummaryHeight() {
+          var box = document.getElementById("main-display"),
+            summary = document.getElementById("flight-summary"),
+            logo = document.getElementById("logo-frame");
+          for (var pass = 0; pass < 3; pass++) {
+            var cs = getComputedStyle(box),
+              available =
+                box.clientHeight -
+                parseFloat(cs.paddingTop) -
+                parseFloat(cs.paddingBottom),
+              s = summary.getBoundingClientRect(),
+              l = logo.getBoundingClientRect(),
+              used = Math.max(s.bottom, l.bottom) - Math.min(s.top, l.top),
+              over = used - available;
+            if (over <= 1 || s.height <= 0) return;
+            var ratio = Math.max(0.4, (s.height - over) / s.height);
+            SUMMARY_LINES.forEach(function (id) {
+              var el = document.getElementById(id),
+                size = parseFloat(getComputedStyle(el).fontSize);
+              el.style.fontSize = Math.max(8, Math.floor(size * ratio)) + "px";
+            });
+          }
+        }
+        function fitHeadlineText() {
+          document.getElementById("icao-line").style.fontSize = "";
+          fitTextToWidth(callsign, 16);
+          fitTextToWidth(document.getElementById("route-line"), 16);
+          fitAircraftType();
+          fitSummaryHeight();
         }
         function scheduleLedTextRender() {
         if (fontThickness !== "normal") {
@@ -674,7 +856,6 @@
         callsign.textContent = a.callsign || a.icao.toUpperCase();
         document.getElementById("aircraft-type").textContent =
           InPlaneSight.aircraftType(a) || "UNKNOWN";
-        fitAircraftType();
         document.getElementById("icao-line").textContent = a.icao.toUpperCase();
         document.getElementById("s-alt").textContent =
           a.altitude_ft != null
@@ -697,6 +878,7 @@
           ? (a.origin_display || a.origin) + "-" +
               (a.destination_display || a.destination)
             : "";
+        fitHeadlineText();
         scheduleLedTextRender();
         if (a.icao !== prevIcao) {
           updateLogo(a.callsign, a.heading, a.category);
@@ -766,7 +948,7 @@
           console.error(e);
         });
         addEventListener("resize", function () {
-          fitAircraftType();
+          fitHeadlineText();
           scheduleLedTextRender();
         });
       </script>
