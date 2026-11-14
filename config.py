@@ -16,6 +16,7 @@ from typing import Literal
 from pydantic import (
     BaseModel,
     ConfigDict,
+    DirectoryPath,
     Field,
     SecretStr,
     ValidationError,
@@ -50,6 +51,8 @@ def describe_errors(error: ValidationError) -> str:
             message = 'empty'
         elif problem['type'] == 'extra_forbidden':
             message = 'unknown setting (check the spelling)'
+        elif problem['type'] == 'path_not_directory':
+            message = f'folder not found: {problem["input"]}'
         else:
             message = problem['msg']
         lines.append(f'  {name}: {message}')
@@ -66,7 +69,14 @@ class SwiftConfig(BaseModel):
     queue: str = Field(min_length=1)
     username: str = Field(min_length=1)
     password: SecretStr = Field(min_length=1)
-    ca_dir: str = Field(min_length=1)
+    # Folder of trusted root certificates (PEM files). Leave unset to use the
+    # Mozilla roots bundled with certifi
+    ca_dir: DirectoryPath | None = None
+
+    @field_validator('ca_dir', mode='before')
+    @classmethod
+    def _blank_ca_dir_means_default(cls, value):
+        return None if isinstance(value, str) and not value.strip() else value
 
 
 class Config(BaseSettings):

@@ -15,6 +15,7 @@ dependencies = [
 
 [project.optional-dependencies]
 swift = [
+    "certifi>=2026.7.22",
     "solace-pubsubplus>=1.11.0",
 ]
 

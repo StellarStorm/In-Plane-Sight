@@ -45,16 +45,16 @@ def test_env_overrides_toml(config_file, monkeypatch):
     assert config.port == 8080
 
 
-def test_env_supplies_swift_password(config_file, monkeypatch):
+def test_env_supplies_swift_password(config_file, monkeypatch, tmp_path):
     config_file.write_text(
-        '[swift]\nqueue = "q"\nusername = "u"\nca_dir = "/ca"\n'
+        '[swift]\nqueue = "q"\nusername = "u"\nca_dir = "/missing"\n'
     )
     monkeypatch.setenv('IPS_SWIFT_PASSWORD', 'secret')
-    monkeypatch.setenv('IPS_SWIFT_CA_DIR', '/env-ca')
+    monkeypatch.setenv('IPS_SWIFT_CA_DIR', str(tmp_path))
     swift = Config.load(config_file).swift
     assert swift is not None
     assert swift.queue == 'q'
-    assert swift.ca_dir == '/env-ca'  # underscore inside the key name
+    assert swift.ca_dir == tmp_path  # underscore inside the key name
     assert swift.password.get_secret_value() == 'secret'
     assert 'secret' not in repr(swift)
 
@@ -84,8 +84,9 @@ def test_invalid_toml_is_rejected(config_file):
     'toml, expected',
     [
         ('[swift]\n', 'queue: missing'),
-        ('[swift]\nqueue = ""\nusername = "u"\npassword = ""\nca_dir = "/c"', 'password: empty'),
-        ('[swift]\nqueu = "q"\nusername = "u"\npassword = "p"\nca_dir = "/c"', 'queu: unknown setting'),
+        ('[swift]\nqueue = ""\nusername = "u"\npassword = ""', 'password: empty'),
+        ('[swift]\nqueu = "q"\nusername = "u"\npassword = "p"', 'queu: unknown setting'),
+        ('[swift]\nqueue = "q"\nusername = "u"\npassword = "p"\nca_dir = "/no/such/dir"', 'ca_dir: folder not found: /no/such/dir'),
     ],
 )
 def test_incomplete_swift_warns_and_disables_routes(
@@ -101,3 +102,13 @@ def test_incomplete_swift_warns_and_disables_routes(
     assert Config.load(config_file).swift is None
     assert len(warnings) == 1
     assert expected in warnings[0]
+
+
+@pytest.mark.parametrize('ca_line', ['', 'ca_dir = ""\n'])
+def test_ca_dir_is_optional(config_file, ca_line):
+    config_file.write_text(
+        f'[swift]\nqueue = "q"\nusername = "u"\npassword = "p"\n{ca_line}'
+    )
+    swift = Config.load(config_file).swift
+    assert swift is not None
+    assert swift.ca_dir is None

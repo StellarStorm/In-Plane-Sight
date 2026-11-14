@@ -1,14 +1,18 @@
+import shutil
+from pathlib import Path
+
 import pytest
 
 import main
-from config import Config
-from sources.base import Aircraft
+from config import Config, SwiftConfig
 from sources.airport_codes import airport_display_code
+from sources.base import Aircraft
 from sources.swift_routes import (
     FlightRouteUpdate,
     RouteIndex,
     parse_fixm_message,
 )
+from sources.swift_subscriber import SwiftSubscriber
 
 ACTIVE_FIXM = '''<?xml version="1.0" encoding="UTF-8"?>
 <ns5:MessageCollection xmlns:ns5="http://www.faa.aero/nas/3.0">
@@ -145,3 +149,46 @@ def test_aircraft_endpoint_enriches_all_views_from_shared_route_index(
     assert with_swift[0]['destination'] == 'KDEN'
     assert with_swift[0]['origin_display'] == 'PHL'
     assert with_swift[0]['destination_display'] == 'DEN'
+
+
+def test_swift_default_trust_store_holds_certifi_bundle():
+    certifi = pytest.importorskip('certifi')
+    subscriber = SwiftSubscriber(
+        SwiftConfig(queue='q', username='u', password='p'), RouteIndex()
+    )
+    folder = Path(subscriber._trust_store_dir())
+    assert subscriber._trust_store_dir() == str(folder)  # created once
+    files = list(folder.iterdir())
+    assert [f.read_bytes() for f in files] == [
+        Path(certifi.where()).read_bytes()
+    ]
+    subscriber._default_trust_store.cleanup()
+    assert not folder.exists()
+
+
+def test_swift_default_trust_store_is_recreated_after_temp_cleanup():
+    pytest.importorskip('certifi')
+    subscriber = SwiftSubscriber(
+        SwiftConfig(queue='q', username='u', password='p'), RouteIndex()
+    )
+    # The OS deletes just the file...
+    first = Path(subscriber._trust_store_dir())
+    (first / 'cacert.pem').unlink()
+    second = Path(subscriber._trust_store_dir())
+    assert (second / 'cacert.pem').is_file()
+    assert not first.exists()
+    # ...or the whole folder.
+    shutil.rmtree(second)
+    third = Path(subscriber._trust_store_dir())
+    assert (third / 'cacert.pem').is_file()
+    subscriber._default_trust_store.cleanup()
+    assert not third.exists()
+
+
+def test_swift_configured_ca_dir_is_used_as_is(tmp_path):
+    subscriber = SwiftSubscriber(
+        SwiftConfig(queue='q', username='u', password='p', ca_dir=tmp_path),
+        RouteIndex(),
+    )
+    assert subscriber._trust_store_dir() == str(tmp_path)
+    assert subscriber._default_trust_store is None

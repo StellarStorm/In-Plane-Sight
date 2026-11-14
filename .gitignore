@@ -6,8 +6,10 @@ dist/
 wheels/
 *.egg-info
 
-# Virtual environments
+# Virtual environments and development directories
 .venv
+.pytest_cache
+.ruff_cache
 
 # User settings
 config.toml
@@ -21,4 +23,3 @@ jumpstart-python-latest/
 
 # Don't include local route-specific files
 .in-plane-sight/
-solace-ca/

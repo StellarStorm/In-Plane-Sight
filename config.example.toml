@@ -28,11 +28,10 @@ port = 8000
 log_level = "INFO"        # DEBUG, INFO, WARNING, ERROR or CRITICAL
 
 # Optional FAA SWIFT/SCDS Flight FIXM route feed. Uncomment this section to
-# enable it; queue, username, password and ca_dir are then required.
+# enable it; queue, username and password are then required.
 # [swift]
 # host = "tcps://ems1.swim.faa.gov:55443"
 # vpn = "FDPS"
 # queue = ""
 # username = ""
 # password = ""
-# ca_dir = ""  # hashed CA directory including DigiCert Global Root G2

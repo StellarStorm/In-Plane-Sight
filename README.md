@@ -128,20 +128,13 @@ vpn = "FDPS"
 queue = "your-queue-name"
 username = "your-subscription-username"
 password = "your-subscription-password"
-ca_dir = "/path/to/hashed/ca-dir"
 ```
 
-Route data is enabled whenever the `[swift]` section is present. `queue`, `username`, `password` and `ca_dir` are required. If any are missing or empty, the app still starts, but with route data turned off, and it logs a warning listing what to fill in. `host` and `vpn` default to the values shown.
+Route data is enabled whenever the `[swift]` section is present. `queue`, `username` and `password` are required. If any are missing or empty, the app still starts, but with route data turned off, and it logs a warning listing what to fill in. `host` and `vpn` default to the values shown.
 
 You can leave `password` out of the file and set it with the `IPS_SWIFT_PASSWORD` environment variable instead.
 
-`ca_dir` must be a hashed directory of certificate authorities that can validate the broker's TLS certificate. The `ems1.swim.faa.gov` certificate currently chains to DigiCert Global Root G2. Put that root certificate in the directory, then run:
-
-```sh
-openssl rehash /path/to/hashed/ca-dir
-```
-
-On macOS, you can export the root from the System Roots keychain. On Linux, it is usually in the system CA bundle. Do not turn off certificate validation.
+The broker's certificate is checked against the Mozilla root certificates installed with the app, so there is nothing to set up. If your network inspects TLS traffic with its own root certificate, set `ca_dir` in `[swift]` to a folder holding that certificate as a `.pem` file.
 
 ### Behaviour and Limitations
 

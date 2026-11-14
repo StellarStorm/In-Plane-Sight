@@ -147,6 +147,7 @@ dependencies = [
 
 [package.optional-dependencies]
 swift = [
+    { name = "certifi" },
     { name = "solace-pubsubplus" },
 ]
 
@@ -159,6 +160,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "airportsdata", specifier = ">=20261030" },
+    { name = "certifi", marker = "extra == 'swift'", specifier = ">=2026.7.22" },
     { name = "fastapi", specifier = ">=0.142.2" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "pydantic-settings", specifier = ">=2.16.3" },
