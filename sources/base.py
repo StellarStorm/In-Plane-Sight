@@ -18,14 +18,6 @@ class Aircraft:
     destination: str | None = None
     origin_display: str | None = None
     destination_display: str | None = None
-    origin_timezone: str | None = None
-    destination_timezone: str | None = None
-    departure_time: str | None = None
-    departure_estimated: bool = False
-    arrival_time: str | None = None
-    arrival_estimated: bool = False
-    # True when the FAA estimate was implausible and the app calculated one.
-    arrival_calculated: bool = False
 
 
 def parse_aircraft(raw: dict) -> Aircraft:
