@@ -176,7 +176,9 @@ def test_internet_sources_parse_aircraft_and_filter_missing_positions(
     ]
 
 
-def test_local_source_parses_dump1090_aircraft_list(monkeypatch: pytest.MonkeyPatch):
+def test_local_source_parses_dump1090_aircraft_list(
+    monkeypatch: pytest.MonkeyPatch,
+):
     payload = {
         'aircraft': [
             {'hex': 'abc123', 'flight': 'LOCAL1', 'lat': 39.95, 'lon': -75.16},

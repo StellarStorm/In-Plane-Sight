@@ -84,9 +84,18 @@ def test_invalid_toml_is_rejected(config_file):
     'toml, expected',
     [
         ('[swift]\n', 'queue: missing'),
-        ('[swift]\nqueue = ""\nusername = "u"\npassword = ""', 'password: empty'),
-        ('[swift]\nqueu = "q"\nusername = "u"\npassword = "p"', 'queu: unknown setting'),
-        ('[swift]\nqueue = "q"\nusername = "u"\npassword = "p"\nca_dir = "/no/such/dir"', 'ca_dir: folder not found: /no/such/dir'),
+        (
+            '[swift]\nqueue = ""\nusername = "u"\npassword = ""',
+            'password: empty',
+        ),
+        (
+            '[swift]\nqueu = "q"\nusername = "u"\npassword = "p"',
+            'queu: unknown setting',
+        ),
+        (
+            '[swift]\nqueue = "q"\nusername = "u"\npassword = "p"\nca_dir = "/no/such/dir"',
+            'ca_dir: folder not found: /no/such/dir',
+        ),
     ],
 )
 def test_incomplete_swift_warns_and_disables_routes(

@@ -14,7 +14,7 @@ from sources.swift_routes import (
 )
 from sources.swift_subscriber import SwiftSubscriber
 
-ACTIVE_FIXM = '''<?xml version="1.0" encoding="UTF-8"?>
+ACTIVE_FIXM = """<?xml version="1.0" encoding="UTF-8"?>
 <ns5:MessageCollection xmlns:ns5="http://www.faa.aero/nas/3.0">
   <message>
     <flight>
@@ -26,7 +26,7 @@ ACTIVE_FIXM = '''<?xml version="1.0" encoding="UTF-8"?>
     </flight>
   </message>
 </ns5:MessageCollection>
-'''
+"""
 
 
 def test_swift_config_is_optional_and_validated(tmp_path):

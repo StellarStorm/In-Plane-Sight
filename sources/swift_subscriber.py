@@ -159,9 +159,8 @@ class SwiftSubscriber:
                     self._messaging_service = messaging_service
                 messaging_service.connect()
 
-                receiver = (
-                    messaging_service.create_persistent_message_receiver_builder()
-                    .build(Queue.durable_exclusive_queue(self._config.queue))
+                receiver = messaging_service.create_persistent_message_receiver_builder().build(
+                    Queue.durable_exclusive_queue(self._config.queue)
                 )
                 receiver.start()
                 with self._connection_lock:

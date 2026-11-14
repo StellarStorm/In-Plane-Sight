@@ -63,15 +63,19 @@ def parse_fixm_message(
         )
         gufi = _child(flight, 'gufi')
         flight_id = (
-            (gufi.text or '').strip() if gufi is not None else ''
-        ) or _header(properties, 'FDPS_FlightId') or callsign
+            ((gufi.text or '').strip() if gufi is not None else '')
+            or _header(properties, 'FDPS_FlightId')
+            or callsign
+        )
 
         updates.append(
             FlightRouteUpdate(
                 flight_id=flight_id,
                 callsign=' '.join(callsign.split()).upper(),
                 origin=origin.strip().upper() if origin else None,
-                destination=destination.strip().upper() if destination else None,
+                destination=destination.strip().upper()
+                if destination
+                else None,
                 status=status.strip().upper(),
             )
         )
@@ -144,7 +148,9 @@ class RouteIndex:
             previous = self._routes.get(update.flight_id)
             if previous is not None and previous[0].callsign != update.callsign:
                 previous_callsign = previous[0].callsign
-                self._flight_ids_by_callsign[previous_callsign].discard(update.flight_id)
+                self._flight_ids_by_callsign[previous_callsign].discard(
+                    update.flight_id
+                )
                 if not self._flight_ids_by_callsign[previous_callsign]:
                     self._flight_ids_by_callsign.pop(previous_callsign)
             self._routes[update.flight_id] = (update, self._clock())
@@ -156,7 +162,9 @@ class RouteIndex:
         results = self.lookup_many([callsign])
         return results.get(' '.join((callsign or '').split()).upper())
 
-    def lookup_many(self, callsigns: list[str | None]) -> dict[str, tuple[str, str]]:
+    def lookup_many(
+        self, callsigns: list[str | None]
+    ) -> dict[str, tuple[str, str]]:
         self.expire()
         normalized_callsigns = {
             ' '.join((callsign or '').split()).upper()
