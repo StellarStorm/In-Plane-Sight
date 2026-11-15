@@ -156,7 +156,8 @@ def get_aircraft():
         return JSONResponse(
             {'error': 'Aircraft data is unavailable'}, status_code=503
         )
-    aircraft = add_routes(aircraft)
+    # The board shows aircraft flying overhead, not traffic at the airport.
+    aircraft = add_routes([item for item in aircraft if not item.on_ground])
     if route_index is not None:
         logger.debug(
             'Routes known for %d of %d aircraft with callsigns (%d stored)',
