@@ -46,10 +46,13 @@ def test_writes_only_when_a_route_is_new_or_changes(
 ):
     store = make_store(tmp_path / 'tracked-routes.json', clock)
     writes = []
-    original = store._save
-    monkeypatch.setattr(
-        store, '_save', lambda now: (writes.append(now), original(now))
-    )
+    save = store._save
+
+    def counting_save(now):
+        writes.append(now)
+        save(now)
+
+    monkeypatch.setattr(store, '_save', counting_save)
     store.remember('DAL1', 'a00001', 'KATL', 'KPDX')
     clock[0] += 15
     store.remember('DAL1', 'a00001', 'KATL', 'KPDX')

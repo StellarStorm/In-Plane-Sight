@@ -1,16 +1,14 @@
 """Routes of tracked flights, saved so a restart mid-flight doesn't lose them.
 
-The FAA feed only gives a flight's route when it departs, lands or its plan
-changes, so after a restart a distant flight has no route until it lands.
-Only flights someone tracked are saved, which takes a few small writes per
-flight. A saved route is only used when the FAA has no route for the flight,
-and only for the same aircraft, since airlines reuse flight numbers.
+The FAA feed only sends a route when a flight departs, lands or changes its
+plan, so after a restart a distant flight has no route until it lands. Saved
+routes are keyed by aircraft too, since airlines reuse flight numbers.
 """
 
 import json
 import os
 import time
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from threading import Lock
@@ -38,7 +36,6 @@ class TrackedRoutes:
         self._routes = self._load()
 
     def get(self, callsign: str, icao: str) -> tuple[str, str] | None:
-        """The saved route for this flight and aircraft, if any."""
         with self._lock:
             route = self._routes.get(_normalize(callsign))
             if (
@@ -52,22 +49,19 @@ class TrackedRoutes:
     def remember(
         self, callsign: str, icao: str, origin: str, destination: str
     ) -> None:
-        """Save the FAA's route for a tracked flight. Writes only when the
-        route is new or has changed."""
-        callsign, icao = _normalize(callsign), icao.lower()
         now = self._clock()
+        route = SavedRoute(
+            _normalize(callsign), icao.lower(), origin, destination, now
+        )
         with self._lock:
-            current = self._routes.get(callsign)
+            current = self._routes.get(route.callsign)
             if (
                 current is not None
-                and (current.icao, current.origin, current.destination)
-                == (icao, origin, destination)
+                and replace(current, saved_at=now) == route
                 and not self._expired(current, now)
             ):
                 return
-            self._routes[callsign] = SavedRoute(
-                callsign, icao, origin, destination, now
-            )
+            self._routes[route.callsign] = route
             self._save(now)
 
     def forget(self, callsign: str) -> None:
@@ -84,11 +78,8 @@ class TrackedRoutes:
             entries = json.loads(self._path.read_text())['routes']
             routes = [
                 SavedRoute(
-                    callsign=_normalize(str(entry['callsign'])),
-                    icao=str(entry['icao']).lower(),
-                    origin=str(entry['origin']),
-                    destination=str(entry['destination']),
-                    saved_at=min(_parse_time(entry['saved_at']), now),
+                    **entry
+                    | {'saved_at': min(_parse_time(entry['saved_at']), now)}
                 )
                 for entry in entries
             ]
@@ -104,26 +95,19 @@ class TrackedRoutes:
         }
 
     def _save(self, now: float) -> None:
-        """Write all unexpired routes, one per line. The file is flushed to
-        disk and then swapped in, so a power cut leaves the old file or the
-        new one, never a broken one."""
-        routes = sorted(
-            (r for r in self._routes.values() if not self._expired(r, now)),
-            key=lambda route: route.callsign,
-        )
-        self._routes = {route.callsign: route for route in routes}
+        """Flushed to disk and then swapped in, so a power cut leaves the old
+        file or the new one, never a broken one."""
+        self._routes = {
+            callsign: route
+            for callsign, route in sorted(self._routes.items())
+            if not self._expired(route, now)
+        }
         lines = [
             '    '
             + json.dumps(
-                {
-                    'callsign': route.callsign,
-                    'icao': route.icao,
-                    'origin': route.origin,
-                    'destination': route.destination,
-                    'saved_at': _format_time(route.saved_at),
-                }
+                asdict(route) | {'saved_at': _format_time(route.saved_at)}
             )
-            for route in routes
+            for route in self._routes.values()
         ]
         text = '{\n  "routes": [\n'
         text += ',\n'.join(lines) + ('\n' if lines else '') + '  ]\n}\n'

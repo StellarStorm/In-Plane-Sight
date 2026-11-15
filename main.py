@@ -59,18 +59,21 @@ except ConfigError as error:
 source = build_source(config)
 logger = get_logger(__name__, config.log_level)
 route_index: RouteIndex | None = None
-# The folder is gitignored.
+route_ttl_seconds = round(
+    (config.swift.route_ttl_hours if config.swift else 20) * 60 * 60
+)
 tracked_routes = TrackedRoutes(
-    Path('.in-plane-sight/tracked-routes.json'),
-    ttl_seconds=round(
-        (config.swift.route_ttl_hours if config.swift else 20) * 60 * 60
-    ),
+    Path('.in-plane-sight/tracked-routes.json'), route_ttl_seconds
 )
 
 
+def forget_tracked_route(callsign: str) -> None:
+    tracked_routes.forget(callsign)
+
+
 def destination_position(aircraft: Aircraft) -> tuple[float, float] | None:
-    route, _ = tracked_flight_route(aircraft, aircraft.callsign or '')
-    return airport_position(route.destination)
+    aircraft = with_saved_route(add_routes([aircraft])[0], aircraft.callsign)
+    return airport_position(aircraft.destination)
 
 
 # Tracked flights are looked up on adsb.fi/adsb.lol even with a local
@@ -82,7 +85,7 @@ tracker = FlightTracker(
     arrived_seconds=config.tracking.arrived_minutes * 60,
     max_seconds=config.tracking.max_hours * 60 * 60,
     destination=destination_position,
-    on_arrived=lambda callsign: tracked_routes.forget(callsign),
+    on_arrived=forget_tracked_route,
 )
 
 
@@ -92,8 +95,8 @@ async def lifespan(app: FastAPI):
     subscriber = None
     if config.swift is not None:
         route_index = RouteIndex(
-            ttl_seconds=round(config.swift.route_ttl_hours * 60 * 60),
-            on_finished=lambda callsign: tracked_routes.forget(callsign),
+            ttl_seconds=route_ttl_seconds,
+            on_finished=forget_tracked_route,
         )
         subscriber = SwiftSubscriber(
             config.swift, route_index, config.log_level
@@ -218,23 +221,12 @@ def stop_tracking():
     return {'tracking': False}
 
 
-def tracked_flight_route(
-    aircraft: Aircraft, callsign: str
-) -> tuple[Aircraft, bool]:
-    """The tracked aircraft with its route, and whether it came from the FAA.
-
-    Falls back to the route saved while tracking, for a distant flight the
-    FAA will not send again until it lands (for example after a restart).
-    """
-    if route_index is None:
-        return aircraft, False
-    aircraft = add_routes([aircraft])[0]
-    if aircraft.origin and aircraft.destination:
-        return aircraft, True
-    saved = tracked_routes.get(callsign, aircraft.icao)
-    if saved is not None:
-        aircraft = with_route(aircraft, *saved)
-    return aircraft, False
+def with_saved_route(aircraft: Aircraft, callsign: str | None) -> Aircraft:
+    """Fall back to the route saved while tracking when the FAA has none."""
+    if route_index is None or aircraft.destination:
+        return aircraft
+    saved = tracked_routes.get(callsign or '', aircraft.icao)
+    return with_route(aircraft, *saved) if saved else aircraft
 
 
 def tracking_response(state: dict | None) -> dict:
@@ -243,16 +235,15 @@ def tracking_response(state: dict | None) -> dict:
         return {'tracking': False}
     response = {'tracking': True, **state}
     if state['aircraft'] is not None:
-        aircraft, from_faa = tracked_flight_route(
-            Aircraft(**state['aircraft']), state['callsign']
-        )
-        if from_faa:
+        aircraft = add_routes([Aircraft(**state['aircraft'])])[0]
+        if aircraft.origin and aircraft.destination:
             tracked_routes.remember(
                 state['callsign'],
                 aircraft.icao,
                 aircraft.origin,
                 aircraft.destination,
             )
+        aircraft = with_saved_route(aircraft, state['callsign'])
         response['aircraft'] = asdict(aircraft)
         response['origin_position'] = airport_position(aircraft.origin)
         response['destination_position'] = airport_position(
