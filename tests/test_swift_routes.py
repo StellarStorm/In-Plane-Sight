@@ -1,3 +1,4 @@
+import json
 import shutil
 from pathlib import Path
 
@@ -141,6 +142,31 @@ def test_saved_routes_are_restored_and_keep_their_expiry(tmp_path):
     now[0] += 10  # 100 seconds after the FAA last updated DAL1
     assert restored.lookup('DAL1') is None
     assert restored.lookup('UAL2') == ('KEWR', 'KSFO')
+
+
+def test_route_file_has_one_route_per_line_sorted_by_callsign(tmp_path):
+    path = tmp_path / 'routes.json'
+    now = [1794760930.0]  # 2026-11-15 16:42:10 UTC
+    index = make_index(now)
+    index.apply(FlightRouteUpdate('gufi-2', 'UAL2', 'KEWR', 'KSFO', 'ACTIVE'))
+    index.apply(FlightRouteUpdate('gufi-1', 'DAL1', 'KATL', 'KPDX', 'ACTIVE'))
+    index.save(path)
+
+    assert path.read_text() == (
+        '{\n'
+        '  "version": 1,\n'
+        '  "routes": [\n'
+        '    {"callsign": "DAL1", "origin": "KATL", "destination": "KPDX", '
+        '"updated_at": "2026-11-15T16:42:10Z", "flight_id": "gufi-1"},\n'
+        '    {"callsign": "UAL2", "origin": "KEWR", "destination": "KSFO", '
+        '"updated_at": "2026-11-15T16:42:10Z", "flight_id": "gufi-2"}\n'
+        '  ]\n'
+        '}\n'
+    )
+    assert json.loads(path.read_text())['version'] == 1
+
+    make_index(now).save(path)
+    assert json.loads(path.read_text()) == {'version': 1, 'routes': []}
 
 
 def test_expired_routes_are_not_restored(tmp_path):
