@@ -76,6 +76,11 @@ def test_static_files_do_not_depend_on_the_working_directory(
     assert client.get('/airline-icons').json()
 
 
+def test_browsers_revalidate_pages_and_scripts(client):
+    for path in ('/', '/static/common.js'):
+        assert client.get(path).headers['cache-control'] == 'no-cache'
+
+
 def test_misspelled_environment_variable_is_rejected(tmp_path, monkeypatch):
     monkeypatch.setenv('IPS_RADIUS', '30')
     with pytest.raises(ConfigError, match='IPS_RADIUS'):

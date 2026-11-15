@@ -5,7 +5,7 @@ from dataclasses import asdict, replace
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Request
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -140,6 +140,15 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 app.mount('/static', StaticFiles(directory=STATIC_DIR), name='static')
+
+
+@app.middleware('http')
+async def revalidate(request: Request, call_next):
+    # Without this, browsers may reuse a cached script from before an update
+    # alongside a newer page, which breaks the page.
+    response = await call_next(request)
+    response.headers.setdefault('Cache-Control', 'no-cache')
+    return response
 
 
 @app.get('/')
