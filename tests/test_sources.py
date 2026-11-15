@@ -87,6 +87,20 @@ def test_parse_aircraft_normalizes_adsb_fields():
     )
 
 
+@pytest.mark.parametrize(
+    ('rates', 'expected'),
+    [
+        ({'baro_rate': -512, 'geom_rate': 960}, -512),
+        ({'baro_rate': 0, 'geom_rate': 960}, 0),
+        ({'geom_rate': 960}, 960),
+        ({'baro_rate': None, 'geom_rate': 960}, 960),
+        ({}, None),
+    ],
+)
+def test_geom_rate_is_only_a_fallback_for_baro_rate(rates, expected):
+    assert parse_aircraft(rates).vertical_rate_fpm == expected
+
+
 def test_parse_aircraft_handles_missing_and_ground_values():
     aircraft = parse_aircraft(
         {'flight': '   ', 'alt_baro': 'ground', 'gs': 'unknown'}
@@ -102,6 +116,7 @@ def test_parse_aircraft_handles_missing_and_ground_values():
         heading=None,
         aircraft_type=None,
         vertical_rate_fpm=None,
+        on_ground=True,
     )
 
     assert asdict(aircraft)['origin'] is None

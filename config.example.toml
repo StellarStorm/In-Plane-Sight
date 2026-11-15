@@ -27,6 +27,13 @@ host = "0.0.0.0"
 port = 8000
 log_level = "INFO"        # DEBUG, INFO, WARNING, ERROR or CRITICAL
 
+# --- Tracking one flight (from /track) ---
+# Tracking ends on its own after the flight lands, loses ADS-B, or runs too long.
+[tracking]
+arrived_minutes = 5  # stay on screen this long after landing
+lost_minutes = 30    # give up after this long without ADS-B
+max_hours = 24       # never track longer than this
+
 # Optional FAA SWIFT/SCDS Flight FIXM route feed. Uncomment this section to
 # enable it; queue, username and password are then required.
 # [swift]
@@ -35,3 +42,4 @@ log_level = "INFO"        # DEBUG, INFO, WARNING, ERROR or CRITICAL
 # queue = ""
 # username = ""
 # password = ""
+# route_ttl_hours = 20  # hours a route is kept after the FAA last updated it

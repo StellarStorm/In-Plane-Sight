@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>InPlaneSight - Track a Flight</title>
+    <style>
+      :root {
+        --bg: #06070d;
+        --panel: #0e1018;
+        --line: #232838;
+        --text: #e8eaf0;
+        --muted: #8a90a6;
+        --accent: #5df2ff;
+        --violet: #9faaff;
+        --danger: #ff7a7a;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: var(--bg);
+        color: var(--text);
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      main {
+        max-width: 480px;
+        margin: 0 auto;
+        padding: 24px 16px 40px;
+      }
+      h1 {
+        margin: 0 0 20px;
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 16px;
+      }
+      label {
+        display: block;
+        font-size: 14px;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+      }
+      input {
+        flex: 1;
+        min-width: 0;
+        padding: 12px;
+        font-size: 18px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text);
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+      input:focus {
+        outline: 2px solid var(--accent);
+        outline-offset: 1px;
+      }
+      button {
+        padding: 12px 18px;
+        font-size: 16px;
+        font-weight: 600;
+        border: 0;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.6;
+        cursor: default;
+      }
+      #track-button {
+        color: #031014;
+        background: var(--accent);
+      }
+      #stop-button {
+        width: 100%;
+        margin-top: 16px;
+        color: var(--danger);
+        background: transparent;
+        border: 1px solid var(--danger);
+      }
+      .hint {
+        margin: 10px 0 0;
+        font-size: 13px;
+        line-height: 1.5;
+        color: var(--muted);
+      }
+      #error {
+        display: none;
+        margin: 10px 0 0;
+        font-size: 14px;
+        color: var(--danger);
+      }
+      #current {
+        display: none;
+      }
+      #current-callsign {
+        font-size: 28px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+      }
+      #current-status {
+        margin-top: 4px;
+        font-size: 15px;
+        color: var(--accent);
+      }
+      dl {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 6px 16px;
+        margin: 14px 0 0;
+        font-size: 15px;
+      }
+      dt {
+        color: var(--muted);
+      }
+      dd {
+        margin: 0;
+      }
+      nav {
+        display: flex;
+        gap: 20px;
+        font-size: 15px;
+      }
+      nav a {
+        color: var(--violet);
+        text-decoration: none;
+        padding: 6px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Track a flight</h1>
+
+      <section id="current" class="panel" aria-live="polite">
+        <div id="current-callsign"></div>
+        <div id="current-status"></div>
+        <dl id="current-details"></dl>
+        <button id="stop-button" type="button">Stop tracking</button>
+      </section>
+
+      <form id="track-form" class="panel">
+        <label for="flight">Flight to show on every display</label>
+        <div class="row">
+          <input
+            id="flight"
+            name="flight"
+            placeholder="UA1234"
+            autocomplete="off"
+            autocapitalize="characters"
+            spellcheck="false"
+            maxlength="20"
+            required
+          />
+          <button id="track-button" type="submit">Track</button>
+        </div>
+        <p id="error" role="alert"></p>
+        <p class="hint">
+          Flight number (UA1234), callsign (UAL1234) or tail number (N12345).
+          Regional flights often broadcast the operating airline's callsign,
+          for example ENY3456 for an American Eagle flight.
+        </p>
+        <p class="hint">
+          The displays go back to the aircraft overhead a few minutes after
+          the flight lands, or if it is not seen for a while.
+        </p>
+      </form>
+
+      <nav><a href="/">BOARD</a><a href="/map">MAP</a><a href="/list">LIST</a></nav>
+    </main>
+
+    <script>
+      var form = document.getElementById("track-form"),
+        input = document.getElementById("flight"),
+        trackButton = document.getElementById("track-button"),
+        stopButton = document.getElementById("stop-button"),
+        errorEl = document.getElementById("error"),
+        current = document.getElementById("current");
+
+      var STATUS_TEXT = {
+        waiting: "Waiting for the flight to appear on ADS-B",
+        on_ground: "On the ground",
+        airborne: "In the air",
+        signal_lost: "Signal lost; showing last known position",
+        arrived: "Arrived",
+      };
+
+      function showError(message) {
+        errorEl.textContent = message || "";
+        errorEl.style.display = message ? "block" : "none";
+      }
+
+      function addDetail(list, label, value) {
+        if (value == null || value === "") return;
+        var dt = document.createElement("dt"),
+          dd = document.createElement("dd");
+        dt.textContent = label;
+        dd.textContent = value;
+        list.append(dt, dd);
+      }
+
+      function show(state) {
+        if (!state.tracking) {
+          current.style.display = "none";
+          return;
+        }
+        var a = state.aircraft;
+        current.style.display = "block";
+        document.getElementById("current-callsign").textContent =
+          state.callsign;
+        document.getElementById("current-status").textContent =
+          state.status === "airborne" && state.phase
+            ? state.phase[0].toUpperCase() + state.phase.slice(1)
+            : STATUS_TEXT[state.status] || state.status;
+        var details = document.getElementById("current-details");
+        details.replaceChildren();
+        if (state.flight !== state.callsign) {
+          addDetail(details, "Entered", state.flight);
+        }
+        if (a) {
+          if (a.origin && a.destination) {
+            addDetail(
+              details,
+              "Route",
+              (a.origin_display || a.origin) +
+                " → " +
+                (a.destination_display || a.destination),
+            );
+          }
+          addDetail(
+            details,
+            "Aircraft",
+            [a.aircraft_type, a.description].filter(Boolean).join(" · "),
+          );
+          addDetail(
+            details,
+            "Altitude",
+            a.altitude_ft != null ? a.altitude_ft.toLocaleString() + " ft" : null,
+          );
+          addDetail(
+            details,
+            "Speed",
+            a.speed_kts != null ? a.speed_kts + " kt" : null,
+          );
+        }
+        if (state.last_seen_at) {
+          addDetail(
+            details,
+            "Last seen",
+            new Date(state.last_seen_at * 1000).toLocaleTimeString(),
+          );
+        }
+      }
+
+      function request(method, body) {
+        return fetch("/tracking", {
+          method: method,
+          headers: body ? { "Content-Type": "application/json" } : {},
+          body: body ? JSON.stringify(body) : undefined,
+        }).then(function (response) {
+          return response.json().then(function (data) {
+            if (!response.ok) {
+              var message =
+                data.error ||
+                (Array.isArray(data.detail) ? "Enter a flight number." : null) ||
+                "Something went wrong.";
+              throw new Error(message);
+            }
+            return data;
+          });
+        });
+      }
+
+      function refresh() {
+        request("GET")
+          .then(show)
+          .catch(function (error) {
+            console.error(error);
+          });
+      }
+
+      form.addEventListener("submit", function (event) {
+        event.preventDefault();
+        showError("");
+        trackButton.disabled = true;
+        request("POST", { flight: input.value })
+          .then(function (state) {
+            input.value = "";
+            input.blur();
+            show(state);
+          })
+          .catch(function (error) {
+            showError(error.message);
+          })
+          .finally(function () {
+            trackButton.disabled = false;
+          });
+      });
+
+      stopButton.addEventListener("click", function () {
+        stopButton.disabled = true;
+        request("DELETE")
+          .then(show)
+          .catch(function (error) {
+            showError(error.message);
+          })
+          .finally(function () {
+            stopButton.disabled = false;
+          });
+      });
+
+      fetch("/config")
+        .then(function (r) {
+          return r.json();
+        })
+        .then(function (cfg) {
+          setInterval(refresh, cfg.refresh_seconds * 1000);
+        })
+        .catch(function () {
+          setInterval(refresh, 15000);
+        });
+      refresh();
+    </script>
+  </body>
+</html>

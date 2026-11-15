@@ -19,6 +19,7 @@ class Aircraft:
     destination: str | None = None
     origin_display: str | None = None
     destination_display: str | None = None
+    on_ground: bool = False
 
 
 def parse_aircraft(raw: dict) -> Aircraft:
@@ -27,6 +28,9 @@ def parse_aircraft(raw: dict) -> Aircraft:
     alt = raw.get('alt_baro')
     speed = raw.get('gs')
     vr = raw.get('baro_rate')
+    if not isinstance(vr, (int, float)):
+        # Many light aircraft only report the GPS-derived rate.
+        vr = raw.get('geom_rate')
     return Aircraft(
         icao=raw.get('hex', ''),
         callsign=callsign,
@@ -39,6 +43,7 @@ def parse_aircraft(raw: dict) -> Aircraft:
         description=raw.get('desc'),
         vertical_rate_fpm=int(vr) if isinstance(vr, (int, float)) else None,
         category=raw.get('category'),
+        on_ground=alt == 'ground',
     )
 
 

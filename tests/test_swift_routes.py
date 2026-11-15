@@ -2,6 +2,7 @@ import shutil
 from pathlib import Path
 
 import pytest
+from fastapi.testclient import TestClient
 
 import main
 from config import Config, SwiftConfig
@@ -39,6 +40,24 @@ def test_swift_config_is_optional_and_validated(tmp_path):
     assert Config.load(config_file).swift is None
 
 
+def test_swift_route_ttl_defaults_to_20_hours_and_can_be_set(
+    tmp_path, monkeypatch
+):
+    config_file = tmp_path / 'config.toml'
+    config_file.write_text(
+        '[swift]\nqueue = "q"\nusername = "u"\npassword = "p"\n'
+    )
+    assert Config.load(config_file).swift.route_ttl_hours == 20
+
+    monkeypatch.setenv('IPS_SWIFT_ROUTE_TTL_HOURS', '6.5')
+    assert Config.load(config_file).swift.route_ttl_hours == 6.5
+
+    # Zero or negative would expire every route at once, so it turns the
+    # route feed off with a warning like any other bad [swift] value.
+    monkeypatch.setenv('IPS_SWIFT_ROUTE_TTL_HOURS', '0')
+    assert Config.load(config_file).swift is None
+
+
 def test_parse_fixm_namespaced_message_and_header_fields():
     updates = parse_fixm_message(
         ACTIVE_FIXM,
@@ -67,7 +86,7 @@ def test_parse_fixm_ignores_wrong_data_type_and_sensitive_messages():
     assert parse_fixm_message(ACTIVE_FIXM, {'FDPS_BlockAtFAA': 'true'}) == []
 
 
-def test_route_index_expires_after_last_access_and_sweeps_unrequested_routes():
+def test_routes_expire_after_the_last_faa_update_not_the_last_lookup():
     now = [1000.0]
     route_index = RouteIndex(
         ttl_seconds=100,
@@ -83,17 +102,157 @@ def test_route_index_expires_after_last_access_and_sweeps_unrequested_routes():
 
     now[0] += 90
     assert route_index.lookup(' swa42 ') == ('KPHL', 'KDEN')
-    now[0] += 99
+    route_index.apply(
+        FlightRouteUpdate('gufi-2', 'AAL1', 'KJFK', 'KLAX', 'ACTIVE')
+    )
+    now[0] += 10
+    assert route_index.lookup('SWA42') is None  # looked up, never updated
+    assert route_index.lookup('AAL1') == ('KJFK', 'KLAX')
+    assert len(route_index) == 1
+
+    now[0] += 90
     assert route_index.expire() == 1
     assert route_index.lookup('AAL1') is None
-    assert route_index.lookup('SWA42') == ('KPHL', 'KDEN')
-
-    now[0] += 101
-    assert route_index.expire() == 1
-    assert route_index.lookup('SWA42') is None
 
 
-def test_route_index_ignores_non_active_and_is_memory_only():
+def make_index(now, ttl_seconds=100):
+    return RouteIndex(
+        ttl_seconds=ttl_seconds,
+        cleanup_interval_seconds=1,
+        clock=lambda: now[0],
+    )
+
+
+def test_saved_routes_are_restored_and_keep_their_expiry(tmp_path):
+    path = tmp_path / 'store' / 'routes.json'
+    now = [1000.0]
+    saved = make_index(now)
+    saved.apply(FlightRouteUpdate('gufi-1', 'DAL1', 'KATL', 'KPDX', 'ACTIVE'))
+    now[0] += 60
+    saved.apply(FlightRouteUpdate('gufi-2', 'UAL2', 'KEWR', 'KSFO', 'ACTIVE'))
+    assert saved.save(path) == 2
+    assert not path.with_name('routes.json.tmp').exists()
+
+    now[0] += 30
+    restored = make_index(now)
+    assert restored.load(path) == 2
+    assert restored.lookup('DAL1') == ('KATL', 'KPDX')
+
+    now[0] += 10  # 100 seconds after the FAA last updated DAL1
+    assert restored.lookup('DAL1') is None
+    assert restored.lookup('UAL2') == ('KEWR', 'KSFO')
+
+
+def test_expired_routes_are_not_restored(tmp_path):
+    path = tmp_path / 'routes.json'
+    now = [1000.0]
+    saved = make_index(now)
+    saved.apply(FlightRouteUpdate('gufi-1', 'DAL1', 'KATL', 'KPDX', 'ACTIVE'))
+    saved.save(path)
+
+    now[0] += 100
+    restored = make_index(now)
+    assert restored.load(path) == 0
+    assert len(restored) == 0
+
+
+def test_live_faa_data_wins_over_restored_routes(tmp_path):
+    path = tmp_path / 'routes.json'
+    now = [1000.0]
+    saved = make_index(now)
+    saved.apply(FlightRouteUpdate('old', 'DAL1', 'KATL', 'KPDX', 'ACTIVE'))
+    saved.apply(FlightRouteUpdate('same', 'UAL2', 'KEWR', 'KSFO', 'ACTIVE'))
+    saved.apply(FlightRouteUpdate('done', 'AAL3', 'KJFK', 'KLAX', 'ACTIVE'))
+    saved.save(path)
+    restored = make_index(now)
+    restored.load(path)
+
+    # A different flight with the same callsign.
+    restored.apply(FlightRouteUpdate('new', 'DAL1', 'KATL', 'KSEA', 'ACTIVE'))
+    assert restored.lookup('DAL1') == ('KATL', 'KSEA')
+    # The same flight, diverted.
+    restored.apply(FlightRouteUpdate('same', 'UAL2', 'KEWR', 'KOAK', 'ACTIVE'))
+    assert restored.lookup('UAL2') == ('KEWR', 'KOAK')
+    # The same flight, finished.
+    restored.apply(FlightRouteUpdate('done', 'AAL3', None, None, 'ARRIVED'))
+    assert restored.lookup('AAL3') is None
+
+
+def test_restored_routes_never_replace_live_ones(tmp_path):
+    path = tmp_path / 'routes.json'
+    now = [1000.0]
+    saved = make_index(now)
+    saved.apply(FlightRouteUpdate('gufi-1', 'DAL1', 'KATL', 'KPDX', 'ACTIVE'))
+    saved.save(path)
+    live = make_index(now)
+    live.apply(FlightRouteUpdate('gufi-1', 'DAL1', 'KATL', 'KSEA', 'ACTIVE'))
+    assert live.load(path) == 0
+    assert live.lookup('DAL1') == ('KATL', 'KSEA')
+
+
+def test_saved_timestamps_in_the_future_count_as_now(tmp_path):
+    path = tmp_path / 'routes.json'
+    now = [5000.0]
+    saved = make_index(now)
+    saved.apply(FlightRouteUpdate('gufi-1', 'DAL1', 'KATL', 'KPDX', 'ACTIVE'))
+    saved.save(path)
+
+    now[0] = 1000.0  # clock went backwards
+    restored = make_index(now)
+    restored.load(path)
+    now[0] += 100
+    assert restored.lookup('DAL1') is None
+
+
+def test_missing_route_file_restores_nothing(tmp_path):
+    assert RouteIndex().load(tmp_path / 'missing.json') == 0
+
+
+def test_unreadable_route_file_is_ignored_with_a_warning(
+    tmp_path, monkeypatch, caplog
+):
+    path = tmp_path / 'routes.json'
+    path.write_text('not json')
+    monkeypatch.setattr(main, 'ROUTE_FILE', path)
+    index = RouteIndex()
+    main.restore_routes(index)
+    assert len(index) == 0
+    assert 'Ignoring saved routes' in caplog.text
+
+
+def test_app_restores_routes_at_start_and_saves_them_at_exit(
+    tmp_path, monkeypatch
+):
+    path = tmp_path / 'routes.json'
+    saved = RouteIndex()
+    saved.apply(FlightRouteUpdate('gufi-1', 'DAL1', 'KATL', 'KPDX', 'ACTIVE'))
+    saved.save(path)
+
+    class FakeSubscriber:
+        def __init__(self, config, route_index, log_level):
+            self.route_index = route_index
+
+        def start(self):
+            self.route_index.apply(
+                FlightRouteUpdate('gufi-2', 'UAL2', 'KEWR', 'KSFO', 'ACTIVE')
+            )
+
+        def stop(self):
+            pass
+
+    swift = SwiftConfig(queue='q', username='u', password='p')
+    monkeypatch.setattr(main.config, 'swift', swift)
+    monkeypatch.setattr(main, 'SwiftSubscriber', FakeSubscriber)
+    monkeypatch.setattr(main, 'ROUTE_FILE', path)
+    with TestClient(main.app):
+        assert main.route_index.lookup('DAL1') == ('KATL', 'KPDX')
+
+    restored = RouteIndex()
+    assert restored.load(path) == 2
+    assert restored.lookup('UAL2') == ('KEWR', 'KSFO')
+
+
+def test_route_index_ignores_non_active_routes():
     route_index = RouteIndex()
     route_index.apply(
         FlightRouteUpdate('gufi-0', 'AAL1', 'KJFK', 'KLAX', 'PLANNED')
@@ -103,7 +262,9 @@ def test_route_index_ignores_non_active_and_is_memory_only():
     )
 
     assert route_index.lookup('AAL1') == ('KJFK', 'KLAX')
+    assert len(route_index) == 1
     assert RouteIndex().lookup('AAL1') is None
+    assert len(RouteIndex()) == 0
 
 
 def test_airport_display_code_maps_iata_and_falls_back_to_icao():

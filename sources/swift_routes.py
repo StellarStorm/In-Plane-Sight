@@ -1,8 +1,12 @@
+import json
+import os
 import time
 import xml.etree.ElementTree as ET
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+from pathlib import Path
 from threading import Lock
+from typing import ClassVar
 
 
 @dataclass(frozen=True)
@@ -99,12 +103,25 @@ def _child(element: ET.Element, name: str) -> ET.Element | None:
 
 
 class RouteIndex:
-    TERMINAL_STATUSES = {'CANCELLED', 'COMPLETED', 'ARRIVED', 'INACTIVE'}
+    """Routes of active flights, by FDPS flight id (gufi) and callsign.
+
+    A route is dropped when the FAA reports the flight finished, or
+    ttl_seconds after the FAA last sent anything about it. Routes can be
+    saved and restored across restarts; a restored route is only used until
+    the FAA sends live data for that callsign, which always wins.
+    """
+
+    TERMINAL_STATUSES: ClassVar = {
+        'CANCELLED',
+        'COMPLETED',
+        'ARRIVED',
+        'INACTIVE',
+    }
     CLEANUP_INTERVAL_SECONDS = 60
 
     def __init__(
         self,
-        ttl_seconds: int = 4 * 60 * 60,
+        ttl_seconds: int = 20 * 60 * 60,
         cleanup_interval_seconds: int = CLEANUP_INTERVAL_SECONDS,
         clock=time.time,
     ):
@@ -112,20 +129,25 @@ class RouteIndex:
         self._cleanup_interval_seconds = cleanup_interval_seconds
         self._clock = clock
         self._lock = Lock()
+        # flight id -> (latest update, when the FAA sent it)
         self._routes: dict[str, tuple[FlightRouteUpdate, float]] = {}
         self._flight_ids_by_callsign: dict[str, set[str]] = {}
+        self._restored_ids: set[str] = set()
         self._last_cleanup_at = self._clock()
+
+    def __len__(self) -> int:
+        with self._lock:
+            return len(self._routes)
 
     def expire(self) -> int:
         now = self._clock()
         with self._lock:
             if now - self._last_cleanup_at < self._cleanup_interval_seconds:
                 return 0
-            cutoff = now - self._ttl_seconds
             expired_ids = [
                 flight_id
-                for flight_id, (_, last_accessed_at) in self._routes.items()
-                if last_accessed_at <= cutoff
+                for flight_id, (_, updated_at) in self._routes.items()
+                if self._expired(updated_at, now)
             ]
             for flight_id in expired_ids:
                 self._remove(flight_id)
@@ -144,19 +166,8 @@ class RouteIndex:
                 or not update.destination
             ):
                 return
-
-            previous = self._routes.get(update.flight_id)
-            if previous is not None and previous[0].callsign != update.callsign:
-                previous_callsign = previous[0].callsign
-                self._flight_ids_by_callsign[previous_callsign].discard(
-                    update.flight_id
-                )
-                if not self._flight_ids_by_callsign[previous_callsign]:
-                    self._flight_ids_by_callsign.pop(previous_callsign)
-            self._routes[update.flight_id] = (update, self._clock())
-            self._flight_ids_by_callsign.setdefault(update.callsign, set()).add(
-                update.flight_id
-            )
+            self._remove(update.flight_id)
+            self._add(update, self._clock())
 
     def lookup(self, callsign: str | None) -> tuple[str, str] | None:
         results = self.lookup_many([callsign])
@@ -165,41 +176,100 @@ class RouteIndex:
     def lookup_many(
         self, callsigns: list[str | None]
     ) -> dict[str, tuple[str, str]]:
+        """Routes by callsign. A callsign with more than one different route
+        is left out, since there is no telling which is right."""
         self.expire()
         normalized_callsigns = {
             ' '.join((callsign or '').split()).upper()
             for callsign in callsigns
             if ' '.join((callsign or '').split())
         }
-        if not normalized_callsigns:
-            return {}
         now = self._clock()
-        cutoff = now - self._ttl_seconds
+        results = {}
         with self._lock:
-            expired_ids = set()
-            route_sets: dict[str, set[tuple[str, str]]] = {}
             for callsign in normalized_callsigns:
-                for flight_id in self._flight_ids_by_callsign.get(callsign, ()):
-                    record = self._routes.get(flight_id)
-                    if record is None:
-                        continue
-                    update, seen_at = record
-                    if seen_at <= cutoff:
-                        expired_ids.add(flight_id)
-                    elif update.status == 'ACTIVE':
-                        self._routes[flight_id] = (update, now)
-                        route_sets.setdefault(callsign, set()).add(
-                            (update.origin or '', update.destination or '')
-                        )
-            for flight_id in expired_ids:
-                self._remove(flight_id)
-            return {
-                callsign: next(iter(routes))
-                for callsign, routes in route_sets.items()
-                if len(routes) == 1
-            }
+                flight_ids = [
+                    flight_id
+                    for flight_id in self._flight_ids_by_callsign.get(
+                        callsign, ()
+                    )
+                    if not self._expired(self._routes[flight_id][1], now)
+                ]
+                live_ids = [
+                    flight_id
+                    for flight_id in flight_ids
+                    if flight_id not in self._restored_ids
+                ]
+                routes = {
+                    (
+                        self._routes[flight_id][0].origin,
+                        self._routes[flight_id][0].destination,
+                    )
+                    for flight_id in live_ids or flight_ids
+                }
+                if len(routes) == 1:
+                    results[callsign] = routes.pop()
+        return results
+
+    def save(self, path: Path) -> int:
+        """Write the current routes to path, replacing it in one step."""
+        now = self._clock()
+        with self._lock:
+            routes = [
+                {**asdict(update), 'updated_at': updated_at}
+                for update, updated_at in self._routes.values()
+                if not self._expired(updated_at, now)
+            ]
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = path.with_name(path.name + '.tmp')
+        temporary.write_text(json.dumps({'version': 1, 'routes': routes}))
+        os.replace(temporary, path)
+        return len(routes)
+
+    def load(self, path: Path) -> int:
+        """Restore routes saved by save(), skipping any that have expired.
+
+        Restored routes keep the time the FAA last updated them, so they
+        expire on the same schedule as if the app had kept running.
+        """
+        try:
+            saved = json.loads(path.read_text())
+        except FileNotFoundError:
+            return 0
+        now = self._clock()
+        restored = 0
+        with self._lock:
+            for entry in saved['routes']:
+                update = FlightRouteUpdate(
+                    flight_id=str(entry['flight_id']),
+                    callsign=str(entry['callsign']),
+                    origin=str(entry['origin']),
+                    destination=str(entry['destination']),
+                    status=str(entry['status']),
+                )
+                updated_at = min(float(entry['updated_at']), now)
+                if (
+                    update.status != 'ACTIVE'
+                    or self._expired(updated_at, now)
+                    or update.flight_id in self._routes
+                ):
+                    continue
+                self._add(update, updated_at)
+                self._restored_ids.add(update.flight_id)
+                restored += 1
+        return restored
+
+    def _expired(self, updated_at: float, now: float) -> bool:
+        return updated_at <= now - self._ttl_seconds
+
+    def _add(self, update: FlightRouteUpdate, updated_at: float) -> None:
+        self._routes[update.flight_id] = (update, updated_at)
+        self._flight_ids_by_callsign.setdefault(update.callsign, set()).add(
+            update.flight_id
+        )
 
     def _remove(self, flight_id: str) -> None:
+        self._restored_ids.discard(flight_id)
         record = self._routes.pop(flight_id, None)
         if record is None:
             return
