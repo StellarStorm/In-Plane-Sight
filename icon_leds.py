@@ -63,8 +63,11 @@ def color_distance(
     return sum((a - b) ** 2 for a, b in zip(first, second, strict=True)) ** 0.5
 
 
-def estimate_background(image: Image.Image) -> tuple[int, int, int]:
-    image = image.convert('RGB')
+def estimate_background(image: Image.Image) -> tuple[int, int, int] | None:
+    """The most common border colour, or None if the border is mostly
+    transparent: the background is then already removed, and the hidden RGB
+    of transparent pixels (often black) would erase matching artwork."""
+    image = image.convert('RGBA')
     width, height = image.size
     border = []
 
@@ -73,7 +76,10 @@ def estimate_background(image: Image.Image) -> tuple[int, int, int]:
     for y in range(height):
         border.extend((image.getpixel((0, y)), image.getpixel((width - 1, y))))
 
-    return Counter(border).most_common(1)[0][0]
+    opaque = [pixel[:3] for pixel in border if pixel[3] >= 128]
+    if len(opaque) * 2 <= len(border):
+        return None
+    return Counter(opaque).most_common(1)[0][0]
 
 
 def remove_background(
@@ -90,6 +96,8 @@ def remove_background(
         if background.lower() == 'auto'
         else ImageColor.getrgb(background)
     )
+    if target is None:
+        return image
 
     width, height = image.size
     pixels = image.load()
@@ -278,7 +286,8 @@ def build_icon(
         'code': code,
         'label': label,
         'palette': {
-            symbol: '#%02x%02x%02x' % color for symbol, color in palette.items()
+            symbol: '#{:02x}{:02x}{:02x}'.format(*color)
+            for symbol, color in palette.items()
         },
         'rows': rows,
     }
@@ -442,8 +451,7 @@ def main() -> None:
     validate_icon(written)
 
     if args.preview:
-        path = Path(f'{code}.png')
-        write_preview(icon, path=path)
+        write_preview(icon, path=output.with_suffix('.png'))
 
     print(f'Wrote {output}')
 
