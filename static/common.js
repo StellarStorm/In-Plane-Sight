@@ -17,6 +17,17 @@ window.InPlaneSight = {
         return aircraft.aircraft_type || aircraft.description || '';
     },
 
+    // Rejects on a non-OK status, so an upstream outage (503) shows as a
+    // failed fetch rather than as an empty sky.
+    fetchJson(url) {
+        return fetch(url).then(function (response) {
+            if (!response.ok) {
+                throw new Error(url + ' returned ' + response.status);
+            }
+            return response.json();
+        });
+    },
+
     formatTime(date) {
         return date.toLocaleTimeString([], {
             hour: this.timeFormat === '12' ? 'numeric' : '2-digit',

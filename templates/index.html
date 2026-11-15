@@ -72,9 +72,8 @@
   <script>
       var statusEl = document.getElementById('status');
 
-    fetch('/config')
-      .then(function(r) { return r.json(); })
-      .then(function(cfg) { init(cfg); })
+    InPlaneSight.fetchJson('/config')
+      .then(init)
       .catch(function(err) {
         statusEl.textContent = 'config fetch failed';
         console.error(err);
@@ -145,7 +144,7 @@
           escapeHtml(a.origin_display || a.origin) + '-' +
             escapeHtml(a.destination_display || a.destination) + '</div>'
           : '';
-        return '<div class="popup-callsign">' + (a.callsign || a.icao) + '</div>'
+        return '<div class="popup-callsign">' + escapeHtml(a.callsign || a.icao) + '</div>'
              + '<div class="popup-type">'     + type                   + '</div>'
              + '<div class="popup-detail">'   + detail                 + '</div>'
              + route;
@@ -208,6 +207,16 @@
       }
 
 
+      // MapLibre joins points literally, so a step from 179.9 to -179.9 would
+      // be drawn the long way round; keep each point within 180° of the last.
+      function unwrapLongitudes(points) {
+        for (var j = 1; j < points.length; j++) {
+          while (points[j][0] - points[j - 1][0] > 180) points[j][0] -= 360;
+          while (points[j][0] - points[j - 1][0] < -180) points[j][0] += 360;
+        }
+        return points;
+      }
+
       function greatCircle(from, to) {
         var toRadians = Math.PI / 180;
         var lon1 = from[0] * toRadians, lat1 = from[1] * toRadians;
@@ -232,12 +241,7 @@
             Math.atan2(z, Math.sqrt(x * x + y * y)) / toRadians
           ]);
         }
-        // Keep longitudes continuous across 180° so the line doesn't wrap.
-        for (var j = 1; j < points.length; j++) {
-          while (points[j][0] - points[j - 1][0] > 180) points[j][0] -= 360;
-          while (points[j][0] - points[j - 1][0] < -180) points[j][0] += 360;
-        }
-        return points;
+        return unwrapLongitudes(points);
       }
 
       function setLines(sourceId, lines) {
@@ -297,7 +301,10 @@
           }
           return;
         }
-        var position = [a.lon, a.lat];
+        var flown = unwrapLongitudes(trackPath.map(lngLat));
+        if (!flown.length) flown = [[a.lon, a.lat]];
+        // The newest point is the aircraft, on the same copy of the world.
+        var position = flown[flown.length - 1];
         a.callsign = t.callsign;
         var popup = makePopup(a);
         if (trackedMarker) {
@@ -313,8 +320,6 @@
             .addTo(map);
         }
 
-        var flown = trackPath.map(lngLat);
-        if (!flown.length) flown = [position];
         setLines('tracked-path', flown.length > 1 ? [flown] : []);
         var planned = [];
         var origin = lngLat(t.origin_position);
@@ -331,13 +336,6 @@
         } else {
           map.easeTo({ center: position });
         }
-      }
-
-      function fetchJson(url) {
-        return fetch(url).then(function (r) {
-          if (!r.ok) throw new Error(url + ': ' + r.status);
-          return r.json();
-        });
       }
 
       function showAircraft(aircraft) {
@@ -367,12 +365,10 @@
         });
       }
 
+      // A failed poll leaves the map as it was, rather than treating it as
+      // the end of tracking and flying home.
       function refresh() {
-        fetchJson(trackingUrl())
-          .catch(function (err) {
-            console.error(err);
-            return { tracking: false };
-          })
+        InPlaneSight.fetchJson(trackingUrl())
           .then(function (tracked) {
             showTracked(tracked);
             setRangeVisible(!tracked.tracking);
@@ -383,7 +379,7 @@
                 ' · ' + InPlaneSight.formatTime(new Date());
               return;
             }
-            return fetchJson('/aircraft').then(function (aircraft) {
+            return InPlaneSight.fetchJson('/aircraft').then(function (aircraft) {
               showAircraft(aircraft);
               statusEl.textContent = aircraft.length + ' aircraft · ' +
                 InPlaneSight.formatTime(new Date());
