@@ -1,6 +1,6 @@
 from urllib.parse import quote
 
-import httpx
+import httpx2
 
 from .base import Aircraft, AircraftSource, SourceError, parse_aircraft
 
@@ -29,20 +29,20 @@ def parse_payload(payload: object, key: str) -> list[Aircraft]:
     ]
 
 
-def get_json(client: httpx.Client, url: str) -> object:
+def get_json(client: httpx2.Client, url: str) -> object:
     try:
         response = client.get(url)
         response.raise_for_status()
         return response.json()
-    except httpx.HTTPError as error:
+    except httpx2.HTTPError as error:
         raise SourceError(f'{url}: {error}') from error
     except ValueError as error:
         raise SourceError(f'{url}: response is not JSON') from error
 
 
 def _fetch_aircraft(url: str) -> list[Aircraft]:
-    transport = httpx.HTTPTransport(retries=3)
-    with httpx.Client(
+    transport = httpx2.HTTPTransport(retries=3)
+    with httpx2.Client(
         timeout=10, headers=_HEADERS, transport=transport
     ) as client:
         return parse_payload(get_json(client, url), 'ac')

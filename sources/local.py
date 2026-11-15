@@ -1,4 +1,4 @@
-import httpx
+import httpx2
 
 from .base import Aircraft, AircraftSource
 from .internet import get_json, parse_payload
@@ -13,6 +13,6 @@ class LocalSource(AircraftSource):
         self._url = url
 
     def fetch(self) -> list[Aircraft]:
-        with httpx.Client(timeout=5) as client:
+        with httpx2.Client(timeout=5) as client:
             payload = get_json(client, self._url)
         return parse_payload(payload, 'aircraft')

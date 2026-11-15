@@ -2,7 +2,7 @@ import threading
 import time
 from dataclasses import asdict
 
-import httpx
+import httpx2
 import pytest
 
 from sources.base import Aircraft, AircraftSource, SourceError, parse_aircraft
@@ -32,33 +32,33 @@ def make_aircraft(icao: str) -> Aircraft:
     )
 
 
-REAL_CLIENT = httpx.Client
+REAL_CLIENT = httpx2.Client
 
 
-def mock_client(handler) -> httpx.Client:
-    return REAL_CLIENT(transport=httpx.MockTransport(handler))
+def mock_client(handler) -> httpx2.Client:
+    return REAL_CLIENT(transport=httpx2.MockTransport(handler))
 
 
 def json_responder(payloads: dict[str, object], requested_urls: list[str]):
     """Answer each URL with its payload; a str payload is sent as raw text."""
 
-    def respond(request: httpx.Request) -> httpx.Response:
+    def respond(request: httpx2.Request) -> httpx2.Response:
         url = str(request.url)
         requested_urls.append(url)
         payload = payloads[url]
         if isinstance(payload, Exception):
             raise payload
         if isinstance(payload, int):
-            return httpx.Response(payload)
+            return httpx2.Response(payload)
         if isinstance(payload, str):
-            return httpx.Response(200, text=payload)
-        return httpx.Response(200, json=payload)
+            return httpx2.Response(200, text=payload)
+        return httpx2.Response(200, json=payload)
 
     return respond
 
 
 def client_factory(handler):
-    def make_client(*args, **kwargs) -> httpx.Client:
+    def make_client(*args, **kwargs) -> httpx2.Client:
         return mock_client(handler)
 
     return make_client
@@ -70,7 +70,7 @@ def upstream(monkeypatch):
     payloads: dict[str, object] = {}
     requested_urls: list[str] = []
     monkeypatch.setattr(
-        'sources.internet.httpx.Client',
+        'sources.internet.httpx2.Client',
         client_factory(json_responder(payloads, requested_urls)),
     )
     return payloads, requested_urls
@@ -229,7 +229,7 @@ def test_local_source_parses_dump1090_aircraft_list(
     requested_urls: list[str] = []
     url = 'http://receiver.test/aircraft.json'
     monkeypatch.setattr(
-        'sources.local.httpx.Client',
+        'sources.local.httpx2.Client',
         client_factory(json_responder({url: payload}, requested_urls)),
     )
 
