@@ -10,16 +10,15 @@ never gets stuck showing an old flight:
   never appeared).
 """
 
+import itertools
 import re
 import time
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from threading import Lock
 
-import httpx
-
 from .airport_codes import airports_near
-from .base import Aircraft
+from .base import Aircraft, SourceError
 from .flight_phase import NEAR_DESTINATION_NM, FlightPhase
 from .geo import distance_nm
 from .logging_config import get_logger
@@ -109,9 +108,10 @@ class FlightTracker:
         on_arrived: Callable[[str], None] | None = None,
         clock: Callable[[], float] = time.time,
     ):
-        """destination gives an aircraft's destination airport position, if
-        known, so a hold near it counts as part of the descent. on_arrived
-        is called with the callsign when tracking ends because it landed."""
+        """lookup raises SourceError if the source fails. destination gives
+        an aircraft's destination airport position, if known, so a hold near
+        it counts as part of the descent. on_arrived is called with the
+        callsign when tracking ends because it landed."""
         self._lookup = lookup
         self._refresh_seconds = refresh_seconds
         self._lost_seconds = lost_seconds
@@ -133,13 +133,14 @@ class FlightTracker:
             )
         flight = ' '.join(flight.split()).upper()
         logger.info('Tracking %s (callsign %s)', flight, callsign)
+        now = self._clock()
+        tracked = _Tracked(flight, callsign, started_at=now, last_fetch_at=now)
+        tracked.path_id = _path_id(tracked)
         with self._lock:
-            tracked = _Tracked(flight, callsign, started_at=self._clock())
-            tracked.path_id = _path_id(tracked)
             self._tracked = tracked
-            now = self._clock()
-            self._refresh(tracked, now)
-            return self._snapshot(tracked, now)
+        self._refresh(tracked)
+        with self._lock:
+            return self._snapshot(tracked, self._clock())
 
     def stop(self) -> None:
         with self._lock:
@@ -153,11 +154,21 @@ class FlightTracker:
         """The tracked flight, or None. Ends tracking that has run its course."""
         with self._lock:
             tracked = self._tracked
+            due = (
+                tracked is not None
+                and self._clock() - tracked.last_fetch_at
+                >= self._refresh_seconds
+            )
+            if due:
+                # Set before looking up, so other polls don't look up too.
+                tracked.last_fetch_at = self._clock()
+        if due:
+            self._refresh(tracked)
+        with self._lock:
+            tracked = self._tracked
             if tracked is None:
                 return None
             now = self._clock()
-            if now - tracked.last_fetch_at >= self._refresh_seconds:
-                self._refresh(tracked, now)
             reason = self._end_reason(tracked, now)
             if reason is not None:
                 logger.info('Stopped tracking %s: %s', tracked.callsign, reason)
@@ -183,14 +194,27 @@ class FlightTracker:
             else None,
         }
 
-    def _refresh(self, tracked: _Tracked, now: float) -> None:
-        tracked.last_fetch_at = now
+    def _refresh(self, tracked: _Tracked) -> None:
+        # The lookup runs without the lock, so Stop and other requests never
+        # wait on a slow source.
         try:
             matches = self._lookup(tracked.callsign)
-        except httpx.HTTPError as error:
+        except SourceError as error:
             logger.warning('Could not look up %s: %s', tracked.callsign, error)
             return
-        if not matches:
+        with self._lock:
+            if self._tracked is tracked:  # not stopped or replaced meanwhile
+                self._apply(tracked, matches, self._clock())
+
+    def _apply(
+        self, tracked: _Tracked, matches: list[Aircraft], now: float
+    ) -> None:
+        previous = tracked.aircraft.icao if tracked.aircraft else None
+        aircraft = next(
+            (match for match in matches if match.icao == previous),
+            None if previous else (matches[0] if matches else None),
+        )
+        if aircraft is None:
             if (
                 tracked.arrived_at is None
                 and tracked.airborne_seen
@@ -200,17 +224,20 @@ class FlightTracker:
                 and _landing(tracked.aircraft, tracked.phase)
             ):
                 tracked.arrived_at = tracked.last_seen_at
-            return
-        # Stay with the same airframe if the callsign is briefly shared.
-        previous = tracked.aircraft.icao if tracked.aircraft else None
-        aircraft = next(
-            (match for match in matches if match.icao == previous),
-            matches[0],
-        )
-        if previous is not None and aircraft.icao != previous:
-            # A different airframe now uses the callsign: start a new path.
+            # Another airframe with the callsign, such as one parked with it
+            # still set, is only followed once the tracked one has been gone
+            # a while and did not land.
+            if (
+                not matches
+                or tracked.arrived_at is not None
+                or now - tracked.last_seen_at <= LIVE_SECONDS
+            ):
+                return
+            aircraft = matches[0]
             tracked.path = []
             tracked.path_id = _path_id(tracked, aircraft.icao)
+            tracked.airborne_seen = False
+            tracked.phase = FlightPhase()
         _record_position(tracked, aircraft)
         tracked.aircraft = aircraft
         tracked.last_seen_at = now
@@ -278,8 +305,12 @@ def _landing(aircraft: Aircraft, phase: FlightPhase) -> bool:
     )
 
 
+_path_numbers = itertools.count()
+
+
 def _path_id(tracked: _Tracked, icao: str = '') -> str:
-    return f'{tracked.started_at:.3f}-{icao}-{len(tracked.path)}'
+    # Never reused, so a map that missed a reset cannot join two paths.
+    return f'{tracked.started_at:.3f}-{icao}-{next(_path_numbers)}'
 
 
 def _record_position(tracked: _Tracked, aircraft: Aircraft) -> None:

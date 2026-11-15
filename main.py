@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 from dataclasses import asdict, replace
 from pathlib import Path
@@ -88,6 +89,16 @@ tracker = FlightTracker(
 )
 
 
+async def advance_tracking() -> None:
+    """Keep recording the tracked flight while no page is open."""
+    while True:
+        await asyncio.sleep(1)
+        try:
+            await asyncio.to_thread(tracker.state)
+        except Exception:
+            logger.exception('Tracking update failed')
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global route_index
@@ -102,9 +113,11 @@ async def lifespan(app: FastAPI):
         )
         subscriber.start()
         logger.info('SWIFT Flight FIXM subscriber enabled')
+    tracking_task = asyncio.create_task(advance_tracking())
     try:
         yield
     finally:
+        tracking_task.cancel()
         if subscriber is not None:
             subscriber.stop()
         route_index = None
