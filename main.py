@@ -3,7 +3,6 @@ from dataclasses import asdict, replace
 from pathlib import Path
 from typing import Annotated
 
-import httpx
 from fastapi import FastAPI, Query
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -18,7 +17,7 @@ from sources import (
     LocalSource,
 )
 from sources.airport_codes import airport_display_code, airport_position
-from sources.base import Aircraft, AircraftSource
+from sources.base import Aircraft, AircraftSource, SourceError
 from sources.internet import lookup_callsign
 from sources.logging_config import get_logger
 from sources.swift_routes import RouteIndex
@@ -152,9 +151,11 @@ def get_airline_icons():
 def get_aircraft():
     try:
         aircraft = source.fetch()
-    except httpx.HTTPError as error:
-        print(f'Upstream fetch failed: {error}')
-        return JSONResponse(content=[])
+    except SourceError as error:
+        logger.warning('Aircraft data unavailable: %s', error)
+        return JSONResponse(
+            {'error': 'Aircraft data is unavailable'}, status_code=503
+        )
     aircraft = add_routes(aircraft)
     if route_index is not None:
         logger.debug(

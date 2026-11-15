@@ -1,10 +1,20 @@
+import threading
+import time
 from dataclasses import asdict
 
+import httpx
 import pytest
 
-from sources.base import Aircraft, AircraftSource, parse_aircraft
+from sources.base import Aircraft, AircraftSource, SourceError, parse_aircraft
 from sources.cache import CachedSource
-from sources.internet import AdsbFiSource, AdsbLolSource
+from sources.fallback import FallbackSource
+from sources.internet import (
+    ADSB_FI_CALLSIGN_URL,
+    ADSB_LOL_CALLSIGN_URL,
+    AdsbFiSource,
+    AdsbLolSource,
+    lookup_callsign,
+)
 from sources.local import LocalSource
 
 
@@ -22,29 +32,48 @@ def make_aircraft(icao: str) -> Aircraft:
     )
 
 
-def make_client_factory(payload: dict, requested_urls: list[str]):
-    class FakeResponse:
-        def raise_for_status(self) -> None:
-            pass
+REAL_CLIENT = httpx.Client
 
-        def json(self) -> dict:
-            return payload
 
-    class FakeClient:
-        def __init__(self, *args, **kwargs):
-            pass
+def mock_client(handler) -> httpx.Client:
+    return REAL_CLIENT(transport=httpx.MockTransport(handler))
 
-        def __enter__(self):
-            return self
 
-        def __exit__(self, *args):
-            pass
+def json_responder(payloads: dict[str, object], requested_urls: list[str]):
+    """Answer each URL with its payload; a str payload is sent as raw text."""
 
-        def get(self, url: str) -> FakeResponse:
-            requested_urls.append(url)
-            return FakeResponse()
+    def respond(request: httpx.Request) -> httpx.Response:
+        url = str(request.url)
+        requested_urls.append(url)
+        payload = payloads[url]
+        if isinstance(payload, Exception):
+            raise payload
+        if isinstance(payload, int):
+            return httpx.Response(payload)
+        if isinstance(payload, str):
+            return httpx.Response(200, text=payload)
+        return httpx.Response(200, json=payload)
 
-    return FakeClient
+    return respond
+
+
+def client_factory(handler):
+    def make_client(*args, **kwargs) -> httpx.Client:
+        return mock_client(handler)
+
+    return make_client
+
+
+@pytest.fixture
+def upstream(monkeypatch):
+    """Route ADS-B requests to canned answers per URL."""
+    payloads: dict[str, object] = {}
+    requested_urls: list[str] = []
+    monkeypatch.setattr(
+        'sources.internet.httpx.Client',
+        client_factory(json_responder(payloads, requested_urls)),
+    )
+    return payloads, requested_urls
 
 
 class SequenceSource(AircraftSource):
@@ -146,7 +175,7 @@ def test_aircraft_route_fields_are_serializable():
     ],
 )
 def test_internet_sources_parse_aircraft_and_filter_missing_positions(
-    monkeypatch: pytest.MonkeyPatch,
+    upstream,
     source_type: type[AdsbLolSource] | type[AdsbFiSource],
     expected_url: str,
 ):
@@ -167,11 +196,8 @@ def test_internet_sources_parse_aircraft_and_filter_missing_positions(
             {'hex': 'def456', 'lat': 39.95, 'lon': None},
         ]
     }
-    requested_urls: list[str] = []
-    monkeypatch.setattr(
-        'sources.internet.httpx.Client',
-        make_client_factory(payload, requested_urls),
-    )
+    payloads, requested_urls = upstream
+    payloads[expected_url] = payload
 
     aircraft = source_type(39.95, -75.16, 25).fetch()
 
@@ -201,9 +227,10 @@ def test_local_source_parses_dump1090_aircraft_list(
         ]
     }
     requested_urls: list[str] = []
+    url = 'http://receiver.test/aircraft.json'
     monkeypatch.setattr(
         'sources.local.httpx.Client',
-        make_client_factory(payload, requested_urls),
+        client_factory(json_responder({url: payload}, requested_urls)),
     )
 
     aircraft = LocalSource('http://receiver.test/aircraft.json').fetch()
@@ -212,17 +239,120 @@ def test_local_source_parses_dump1090_aircraft_list(
     assert [item.icao for item in aircraft] == ['abc123']
 
 
-def test_cached_source_refetches_when_ttl_expires(
-    monkeypatch: pytest.MonkeyPatch,
-):
+class FailingSource(AircraftSource):
+    def __init__(self):
+        self.fetch_count = 0
+
+    def fetch(self) -> list[Aircraft]:
+        self.fetch_count += 1
+        raise SourceError('down')
+
+
+def test_cached_source_refetches_when_ttl_expires(monkeypatch):
     first_result = [make_aircraft('abc123')]
     second_result = [make_aircraft('def456')]
     source = SequenceSource([first_result, second_result])
     cached = CachedSource(source, ttl_seconds=1)
-    clock = iter([10.0, 10.5, 11.0])
-    monkeypatch.setattr('sources.cache.time.monotonic', lambda: next(clock))
+    times = iter([10.0, 10.5, 11.0])
+
+    def clock() -> float:
+        return next(times)
+
+    monkeypatch.setattr('sources.cache.time.monotonic', clock)
 
     assert cached.fetch() == first_result
     assert cached.fetch() == first_result
     assert cached.fetch() == second_result
     assert source.fetch_count == 2
+
+
+class SlowSource(AircraftSource):
+    def __init__(self):
+        self.fetch_count = 0
+
+    def fetch(self) -> list[Aircraft]:
+        self.fetch_count += 1
+        time.sleep(0.1)
+        return [make_aircraft('abc123')]
+
+
+def test_cached_source_makes_one_upstream_call_for_concurrent_polls():
+    source = SlowSource()
+    cached = CachedSource(source, ttl_seconds=15)
+    threads = [threading.Thread(target=cached.fetch) for _ in range(8)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    assert source.fetch_count == 1
+
+
+@pytest.mark.parametrize(
+    'body',
+    ['<html>Just a moment...</html>', {'ac': None}, ['not', 'a', 'dict'], {}],
+)
+def test_unusable_response_is_a_source_error(upstream, body):
+    payloads, _ = upstream
+    url = 'https://api.adsb.lol/v2/lat/1/lon/2/dist/3'
+    payloads[url] = body
+    with pytest.raises(SourceError):
+        AdsbLolSource(1, 2, 3).fetch()
+
+
+def test_http_error_is_a_source_error(upstream):
+    payloads, _ = upstream
+    payloads['https://api.adsb.lol/v2/lat/1/lon/2/dist/3'] = 503
+    with pytest.raises(SourceError):
+        AdsbLolSource(1, 2, 3).fetch()
+
+
+def test_fallback_is_used_when_primary_sends_garbage(upstream):
+    payloads, requested_urls = upstream
+    fi = 'https://opendata.adsb.fi/api/v3/lat/1/lon/2/dist/3'
+    lol = 'https://api.adsb.lol/v2/lat/1/lon/2/dist/3'
+    payloads[fi] = '<html>busy</html>'
+    payloads[lol] = {'ac': [{'hex': 'abc123', 'lat': 1, 'lon': 2}]}
+
+    source = FallbackSource(AdsbFiSource(1, 2, 3), AdsbLolSource(1, 2, 3))
+
+    assert [item.icao for item in source.fetch()] == ['abc123']
+    assert requested_urls == [fi, lol]
+
+
+def test_fallback_raises_when_both_fail():
+    source = FallbackSource(FailingSource(), FailingSource())
+    with pytest.raises(SourceError):
+        source.fetch()
+
+
+def callsign_urls(callsign: str) -> tuple[str, str]:
+    return (
+        ADSB_FI_CALLSIGN_URL.format(callsign=callsign),
+        ADSB_LOL_CALLSIGN_URL.format(callsign=callsign),
+    )
+
+
+AIRBORNE = {'ac': [{'hex': 'abc123', 'flight': 'UAL1', 'lat': 1, 'lon': 2}]}
+
+
+def test_lookup_callsign_uses_adsb_lol_when_adsb_fi_fails(upstream):
+    payloads, requested_urls = upstream
+    fi, lol = callsign_urls('UAL1')
+    payloads[fi] = '<html>busy</html>'
+    payloads[lol] = AIRBORNE
+
+    assert [item.icao for item in lookup_callsign('UAL1')] == ['abc123']
+    assert requested_urls == [fi, lol]
+
+
+def test_lookup_callsign_fails_when_both_fail(upstream):
+    payloads, _ = upstream
+    fi, lol = callsign_urls('UAL1')
+    payloads[fi] = 503
+    payloads[lol] = '<html>busy</html>'
+    with pytest.raises(SourceError):
+        lookup_callsign('UAL1')
+
+
+def test_parse_aircraft_tolerates_null_callsign():
+    assert parse_aircraft({'flight': None}).callsign is None
