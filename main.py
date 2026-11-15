@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from contextlib import asynccontextmanager
 from dataclasses import asdict, replace
 from pathlib import Path
@@ -38,7 +39,12 @@ PUBLIC_CONFIG_FIELDS = {
     'flicker_enabled',
     'flicker_strength',
 }
-AIRLINE_ICON_DIR = Path(__file__).resolve().parent / 'static' / 'airline-icons'
+# Files are found next to this one, so the app can start from any folder.
+BASE_DIR = Path(__file__).resolve().parent
+STATIC_DIR = BASE_DIR / 'static'
+TEMPLATE_DIR = BASE_DIR / 'templates'
+AIRLINE_ICON_DIR = STATIC_DIR / 'airline-icons'
+DATA_DIR = BASE_DIR / '.in-plane-sight'
 
 
 def build_source(config: Config) -> AircraftSource:
@@ -56,14 +62,16 @@ try:
     config = Config.load()
 except ConfigError as error:
     raise SystemExit(f'Configuration error. {error}') from None
+# Every app logger follows this unless it was given its own level.
+logging.getLogger().setLevel(config.log_level)
 source = build_source(config)
-logger = get_logger(__name__, config.log_level)
+logger = get_logger(__name__)
 route_index: RouteIndex | None = None
 route_ttl_seconds = round(
     (config.swift.route_ttl_hours if config.swift else 20) * 60 * 60
 )
 tracked_routes = TrackedRoutes(
-    Path('.in-plane-sight/tracked-routes.json'), route_ttl_seconds
+    DATA_DIR / 'tracked-routes.json', route_ttl_seconds
 )
 
 
@@ -131,27 +139,27 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
-app.mount('/static', StaticFiles(directory='static'), name='static')
+app.mount('/static', StaticFiles(directory=STATIC_DIR), name='static')
 
 
 @app.get('/')
 def led_display():
-    return FileResponse('templates/led.html')
+    return FileResponse(TEMPLATE_DIR / 'led.html')
 
 
 @app.get('/list')
 def list_view():
-    return FileResponse('templates/display.html')
+    return FileResponse(TEMPLATE_DIR / 'display.html')
 
 
 @app.get('/map')
 def map_view():
-    return FileResponse('templates/index.html')
+    return FileResponse(TEMPLATE_DIR / 'index.html')
 
 
 @app.get('/track')
 def track_view():
-    return FileResponse('templates/track.html')
+    return FileResponse(TEMPLATE_DIR / 'track.html')
 
 
 @app.get('/config')

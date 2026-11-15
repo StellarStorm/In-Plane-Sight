@@ -1,3 +1,15 @@
+import os
+from pathlib import Path
+
+# Isolate the tests from the developer's own config.toml and IPS_* variables.
+# This must happen before `main` is imported, since it loads the config.
+for name in list(os.environ):
+    if name.upper().startswith('IPS_'):
+        del os.environ[name]
+os.environ['IN_PLANE_SIGHT_CONFIG'] = str(
+    Path(__file__).resolve().parent / 'no-such-config.toml'
+)
+
 import pytest
 
 import main
