@@ -1,8 +1,9 @@
 import time
 import xml.etree.ElementTree as ET
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from threading import Lock
+from typing import ClassVar
 
 
 @dataclass(frozen=True)
@@ -99,33 +100,53 @@ def _child(element: ET.Element, name: str) -> ET.Element | None:
 
 
 class RouteIndex:
-    TERMINAL_STATUSES = {'CANCELLED', 'COMPLETED', 'ARRIVED', 'INACTIVE'}
+    """Routes of active flights, by FDPS flight id (gufi) and callsign.
+
+    Held in memory only. A route is dropped when the FAA reports the flight
+    finished, or ttl_seconds after the FAA last sent anything about it;
+    looking a route up does not extend it.
+    """
+
+    TERMINAL_STATUSES: ClassVar = {
+        'CANCELLED',
+        'COMPLETED',
+        'ARRIVED',
+        'INACTIVE',
+    }
     CLEANUP_INTERVAL_SECONDS = 60
 
     def __init__(
         self,
-        ttl_seconds: int = 4 * 60 * 60,
+        ttl_seconds: int = 20 * 60 * 60,
         cleanup_interval_seconds: int = CLEANUP_INTERVAL_SECONDS,
+        on_finished: Callable[[str], None] | None = None,
         clock=time.time,
     ):
+        """on_finished is called with the callsign when the FAA reports a
+        flight finished (landed, cancelled and so on)."""
         self._ttl_seconds = ttl_seconds
+        self._on_finished = on_finished
         self._cleanup_interval_seconds = cleanup_interval_seconds
         self._clock = clock
         self._lock = Lock()
+        # flight id -> (latest update, when the FAA sent it)
         self._routes: dict[str, tuple[FlightRouteUpdate, float]] = {}
         self._flight_ids_by_callsign: dict[str, set[str]] = {}
         self._last_cleanup_at = self._clock()
+
+    def __len__(self) -> int:
+        with self._lock:
+            return len(self._routes)
 
     def expire(self) -> int:
         now = self._clock()
         with self._lock:
             if now - self._last_cleanup_at < self._cleanup_interval_seconds:
                 return 0
-            cutoff = now - self._ttl_seconds
             expired_ids = [
                 flight_id
-                for flight_id, (_, last_accessed_at) in self._routes.items()
-                if last_accessed_at <= cutoff
+                for flight_id, (_, updated_at) in self._routes.items()
+                if self._expired(updated_at, now)
             ]
             for flight_id in expired_ids:
                 self._remove(flight_id)
@@ -134,29 +155,21 @@ class RouteIndex:
 
     def apply(self, update: FlightRouteUpdate) -> None:
         self.expire()
-        with self._lock:
-            if update.status in self.TERMINAL_STATUSES:
+        if update.status in self.TERMINAL_STATUSES:
+            with self._lock:
                 self._remove(update.flight_id)
-                return
-            if (
-                update.status != 'ACTIVE'
-                or not update.origin
-                or not update.destination
-            ):
-                return
-
-            previous = self._routes.get(update.flight_id)
-            if previous is not None and previous[0].callsign != update.callsign:
-                previous_callsign = previous[0].callsign
-                self._flight_ids_by_callsign[previous_callsign].discard(
-                    update.flight_id
-                )
-                if not self._flight_ids_by_callsign[previous_callsign]:
-                    self._flight_ids_by_callsign.pop(previous_callsign)
-            self._routes[update.flight_id] = (update, self._clock())
-            self._flight_ids_by_callsign.setdefault(update.callsign, set()).add(
-                update.flight_id
-            )
+            if self._on_finished is not None:
+                self._on_finished(update.callsign)
+            return
+        if (
+            update.status != 'ACTIVE'
+            or not update.origin
+            or not update.destination
+        ):
+            return
+        with self._lock:
+            self._remove(update.flight_id)
+            self._add(update)
 
     def lookup(self, callsign: str | None) -> tuple[str, str] | None:
         results = self.lookup_many([callsign])
@@ -165,39 +178,44 @@ class RouteIndex:
     def lookup_many(
         self, callsigns: list[str | None]
     ) -> dict[str, tuple[str, str]]:
+        """Routes by callsign. A callsign with more than one different route
+        is left out, since there is no telling which is right."""
         self.expire()
         normalized_callsigns = {
             ' '.join((callsign or '').split()).upper()
             for callsign in callsigns
             if ' '.join((callsign or '').split())
         }
-        if not normalized_callsigns:
-            return {}
         now = self._clock()
-        cutoff = now - self._ttl_seconds
+        results = {}
         with self._lock:
-            expired_ids = set()
-            route_sets: dict[str, set[tuple[str, str]]] = {}
             for callsign in normalized_callsigns:
-                for flight_id in self._flight_ids_by_callsign.get(callsign, ()):
-                    record = self._routes.get(flight_id)
-                    if record is None:
-                        continue
-                    update, seen_at = record
-                    if seen_at <= cutoff:
-                        expired_ids.add(flight_id)
-                    elif update.status == 'ACTIVE':
-                        self._routes[flight_id] = (update, now)
-                        route_sets.setdefault(callsign, set()).add(
-                            (update.origin or '', update.destination or '')
-                        )
-            for flight_id in expired_ids:
-                self._remove(flight_id)
-            return {
-                callsign: next(iter(routes))
-                for callsign, routes in route_sets.items()
-                if len(routes) == 1
-            }
+                flight_ids = [
+                    flight_id
+                    for flight_id in self._flight_ids_by_callsign.get(
+                        callsign, ()
+                    )
+                    if not self._expired(self._routes[flight_id][1], now)
+                ]
+                routes = {
+                    (
+                        self._routes[flight_id][0].origin,
+                        self._routes[flight_id][0].destination,
+                    )
+                    for flight_id in flight_ids
+                }
+                if len(routes) == 1:
+                    results[callsign] = routes.pop()
+        return results
+
+    def _expired(self, updated_at: float, now: float) -> bool:
+        return updated_at <= now - self._ttl_seconds
+
+    def _add(self, update: FlightRouteUpdate) -> None:
+        self._routes[update.flight_id] = (update, self._clock())
+        self._flight_ids_by_callsign.setdefault(update.callsign, set()).add(
+            update.flight_id
+        )
 
     def _remove(self, flight_id: str) -> None:
         record = self._routes.pop(flight_id, None)

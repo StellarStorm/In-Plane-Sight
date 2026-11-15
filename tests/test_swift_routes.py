@@ -39,6 +39,24 @@ def test_swift_config_is_optional_and_validated(tmp_path):
     assert Config.load(config_file).swift is None
 
 
+def test_swift_route_ttl_defaults_to_20_hours_and_can_be_set(
+    tmp_path, monkeypatch
+):
+    config_file = tmp_path / 'config.toml'
+    config_file.write_text(
+        '[swift]\nqueue = "q"\nusername = "u"\npassword = "p"\n'
+    )
+    assert Config.load(config_file).swift.route_ttl_hours == 20
+
+    monkeypatch.setenv('IPS_SWIFT_ROUTE_TTL_HOURS', '6.5')
+    assert Config.load(config_file).swift.route_ttl_hours == 6.5
+
+    # Zero or negative would expire every route at once, so it turns the
+    # route feed off with a warning like any other bad [swift] value.
+    monkeypatch.setenv('IPS_SWIFT_ROUTE_TTL_HOURS', '0')
+    assert Config.load(config_file).swift is None
+
+
 def test_parse_fixm_namespaced_message_and_header_fields():
     updates = parse_fixm_message(
         ACTIVE_FIXM,
@@ -67,7 +85,7 @@ def test_parse_fixm_ignores_wrong_data_type_and_sensitive_messages():
     assert parse_fixm_message(ACTIVE_FIXM, {'FDPS_BlockAtFAA': 'true'}) == []
 
 
-def test_route_index_expires_after_last_access_and_sweeps_unrequested_routes():
+def test_routes_expire_after_the_last_faa_update_not_the_last_lookup():
     now = [1000.0]
     route_index = RouteIndex(
         ttl_seconds=100,
@@ -83,17 +101,20 @@ def test_route_index_expires_after_last_access_and_sweeps_unrequested_routes():
 
     now[0] += 90
     assert route_index.lookup(' swa42 ') == ('KPHL', 'KDEN')
-    now[0] += 99
+    route_index.apply(
+        FlightRouteUpdate('gufi-2', 'AAL1', 'KJFK', 'KLAX', 'ACTIVE')
+    )
+    now[0] += 10
+    assert route_index.lookup('SWA42') is None  # looked up, never updated
+    assert route_index.lookup('AAL1') == ('KJFK', 'KLAX')
+    assert len(route_index) == 1
+
+    now[0] += 90
     assert route_index.expire() == 1
     assert route_index.lookup('AAL1') is None
-    assert route_index.lookup('SWA42') == ('KPHL', 'KDEN')
-
-    now[0] += 101
-    assert route_index.expire() == 1
-    assert route_index.lookup('SWA42') is None
 
 
-def test_route_index_ignores_non_active_and_is_memory_only():
+def test_route_index_ignores_non_active_routes():
     route_index = RouteIndex()
     route_index.apply(
         FlightRouteUpdate('gufi-0', 'AAL1', 'KJFK', 'KLAX', 'PLANNED')
@@ -103,7 +124,9 @@ def test_route_index_ignores_non_active_and_is_memory_only():
     )
 
     assert route_index.lookup('AAL1') == ('KJFK', 'KLAX')
+    assert len(route_index) == 1
     assert RouteIndex().lookup('AAL1') is None
+    assert len(RouteIndex()) == 0
 
 
 def test_airport_display_code_maps_iata_and_falls_back_to_icao():
@@ -192,3 +215,13 @@ def test_swift_configured_ca_dir_is_used_as_is(tmp_path):
     )
     assert subscriber._trust_store_dir() == str(tmp_path)
     assert subscriber._default_trust_store is None
+
+
+def test_finished_flights_are_reported_by_callsign():
+    finished = []
+    route_index = RouteIndex(on_finished=finished.append)
+    route_index.apply(FlightRouteUpdate('g1', 'DAL1', 'KATL', 'KPDX', 'ACTIVE'))
+    route_index.apply(FlightRouteUpdate('g1', 'DAL1', None, None, 'ARRIVED'))
+    route_index.apply(FlightRouteUpdate('g2', 'UAL2', None, None, 'CANCELLED'))
+    assert finished == ['DAL1', 'UAL2']
+    assert route_index.lookup('DAL1') is None

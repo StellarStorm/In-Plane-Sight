@@ -72,11 +72,22 @@ class SwiftConfig(BaseModel):
     # Folder of trusted root certificates (PEM files). Leave unset to use the
     # Mozilla roots bundled with certifi
     ca_dir: DirectoryPath | None = None
+    route_ttl_hours: float = Field(20, gt=0)
 
     @field_validator('ca_dir', mode='before')
     @classmethod
     def _blank_ca_dir_means_default(cls, value):
         return None if isinstance(value, str) and not value.strip() else value
+
+
+class TrackingConfig(BaseModel):
+    """When tracking a single flight ends on its own."""
+
+    model_config = ConfigDict(extra='forbid')
+
+    arrived_minutes: float = Field(5, ge=0)
+    lost_minutes: float = Field(30, gt=0)
+    max_hours: float = Field(24, gt=0)
 
 
 class Config(BaseSettings):
@@ -108,6 +119,9 @@ class Config(BaseSettings):
     host: str = '0.0.0.0'
     port: int = 8000
     log_level: Literal['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'] = 'INFO'
+
+    # Single-flight tracking
+    tracking: TrackingConfig = Field(default_factory=TrackingConfig)
 
     # Optional route feed
     swift: SwiftConfig | None = None

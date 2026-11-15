@@ -29,6 +29,14 @@
       text-shadow: 0 0 8px rgba(77, 255, 180, 0.9);
     }
 
+    .aircraft-icon.tracked {
+      width: 32px;
+      height: 32px;
+      font-size: 26px;
+      color: #ffca4f;
+      text-shadow: 0 0 10px rgba(255, 202, 79, 0.95);
+    }
+
     .maplibregl-popup-content {
       background: rgba(10, 10, 22, 0.95);
       color: #ccc;
@@ -181,35 +189,205 @@
         };
       }
 
+      var trackedMarker = null;
+      var followedCallsign = null;
+      var trackPath = [];
+      var trackPathId = null;
+
+      function lngLat(position) {
+        return position ? [position[1], position[0]] : null;
+      }
+
+      function homeBounds() {
+        var latitudeDelta = RADIUS_NM / 60;
+        var longitudeDelta = latitudeDelta / Math.cos(CENTER[0] * Math.PI / 180);
+        return [
+          [CENTER[1] - longitudeDelta, CENTER[0] - latitudeDelta],
+          [CENTER[1] + longitudeDelta, CENTER[0] + latitudeDelta]
+        ];
+      }
+
+
+      function greatCircle(from, to) {
+        var toRadians = Math.PI / 180;
+        var lon1 = from[0] * toRadians, lat1 = from[1] * toRadians;
+        var lon2 = to[0] * toRadians, lat2 = to[1] * toRadians;
+        var angle = 2 * Math.asin(Math.sqrt(
+          Math.pow(Math.sin((lat2 - lat1) / 2), 2) +
+          Math.cos(lat1) * Math.cos(lat2) *
+          Math.pow(Math.sin((lon2 - lon1) / 2), 2)
+        ));
+        if (angle < 0.01) return [from, to];  // under about 35 nm
+        var steps = Math.ceil(angle / 0.01);
+        var points = [];
+        for (var i = 0; i <= steps; i++) {
+          var f = i / steps;
+          var a = Math.sin((1 - f) * angle) / Math.sin(angle);
+          var b = Math.sin(f * angle) / Math.sin(angle);
+          var x = a * Math.cos(lat1) * Math.cos(lon1) + b * Math.cos(lat2) * Math.cos(lon2);
+          var y = a * Math.cos(lat1) * Math.sin(lon1) + b * Math.cos(lat2) * Math.sin(lon2);
+          var z = a * Math.sin(lat1) + b * Math.sin(lat2);
+          points.push([
+            Math.atan2(y, x) / toRadians,
+            Math.atan2(z, Math.sqrt(x * x + y * y)) / toRadians
+          ]);
+        }
+        // Keep longitudes continuous across 180° so the line doesn't wrap.
+        for (var j = 1; j < points.length; j++) {
+          while (points[j][0] - points[j - 1][0] > 180) points[j][0] -= 360;
+          while (points[j][0] - points[j - 1][0] < -180) points[j][0] += 360;
+        }
+        return points;
+      }
+
+      function setLines(sourceId, lines) {
+        map.getSource(sourceId).setData({
+          type: 'Feature',
+          properties: {},
+          geometry: { type: 'MultiLineString', coordinates: lines }
+        });
+      }
+
+      function updateTrackPath(t) {
+        if (!t.tracking || t.path_id === undefined) {
+          trackPath = [];
+          trackPathId = null;
+          return;
+        }
+        if (t.path_id !== trackPathId || t.path_offset === 0) {
+          trackPath = t.path.slice();
+        } else {
+          trackPath = trackPath.slice(0, t.path_offset).concat(t.path);
+        }
+        trackPathId = t.path_id;
+      }
+
+      function trackingUrl() {
+        var url = '/tracking?path_from=' + (trackPathId ? trackPath.length : 0);
+        if (trackPathId) url += '&path_id=' + encodeURIComponent(trackPathId);
+        return url;
+      }
+
+      function setRangeVisible(visible) {
+        ['aircraft-range-fill', 'aircraft-range-outline'].forEach(function (id) {
+          map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none');
+        });
+      }
+
+      function clearMarkers() {
+        Object.keys(markers).forEach(function (icao) {
+          markers[icao].remove();
+          delete markers[icao];
+        });
+      }
+
+      function showTracked(t) {
+        updateTrackPath(t);
+        var a = t.tracking ? t.aircraft : null;
+        if (!a) {
+          if (trackedMarker) {
+            trackedMarker.remove();
+            trackedMarker = null;
+          }
+          setLines('tracked-path', []);
+          setLines('tracked-route', []);
+          if (followedCallsign && !t.tracking) {
+            followedCallsign = null;
+            map.fitBounds(homeBounds(), { padding: 8 });
+          }
+          return;
+        }
+        var position = [a.lon, a.lat];
+        a.callsign = t.callsign;
+        var popup = makePopup(a);
+        if (trackedMarker) {
+          trackedMarker.setLngLat(position);
+          updateIcon(trackedMarker.getElement(), a.heading, a.category);
+          trackedMarker.getPopup().setHTML(popup);
+        } else {
+          var element = makeIcon(a.heading, a.category);
+          element.classList.add('tracked');
+          trackedMarker = new maplibregl.Marker({ element: element, anchor: 'center' })
+            .setLngLat(position)
+            .setPopup(new maplibregl.Popup({ offset: 18 }).setHTML(popup))
+            .addTo(map);
+        }
+
+        var flown = trackPath.map(lngLat);
+        if (!flown.length) flown = [position];
+        setLines('tracked-path', flown.length > 1 ? [flown] : []);
+        var planned = [];
+        var origin = lngLat(t.origin_position);
+        var destination = lngLat(t.destination_position);
+        if (origin) planned.push(greatCircle(origin, flown[0]));
+        if (destination && t.status !== 'arrived') {
+          planned.push(greatCircle(flown[flown.length - 1], destination));
+        }
+        setLines('tracked-route', planned);
+
+        if (followedCallsign !== t.callsign) {
+          followedCallsign = t.callsign;
+          map.flyTo({ center: position, zoom: Math.min(map.getZoom(), 7) });
+        } else {
+          map.easeTo({ center: position });
+        }
+      }
+
+      function fetchJson(url) {
+        return fetch(url).then(function (r) {
+          if (!r.ok) throw new Error(url + ': ' + r.status);
+          return r.json();
+        });
+      }
+
+      function showAircraft(aircraft) {
+        var seen = {};
+        aircraft.forEach(function (a) {
+          seen[a.icao] = true;
+          var popup = makePopup(a);
+          if (markers[a.icao]) {
+            markers[a.icao].setLngLat([a.lon, a.lat]);
+            updateIcon(markers[a.icao].getElement(), a.heading, a.category);
+            markers[a.icao].getPopup().setHTML(popup);
+          } else {
+            markers[a.icao] = new maplibregl.Marker({
+              element: makeIcon(a.heading, a.category),
+              anchor: 'center'
+            })
+              .setLngLat([a.lon, a.lat])
+              .setPopup(new maplibregl.Popup({ offset: 14 }).setHTML(popup))
+              .addTo(map);
+          }
+        });
+        Object.keys(markers).forEach(function (icao) {
+          if (!seen[icao]) {
+            markers[icao].remove();
+            delete markers[icao];
+          }
+        });
+      }
+
       function refresh() {
-        fetch('/aircraft')
-          .then(function(r) { return r.json(); })
-          .then(function(aircraft) {
-            var seen = {};
-            aircraft.forEach(function(a) {
-              seen[a.icao] = true;
-              var popup = makePopup(a);
-              if (markers[a.icao]) {
-                markers[a.icao].setLngLat([a.lon, a.lat]);
-                updateIcon(markers[a.icao].getElement(), a.heading, a.category);
-                markers[a.icao].getPopup().setHTML(popup);
-              } else {
-                markers[a.icao] = new maplibregl.Marker({
-                  element: makeIcon(a.heading, a.category),
-                  anchor: 'center'
-                })
-                  .setLngLat([a.lon, a.lat])
-                  .setPopup(new maplibregl.Popup({ offset: 14 }).setHTML(popup))
-                  .addTo(map);
-              }
+        fetchJson(trackingUrl())
+          .catch(function (err) {
+            console.error(err);
+            return { tracking: false };
+          })
+          .then(function (tracked) {
+            showTracked(tracked);
+            setRangeVisible(!tracked.tracking);
+            if (tracked.tracking) {
+              clearMarkers();
+              statusEl.textContent = 'tracking ' + tracked.callsign +
+                (tracked.aircraft ? '' : ' (waiting)') +
+                ' · ' + InPlaneSight.formatTime(new Date());
+              return;
+            }
+            return fetchJson('/aircraft').then(function (aircraft) {
+              showAircraft(aircraft);
+              statusEl.textContent = aircraft.length + ' aircraft · ' +
+                InPlaneSight.formatTime(new Date());
             });
-            Object.keys(markers).forEach(function(icao) {
-              if (!seen[icao]) {
-                markers[icao].remove();
-                delete markers[icao];
-              }
-            });
-            statusEl.textContent = aircraft.length + ' aircraft · ' + InPlaneSight.formatTime(new Date());
           })
           .catch(function(err) {
             console.error(err);
@@ -263,18 +441,39 @@
           paint: { 'line-color': '#4dffb4', 'line-width': 1, 'line-opacity': 0.3 }
         });
 
+        var emptyLines = {
+          type: 'Feature',
+          properties: {},
+          geometry: { type: 'MultiLineString', coordinates: [] }
+        };
+        map.addSource('tracked-route', { type: 'geojson', data: emptyLines });
+        map.addLayer({
+          id: 'tracked-route-line',
+          type: 'line',
+          source: 'tracked-route',
+          paint: {
+            'line-color': '#ffca4f',
+            'line-width': 1.5,
+            'line-opacity': 0.5,
+            'line-dasharray': [2, 2]
+          }
+        });
+        map.addSource('tracked-path', { type: 'geojson', data: emptyLines });
+        map.addLayer({
+          id: 'tracked-path-line',
+          type: 'line',
+          source: 'tracked-path',
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: { 'line-color': '#ffca4f', 'line-width': 2.5, 'line-opacity': 0.9 }
+        });
+
         var home = document.createElement('div');
         home.className = 'home-marker';
         new maplibregl.Marker({ element: home, anchor: 'center' })
           .setLngLat([CENTER[1], CENTER[0]])
           .addTo(map);
 
-        var latitudeDelta = RADIUS_NM / 60;
-        var longitudeDelta = latitudeDelta / Math.cos(CENTER[0] * Math.PI / 180);
-        map.fitBounds([
-          [CENTER[1] - longitudeDelta, CENTER[0] - latitudeDelta],
-          [CENTER[1] + longitudeDelta, CENTER[0] + latitudeDelta]
-        ], { padding: 8, duration: 0 });
+        map.fitBounds(homeBounds(), { padding: 8, duration: 0 });
 
         refresh();
         setInterval(refresh, REFRESH_MS);

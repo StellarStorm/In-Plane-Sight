@@ -196,9 +196,11 @@
         white-space: nowrap;
       }
       #icao-line {
+        overflow: hidden;
         font-size: clamp(15px, 2vw, 31px);
         line-height: 1.1;
         letter-spacing: 0.035em;
+        white-space: nowrap;
       }
       #telemetry {
         min-height: 0;
@@ -505,7 +507,7 @@
           <div id="status-info">
         <span id="aircraft-count">-- AIRCRAFT IN RANGE</span><span id="updated">UPDATED --</span>
         </div>
-        <nav id="nav-links"><a href="/list">LIST</a><a href="/map">MAP</a></nav>
+        <nav id="nav-links"><a href="/track">TRACK</a><a href="/list">LIST</a><a href="/map">MAP</a></nav>
         </aside>
         <script src="/static/common.js"></script>
         <script src="/static/js/airline-icons.js"></script>
@@ -678,7 +680,7 @@
           }
         }
         function fitHeadlineText() {
-          document.getElementById("icao-line").style.fontSize = "";
+          fitTextToWidth(document.getElementById("icao-line"), 8);
           fitTextToWidth(callsign, 16);
           fitTextToWidth(document.getElementById("route-line"), 16);
           fitAircraftType();
@@ -848,34 +850,61 @@
               Math.sin(y / 2) ** 2;
           return R * 2 * Math.atan2(Math.sqrt(v), Math.sqrt(1 - v));
         }
+        function showEmpty() {
+          document.getElementById("main-display").style.visibility = "hidden";
+          document.querySelectorAll(".metric").forEach(function (e) {
+            e.style.display = "none";
+          });
+          document.getElementById("empty").style.display = "block";
+          prevIcao = null;
+          logoRequestId += 1;
+          currentHeading = null;
+          genericIcon = false;
+          scheduleLedTextRender();
+        }
         function render(ac) {
-          var empty = document.getElementById("empty"),
-            summary = document.getElementById("main-display"),
-            metrics = document.querySelectorAll(".metric");
           if (!ac.length) {
-            summary.style.visibility = "hidden";
-            metrics.forEach(function (e) {
-              e.style.display = "none";
-            });
-            empty.style.display = "block";
-            prevIcao = null;
-            logoRequestId += 1;
-            currentHeading = null;
-            genericIcon = false;
-            scheduleLedTextRender();
+            showEmpty();
             return;
           }
-        summary.style.visibility = "visible";
-        metrics.forEach(function (e) {
+          showFlight(ac[0], ac[0].icao.toUpperCase(), ac[0].icao);
+        }
+        function trackStatus(t) {
+          if (t.status === "airborne" && t.phase) return t.phase.toUpperCase();
+          return (
+            {
+              waiting: "WAITING",
+              on_ground: "ON GROUND",
+              signal_lost: "SIGNAL LOST",
+              arrived: "ARRIVED",
+            }[t.status] || ""
+          );
+        }
+        function renderTracked(t) {
+          var a = t.aircraft || { icao: "" };
+          a.callsign = t.callsign;
+          a._dist =
+            CENTER && a.lat != null
+              ? distanceNm(CENTER[0], CENTER[1], a.lat, a.lon)
+              : null;
+          showFlight(
+            a,
+            "TRACKING - " + trackStatus(t),
+            "track:" + t.callsign + ":" + a.icao,
+          );
+        }
+        // The logo is reloaded only when logoKey changes.
+        function showFlight(a, infoLine, logoKey) {
+        document.getElementById("main-display").style.visibility = "visible";
+        document.querySelectorAll(".metric").forEach(function (e) {
           e.style.display = "flex";
         });
-        empty.style.display = "none";
-        var a = ac[0];
+        document.getElementById("empty").style.display = "none";
         currentHeading = a.heading;
         callsign.textContent = a.callsign || a.icao.toUpperCase();
         document.getElementById("aircraft-type").textContent =
-          InPlaneSight.aircraftType(a) || "UNKNOWN";
-        document.getElementById("icao-line").textContent = a.icao.toUpperCase();
+          InPlaneSight.aircraftType(a) || (a.icao ? "UNKNOWN" : "----");
+        document.getElementById("icao-line").textContent = infoLine;
         document.getElementById("s-alt").textContent =
           a.altitude_ft != null
             ? (a.altitude_ft / 1000).toFixed(1) + "k ft"
@@ -899,9 +928,9 @@
             : "";
         fitHeadlineText();
         scheduleLedTextRender();
-        if (a.icao !== prevIcao) {
+        if (logoKey !== prevIcao) {
           updateLogo(a.callsign, a.heading, a.category);
-          prevIcao = a.icao;
+          prevIcao = logoKey;
         } else if (genericIcon) {
           airlineLogo.style.transform = "rotate(" + (a.heading || 0) + "deg)";
         } else if (planeFallback.style.display !== "none") {
@@ -909,12 +938,23 @@
             "rotate(" + ((a.heading || 0) - 45) + "deg)";
         }
       }
-        function fetchAircraft() {
-        fetch("/aircraft")
-          .then(function (r) {
+        function fetchJson(url) {
+          return fetch(url).then(function (r) {
+            if (!r.ok) throw new Error(url + " returned " + r.status);
             return r.json();
-          })
-          .then(function (ac) {
+          });
+        }
+        function fetchAircraft() {
+        Promise.all([
+          fetchJson("/aircraft"),
+          fetchJson("/tracking").catch(function (e) {
+            console.error(e);
+            return { tracking: false };
+          }),
+        ])
+          .then(function (results) {
+            var ac = results[0],
+              tracked = results[1];
             ac.forEach(function (a) {
               a._dist = CENTER
                 ? distanceNm(CENTER[0], CENTER[1], a.lat, a.lon)
@@ -923,9 +963,15 @@
             ac.sort(function (a, b) {
               return (a._dist || 9999) - (b._dist || 9999);
             });
-            render(ac);
+            if (tracked.tracking) {
+              renderTracked(tracked);
+            } else {
+              render(ac);
+            }
             document.getElementById("aircraft-count").textContent =
-              ac.length + " AIRCRAFT IN RANGE";
+              tracked.tracking
+                ? "TRACKING " + tracked.callsign
+                : ac.length + " AIRCRAFT IN RANGE";
             document.getElementById("updated").textContent =
               "UPDATED " + InPlaneSight.formatTime(new Date());
           })
@@ -934,6 +980,34 @@
             console.error(e);
           });
       }
+        // Drop ?track= from the address so a reload doesn't restart old tracking.
+        function startTrackingFromUrl() {
+          var params = new URLSearchParams(location.search),
+            flight = params.get("track");
+          if (!flight) return Promise.resolve();
+          params.delete("track");
+          var query = params.toString();
+          history.replaceState(
+            null,
+            "",
+            location.pathname + (query ? "?" + query : "") + location.hash,
+          );
+          return fetch("/tracking", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ flight: flight }),
+          })
+            .then(function (r) {
+              if (!r.ok) {
+                return r.json().then(function (data) {
+                  console.error("Could not track " + flight, data);
+                });
+              }
+            })
+            .catch(function (e) {
+              console.error(e);
+            });
+        }
         (document.fonts && document.fonts.ready
           ? document.fonts.ready
         : Promise.resolve()
@@ -961,8 +1035,10 @@
             "flicker-enabled",
             cfg.flicker_enabled === true,
           );
-          fetchAircraft();
-          setInterval(fetchAircraft, cfg.refresh_seconds * 1000);
+          return startTrackingFromUrl().then(function () {
+            fetchAircraft();
+            setInterval(fetchAircraft, cfg.refresh_seconds * 1000);
+          });
         })
         .catch(function (e) {
           document.getElementById("updated").textContent = "CONFIG FAILED";
