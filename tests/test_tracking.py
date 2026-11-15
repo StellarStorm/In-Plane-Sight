@@ -479,6 +479,10 @@ def test_saved_route_fills_in_only_when_the_faa_has_none(
     assert tracked_routes.get('UAL1234', 'a1b2c3') == ('KEWR', 'KOAK')
 
 
+def always_available() -> bool:
+    return True
+
+
 def test_faa_report_of_a_finished_flight_forgets_its_saved_route(
     monkeypatch, tracked_routes
 ):
@@ -495,11 +499,16 @@ def test_faa_report_of_a_finished_flight_forgets_its_saved_route(
     swift = SwiftConfig(queue='q', username='u', password='p')
     monkeypatch.setattr(main.config, 'swift', swift)
     monkeypatch.setattr(main, 'SwiftSubscriber', FakeSubscriber)
+    monkeypatch.setattr(main, 'solace_available', always_available)
     tracked_routes.remember('N12345', 'a1b2c3', 'KPAO', 'KSMF')
     tracked_routes.remember('UAL2', 'a00002', 'KEWR', 'KSFO')
     with TestClient(main.app):
         main.route_index.apply(
-            FlightRouteUpdate('gufi', 'N12345', None, None, 'COMPLETED')
+            FlightRouteUpdate('gufi', 'N12345', 'KPAO', 'KSMF', 'COMPLETED')
+        )
+        # Another flight with the same number does not count.
+        main.route_index.apply(
+            FlightRouteUpdate('gufi2', 'UAL2', 'KSFO', 'KEWR', 'CANCELLED')
         )
     assert tracked_routes.get('N12345', 'a1b2c3') is None
     assert tracked_routes.get('UAL2', 'a00002') == ('KEWR', 'KSFO')

@@ -22,7 +22,7 @@ from sources.base import Aircraft, AircraftSource, SourceError
 from sources.internet import lookup_callsign
 from sources.logging_config import get_logger
 from sources.swift_routes import RouteIndex
-from sources.swift_subscriber import SwiftSubscriber
+from sources.swift_subscriber import SwiftSubscriber, solace_available
 from sources.tracked_routes import TrackedRoutes
 from sources.tracking import FlightTracker
 
@@ -67,8 +67,10 @@ tracked_routes = TrackedRoutes(
 )
 
 
-def forget_tracked_route(callsign: str) -> None:
-    tracked_routes.forget(callsign)
+def forget_tracked_route(
+    callsign: str, origin: str | None = None, destination: str | None = None
+) -> None:
+    tracked_routes.forget(callsign, origin, destination)
 
 
 def destination_position(aircraft: Aircraft) -> tuple[float, float] | None:
@@ -103,7 +105,12 @@ async def advance_tracking() -> None:
 async def lifespan(app: FastAPI):
     global route_index
     subscriber = None
-    if config.swift is not None:
+    if config.swift is not None and not solace_available():
+        logger.error(
+            'Route data is turned off: the [swift] section is set but the '
+            'solace package is not installed. Run `uv sync --extra swift`.'
+        )
+    elif config.swift is not None:
         route_index = RouteIndex(
             ttl_seconds=route_ttl_seconds,
             on_finished=forget_tracked_route,
@@ -151,7 +158,7 @@ def track_view():
 def get_config():
     return {
         **config.model_dump(include=PUBLIC_CONFIG_FIELDS),
-        'route_enrichment_enabled': config.swift is not None,
+        'route_enrichment_enabled': route_index is not None,
     }
 
 

@@ -33,18 +33,23 @@ def parse_fixm_message(
     except ET.ParseError:
         return []
 
+    flights = [
+        element
+        for element in root.iter()
+        if _local_name(element.tag) == 'flight'
+    ]
+    # The FDPS_* headers describe the whole message, so they only fill gaps
+    # when it holds a single flight.
+    fallback = properties if len(flights) == 1 else {}
     updates = []
-    for flight in root.iter():
-        if _local_name(flight.tag) != 'flight':
-            continue
-
+    for flight in flights:
         identification = _child(flight, 'flightIdentification')
         xml_callsign = (
             identification.get('aircraftIdentification')
             if identification is not None
             else None
         )
-        callsign = _header(properties, 'FDPS_FlightId') or xml_callsign
+        callsign = xml_callsign or _header(fallback, 'FDPS_FlightId')
         status_element = _child(flight, 'flightStatus')
         status = (
             status_element.get('fdpsFlightStatus', '')
@@ -56,16 +61,16 @@ def parse_fixm_message(
 
         departure = _child(flight, 'departure')
         arrival = _child(flight, 'arrival')
-        origin = _header(properties, 'FDPS_Origin') or (
+        origin = (
             departure.get('departurePoint') if departure is not None else None
-        )
-        destination = _header(properties, 'FDPS_DestId') or (
+        ) or _header(fallback, 'FDPS_Origin')
+        destination = (
             arrival.get('arrivalPoint') if arrival is not None else None
-        )
+        ) or _header(fallback, 'FDPS_DestId')
         gufi = _child(flight, 'gufi')
         flight_id = (
             ((gufi.text or '').strip() if gufi is not None else '')
-            or _header(properties, 'FDPS_FlightId')
+            or _header(fallback, 'FDPS_FlightId')
             or callsign
         )
 
@@ -119,11 +124,13 @@ class RouteIndex:
         self,
         ttl_seconds: int = 20 * 60 * 60,
         cleanup_interval_seconds: int = CLEANUP_INTERVAL_SECONDS,
-        on_finished: Callable[[str], None] | None = None,
+        on_finished: Callable[[str, str | None, str | None], None]
+        | None = None,
         clock=time.time,
     ):
-        """on_finished is called with the callsign when the FAA reports a
-        flight finished (landed, cancelled and so on)."""
+        """on_finished(callsign, origin, destination) is called when the FAA
+        reports a flight finished (landed, cancelled and so on) and at least
+        one of its airports is known."""
         self._ttl_seconds = ttl_seconds
         self._on_finished = on_finished
         self._cleanup_interval_seconds = cleanup_interval_seconds
@@ -157,9 +164,16 @@ class RouteIndex:
         self.expire()
         if update.status in self.TERMINAL_STATUSES:
             with self._lock:
+                record = self._routes.get(update.flight_id)
                 self._remove(update.flight_id)
-            if self._on_finished is not None:
-                self._on_finished(update.callsign)
+            known = record[0] if record else None
+            origin = update.origin or (known.origin if known else None)
+            destination = update.destination or (
+                known.destination if known else None
+            )
+            # Without a route it could be any flight with this callsign.
+            if self._on_finished is not None and (origin or destination):
+                self._on_finished(update.callsign, origin, destination)
             return
         if (
             update.status != 'ACTIVE'
