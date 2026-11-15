@@ -1,4 +1,3 @@
-import asyncio
 from contextlib import asynccontextmanager
 from dataclasses import asdict, replace
 from pathlib import Path
@@ -24,6 +23,7 @@ from sources.internet import lookup_callsign
 from sources.logging_config import get_logger
 from sources.swift_routes import RouteIndex
 from sources.swift_subscriber import SwiftSubscriber
+from sources.tracked_routes import TrackedRoutes
 from sources.tracking import FlightTracker
 
 # Settings the browser pages may see. Never include anything from `swift`.
@@ -59,13 +59,18 @@ except ConfigError as error:
 source = build_source(config)
 logger = get_logger(__name__, config.log_level)
 route_index: RouteIndex | None = None
-# Routes are saved so a restart doesn't lose them; the folder is gitignored.
-ROUTE_FILE = Path('.in-plane-sight/routes.json')
-ROUTE_SAVE_SECONDS = 60
+# The folder is gitignored.
+tracked_routes = TrackedRoutes(
+    Path('.in-plane-sight/tracked-routes.json'),
+    ttl_seconds=round(
+        (config.swift.route_ttl_hours if config.swift else 20) * 60 * 60
+    ),
+)
 
 
 def destination_position(aircraft: Aircraft) -> tuple[float, float] | None:
-    return airport_position(add_routes([aircraft])[0].destination)
+    route, _ = tracked_flight_route(aircraft, aircraft.callsign or '')
+    return airport_position(route.destination)
 
 
 # Tracked flights are looked up on adsb.fi/adsb.lol even with a local
@@ -77,6 +82,7 @@ tracker = FlightTracker(
     arrived_seconds=config.tracking.arrived_minutes * 60,
     max_seconds=config.tracking.max_hours * 60 * 60,
     destination=destination_position,
+    on_arrived=lambda callsign: tracked_routes.forget(callsign),
 )
 
 
@@ -84,50 +90,22 @@ tracker = FlightTracker(
 async def lifespan(app: FastAPI):
     global route_index
     subscriber = None
-    saver = None
     if config.swift is not None:
         route_index = RouteIndex(
-            ttl_seconds=round(config.swift.route_ttl_hours * 60 * 60)
+            ttl_seconds=round(config.swift.route_ttl_hours * 60 * 60),
+            on_finished=lambda callsign: tracked_routes.forget(callsign),
         )
-        restore_routes(route_index)
         subscriber = SwiftSubscriber(
             config.swift, route_index, config.log_level
         )
         subscriber.start()
-        saver = asyncio.create_task(save_routes_regularly(route_index))
         logger.info('SWIFT Flight FIXM subscriber enabled')
     try:
         yield
     finally:
-        if saver is not None:
-            saver.cancel()
         if subscriber is not None:
             subscriber.stop()
-            save_routes(route_index)
         route_index = None
-
-
-def restore_routes(index: RouteIndex) -> None:
-    try:
-        restored = index.load(ROUTE_FILE)
-    except (OSError, ValueError, KeyError, TypeError) as error:
-        logger.warning('Ignoring saved routes in %s: %s', ROUTE_FILE, error)
-        return
-    if restored:
-        logger.info('Restored %d saved routes', restored)
-
-
-def save_routes(index: RouteIndex) -> None:
-    try:
-        index.save(ROUTE_FILE)
-    except OSError as error:
-        logger.warning('Could not save routes to %s: %s', ROUTE_FILE, error)
-
-
-async def save_routes_regularly(index: RouteIndex) -> None:
-    while True:
-        await asyncio.sleep(ROUTE_SAVE_SECONDS)
-        await asyncio.to_thread(save_routes, index)
 
 
 app = FastAPI(lifespan=lifespan)
@@ -190,21 +168,27 @@ def add_routes(aircraft: list[Aircraft]) -> list[Aircraft]:
     if route_index is None:
         return aircraft
     routes = route_index.lookup_many([item.callsign for item in aircraft])
-    enriched_aircraft = []
-    for item in aircraft:
-        route = routes.get(' '.join((item.callsign or '').split()).upper())
-        origin = route[0] if route is not None else None
-        destination = route[1] if route is not None else None
-        enriched_aircraft.append(
-            replace(
-                item,
-                origin=origin,
-                destination=destination,
-                origin_display=airport_display_code(origin),
-                destination_display=airport_display_code(destination),
-            )
+    return [
+        with_route(
+            item,
+            *routes.get(
+                ' '.join((item.callsign or '').split()).upper(), (None, None)
+            ),
         )
-    return enriched_aircraft
+        for item in aircraft
+    ]
+
+
+def with_route(
+    aircraft: Aircraft, origin: str | None, destination: str | None
+) -> Aircraft:
+    return replace(
+        aircraft,
+        origin=origin,
+        destination=destination,
+        origin_display=airport_display_code(origin),
+        destination_display=airport_display_code(destination),
+    )
 
 
 class TrackRequest(BaseModel):
@@ -234,13 +218,41 @@ def stop_tracking():
     return {'tracking': False}
 
 
+def tracked_flight_route(
+    aircraft: Aircraft, callsign: str
+) -> tuple[Aircraft, bool]:
+    """The tracked aircraft with its route, and whether it came from the FAA.
+
+    Falls back to the route saved while tracking, for a distant flight the
+    FAA will not send again until it lands (for example after a restart).
+    """
+    if route_index is None:
+        return aircraft, False
+    aircraft = add_routes([aircraft])[0]
+    if aircraft.origin and aircraft.destination:
+        return aircraft, True
+    saved = tracked_routes.get(callsign, aircraft.icao)
+    if saved is not None:
+        aircraft = with_route(aircraft, *saved)
+    return aircraft, False
+
+
 def tracking_response(state: dict | None) -> dict:
     """The tracked flight with its route, for the board, map and /track."""
     if state is None:
         return {'tracking': False}
     response = {'tracking': True, **state}
     if state['aircraft'] is not None:
-        aircraft = add_routes([Aircraft(**state['aircraft'])])[0]
+        aircraft, from_faa = tracked_flight_route(
+            Aircraft(**state['aircraft']), state['callsign']
+        )
+        if from_faa:
+            tracked_routes.remember(
+                state['callsign'],
+                aircraft.icao,
+                aircraft.origin,
+                aircraft.destination,
+            )
         response['aircraft'] = asdict(aircraft)
         response['origin_position'] = airport_position(aircraft.origin)
         response['destination_position'] = airport_position(

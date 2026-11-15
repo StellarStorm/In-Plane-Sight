@@ -106,16 +106,19 @@ class FlightTracker:
         max_seconds: float = 24 * 60 * 60,
         destination: Callable[[Aircraft], tuple[float, float] | None]
         | None = None,
+        on_arrived: Callable[[str], None] | None = None,
         clock: Callable[[], float] = time.time,
     ):
         """destination gives an aircraft's destination airport position, if
-        known, so a hold near it counts as part of the descent."""
+        known, so a hold near it counts as part of the descent. on_arrived
+        is called with the callsign when tracking ends because it landed."""
         self._lookup = lookup
         self._refresh_seconds = refresh_seconds
         self._lost_seconds = lost_seconds
         self._arrived_seconds = arrived_seconds
         self._max_seconds = max_seconds
         self._destination = destination
+        self._on_arrived = on_arrived
         self._clock = clock
         self._lock = Lock()
         self._tracked: _Tracked | None = None
@@ -159,6 +162,8 @@ class FlightTracker:
             if reason is not None:
                 logger.info('Stopped tracking %s: %s', tracked.callsign, reason)
                 self._tracked = None
+                if reason == 'arrived' and self._on_arrived is not None:
+                    self._on_arrived(tracked.callsign)
                 return None
             snapshot = self._snapshot(tracked, now)
             if path_from is not None:

@@ -1,9 +1,7 @@
-import json
 import shutil
 from pathlib import Path
 
 import pytest
-from fastapi.testclient import TestClient
 
 import main
 from config import Config, SwiftConfig
@@ -116,168 +114,6 @@ def test_routes_expire_after_the_last_faa_update_not_the_last_lookup():
     assert route_index.lookup('AAL1') is None
 
 
-def make_index(now, ttl_seconds=100):
-    return RouteIndex(
-        ttl_seconds=ttl_seconds,
-        cleanup_interval_seconds=1,
-        clock=lambda: now[0],
-    )
-
-
-def test_saved_routes_are_restored_and_keep_their_expiry(tmp_path):
-    path = tmp_path / 'store' / 'routes.json'
-    now = [1000.0]
-    saved = make_index(now)
-    saved.apply(FlightRouteUpdate('gufi-1', 'DAL1', 'KATL', 'KPDX', 'ACTIVE'))
-    now[0] += 60
-    saved.apply(FlightRouteUpdate('gufi-2', 'UAL2', 'KEWR', 'KSFO', 'ACTIVE'))
-    assert saved.save(path) == 2
-    assert not path.with_name('routes.json.tmp').exists()
-
-    now[0] += 30
-    restored = make_index(now)
-    assert restored.load(path) == 2
-    assert restored.lookup('DAL1') == ('KATL', 'KPDX')
-
-    now[0] += 10  # 100 seconds after the FAA last updated DAL1
-    assert restored.lookup('DAL1') is None
-    assert restored.lookup('UAL2') == ('KEWR', 'KSFO')
-
-
-def test_route_file_has_one_route_per_line_sorted_by_callsign(tmp_path):
-    path = tmp_path / 'routes.json'
-    now = [1794760930.0]  # 2026-11-15 16:42:10 UTC
-    index = make_index(now)
-    index.apply(FlightRouteUpdate('gufi-2', 'UAL2', 'KEWR', 'KSFO', 'ACTIVE'))
-    index.apply(FlightRouteUpdate('gufi-1', 'DAL1', 'KATL', 'KPDX', 'ACTIVE'))
-    index.save(path)
-
-    assert path.read_text() == (
-        '{\n'
-        '  "version": 1,\n'
-        '  "routes": [\n'
-        '    {"callsign": "DAL1", "origin": "KATL", "destination": "KPDX", '
-        '"updated_at": "2026-11-15T16:42:10Z", "flight_id": "gufi-1"},\n'
-        '    {"callsign": "UAL2", "origin": "KEWR", "destination": "KSFO", '
-        '"updated_at": "2026-11-15T16:42:10Z", "flight_id": "gufi-2"}\n'
-        '  ]\n'
-        '}\n'
-    )
-    assert json.loads(path.read_text())['version'] == 1
-
-    make_index(now).save(path)
-    assert json.loads(path.read_text()) == {'version': 1, 'routes': []}
-
-
-def test_expired_routes_are_not_restored(tmp_path):
-    path = tmp_path / 'routes.json'
-    now = [1000.0]
-    saved = make_index(now)
-    saved.apply(FlightRouteUpdate('gufi-1', 'DAL1', 'KATL', 'KPDX', 'ACTIVE'))
-    saved.save(path)
-
-    now[0] += 100
-    restored = make_index(now)
-    assert restored.load(path) == 0
-    assert len(restored) == 0
-
-
-def test_live_faa_data_wins_over_restored_routes(tmp_path):
-    path = tmp_path / 'routes.json'
-    now = [1000.0]
-    saved = make_index(now)
-    saved.apply(FlightRouteUpdate('old', 'DAL1', 'KATL', 'KPDX', 'ACTIVE'))
-    saved.apply(FlightRouteUpdate('same', 'UAL2', 'KEWR', 'KSFO', 'ACTIVE'))
-    saved.apply(FlightRouteUpdate('done', 'AAL3', 'KJFK', 'KLAX', 'ACTIVE'))
-    saved.save(path)
-    restored = make_index(now)
-    restored.load(path)
-
-    # A different flight with the same callsign.
-    restored.apply(FlightRouteUpdate('new', 'DAL1', 'KATL', 'KSEA', 'ACTIVE'))
-    assert restored.lookup('DAL1') == ('KATL', 'KSEA')
-    # The same flight, diverted.
-    restored.apply(FlightRouteUpdate('same', 'UAL2', 'KEWR', 'KOAK', 'ACTIVE'))
-    assert restored.lookup('UAL2') == ('KEWR', 'KOAK')
-    # The same flight, finished.
-    restored.apply(FlightRouteUpdate('done', 'AAL3', None, None, 'ARRIVED'))
-    assert restored.lookup('AAL3') is None
-
-
-def test_restored_routes_never_replace_live_ones(tmp_path):
-    path = tmp_path / 'routes.json'
-    now = [1000.0]
-    saved = make_index(now)
-    saved.apply(FlightRouteUpdate('gufi-1', 'DAL1', 'KATL', 'KPDX', 'ACTIVE'))
-    saved.save(path)
-    live = make_index(now)
-    live.apply(FlightRouteUpdate('gufi-1', 'DAL1', 'KATL', 'KSEA', 'ACTIVE'))
-    assert live.load(path) == 0
-    assert live.lookup('DAL1') == ('KATL', 'KSEA')
-
-
-def test_saved_timestamps_in_the_future_count_as_now(tmp_path):
-    path = tmp_path / 'routes.json'
-    now = [5000.0]
-    saved = make_index(now)
-    saved.apply(FlightRouteUpdate('gufi-1', 'DAL1', 'KATL', 'KPDX', 'ACTIVE'))
-    saved.save(path)
-
-    now[0] = 1000.0  # clock went backwards
-    restored = make_index(now)
-    restored.load(path)
-    now[0] += 100
-    assert restored.lookup('DAL1') is None
-
-
-def test_missing_route_file_restores_nothing(tmp_path):
-    assert RouteIndex().load(tmp_path / 'missing.json') == 0
-
-
-def test_unreadable_route_file_is_ignored_with_a_warning(
-    tmp_path, monkeypatch, caplog
-):
-    path = tmp_path / 'routes.json'
-    path.write_text('not json')
-    monkeypatch.setattr(main, 'ROUTE_FILE', path)
-    index = RouteIndex()
-    main.restore_routes(index)
-    assert len(index) == 0
-    assert 'Ignoring saved routes' in caplog.text
-
-
-def test_app_restores_routes_at_start_and_saves_them_at_exit(
-    tmp_path, monkeypatch
-):
-    path = tmp_path / 'routes.json'
-    saved = RouteIndex()
-    saved.apply(FlightRouteUpdate('gufi-1', 'DAL1', 'KATL', 'KPDX', 'ACTIVE'))
-    saved.save(path)
-
-    class FakeSubscriber:
-        def __init__(self, config, route_index, log_level):
-            self.route_index = route_index
-
-        def start(self):
-            self.route_index.apply(
-                FlightRouteUpdate('gufi-2', 'UAL2', 'KEWR', 'KSFO', 'ACTIVE')
-            )
-
-        def stop(self):
-            pass
-
-    swift = SwiftConfig(queue='q', username='u', password='p')
-    monkeypatch.setattr(main.config, 'swift', swift)
-    monkeypatch.setattr(main, 'SwiftSubscriber', FakeSubscriber)
-    monkeypatch.setattr(main, 'ROUTE_FILE', path)
-    with TestClient(main.app):
-        assert main.route_index.lookup('DAL1') == ('KATL', 'KPDX')
-
-    restored = RouteIndex()
-    assert restored.load(path) == 2
-    assert restored.lookup('UAL2') == ('KEWR', 'KSFO')
-
-
 def test_route_index_ignores_non_active_routes():
     route_index = RouteIndex()
     route_index.apply(
@@ -379,3 +215,13 @@ def test_swift_configured_ca_dir_is_used_as_is(tmp_path):
     )
     assert subscriber._trust_store_dir() == str(tmp_path)
     assert subscriber._default_trust_store is None
+
+
+def test_finished_flights_are_reported_by_callsign():
+    finished = []
+    route_index = RouteIndex(on_finished=finished.append)
+    route_index.apply(FlightRouteUpdate('g1', 'DAL1', 'KATL', 'KPDX', 'ACTIVE'))
+    route_index.apply(FlightRouteUpdate('g1', 'DAL1', None, None, 'ARRIVED'))
+    route_index.apply(FlightRouteUpdate('g2', 'UAL2', None, None, 'CANCELLED'))
+    assert finished == ['DAL1', 'UAL2']
+    assert route_index.lookup('DAL1') is None

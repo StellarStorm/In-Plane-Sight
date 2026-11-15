@@ -108,6 +108,7 @@ The board can follow one flight anywhere in the world instead of the aircraft ov
 - `/map` shows only the tracked flight and follows it. A solid line shows the path it has flown since tracking started. The server records this path, so opening or reloading the map shows all of it. The free ADS-B services have no history, so the path before tracking started can't be shown. With route data enabled, dashed lines join the origin to the start of the path and the aircraft to its destination.
 - Before the flight appears on ADS-B (for example, before departure), the board shows it as waiting.
 - Only one flight is tracked at a time. Starting a new one replaces it.
+- After a restart the board always starts as the normal board; start tracking again by hand. With route data enabled, a flight's route is remembered so it still shows when you do (see [Behaviour and Limitations](#behaviour-and-limitations)).
 
 Tracking ends on its own, so a kiosk never stays stuck on an old flight. These settings control when:
 
@@ -149,7 +150,7 @@ The app only needs each flight's origin and destination, which do not change dur
 | Flight Plan Update Information  | Picks up diversions and route changes.    |
 | Flight Amendment Information    | Picks up diversions and route changes.    |
 
-A flight that took off before the app first started has no route until it lands. Routes are saved across restarts (see below), so this only matters the first time. To cover overhead flights straight after a restart, you can also add track messages for just the en route centres around you (for example `ZNY` near New York). `Track Messages - 1 Min Update` is much lighter than `Track Messages - ALL`.
+A flight that took off before the app started has no route until it lands, except a flight you were tracking (see below). To cover overhead flights straight after a restart, you can also add track messages for just the en route centres around you (for example `ZNY` near New York). `Track Messages - 1 Min Update` is much lighter than `Track Messages - ALL`.
 
 ### Enabling Route Data
 
@@ -180,7 +181,8 @@ The broker's certificate is checked against the Mozilla root certificates instal
 ### Behaviour and Limitations
 
 - The app reads from your persistent queue. Do not run another consumer, such as the FAA Jumpstart kit, on the same queue at the same time.
-- Routes are saved to `.in-plane-sight/routes.json` every minute and when the app stops, and restored when it starts, so a restart does not lose them. Restored routes keep the time the FAA last updated them and expire on the same schedule. Live FAA data always wins: a new message for the same flight replaces its restored route, a finished flight's route is removed, and if a different flight uses the same callsign, only the live route is shown. Delete the file to start with no routes.
+- Routes are stored in memory only, so the store is empty after a restart and fills as messages arrive. Flights near you get their routes back within seconds if you subscribe to track messages for your local centres.
+- The one exception is a flight you track: its route is saved to `.in-plane-sight/tracked-routes.json`, so if the app restarts mid-flight and you track it again, its route still shows even though the FAA will not send it again until the flight lands. The board does not resume tracking by itself after a restart. A saved route is used only when the FAA has no route for the flight, and only for the same aircraft (by its ADS-B address), since airlines reuse flight numbers. It is deleted when the flight lands or is cancelled (whether or not it is still being tracked), or `route_ttl_hours` after it was saved, and it is not used while route data is turned off. The file is written only when a tracked flight's route is first known or changes, so it causes almost no disk writes.
 - A route expires `route_ttl_hours` (default 20) after the FAA last sent a message about the flight. Looking a route up does not extend it. Expired routes are removed every minute. If you subscribe only to departure messages, keep this longer than the longest flight that may pass overhead; otherwise its route expires before it arrives.
 - With `log_level = "DEBUG"`, each `/aircraft` request logs how many aircraft had a known route and how many routes are stored.
 - SCDS does not provide aircraft positions. Positions always come from the ADS-B source.

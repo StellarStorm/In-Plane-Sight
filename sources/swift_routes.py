@@ -1,11 +1,7 @@
-import json
-import os
 import time
 import xml.etree.ElementTree as ET
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from datetime import UTC, datetime
-from pathlib import Path
 from threading import Lock
 from typing import ClassVar
 
@@ -106,10 +102,9 @@ def _child(element: ET.Element, name: str) -> ET.Element | None:
 class RouteIndex:
     """Routes of active flights, by FDPS flight id (gufi) and callsign.
 
-    A route is dropped when the FAA reports the flight finished, or
-    ttl_seconds after the FAA last sent anything about it. Routes can be
-    saved and restored across restarts; a restored route is only used until
-    the FAA sends live data for that callsign, which always wins.
+    Held in memory only. A route is dropped when the FAA reports the flight
+    finished, or ttl_seconds after the FAA last sent anything about it;
+    looking a route up does not extend it.
     """
 
     TERMINAL_STATUSES: ClassVar = {
@@ -124,16 +119,19 @@ class RouteIndex:
         self,
         ttl_seconds: int = 20 * 60 * 60,
         cleanup_interval_seconds: int = CLEANUP_INTERVAL_SECONDS,
+        on_finished: Callable[[str], None] | None = None,
         clock=time.time,
     ):
+        """on_finished is called with the callsign when the FAA reports a
+        flight finished (landed, cancelled and so on)."""
         self._ttl_seconds = ttl_seconds
+        self._on_finished = on_finished
         self._cleanup_interval_seconds = cleanup_interval_seconds
         self._clock = clock
         self._lock = Lock()
         # flight id -> (latest update, when the FAA sent it)
         self._routes: dict[str, tuple[FlightRouteUpdate, float]] = {}
         self._flight_ids_by_callsign: dict[str, set[str]] = {}
-        self._restored_ids: set[str] = set()
         self._last_cleanup_at = self._clock()
 
     def __len__(self) -> int:
@@ -157,18 +155,21 @@ class RouteIndex:
 
     def apply(self, update: FlightRouteUpdate) -> None:
         self.expire()
-        with self._lock:
-            if update.status in self.TERMINAL_STATUSES:
+        if update.status in self.TERMINAL_STATUSES:
+            with self._lock:
                 self._remove(update.flight_id)
-                return
-            if (
-                update.status != 'ACTIVE'
-                or not update.origin
-                or not update.destination
-            ):
-                return
+            if self._on_finished is not None:
+                self._on_finished(update.callsign)
+            return
+        if (
+            update.status != 'ACTIVE'
+            or not update.origin
+            or not update.destination
+        ):
+            return
+        with self._lock:
             self._remove(update.flight_id)
-            self._add(update, self._clock())
+            self._add(update)
 
     def lookup(self, callsign: str | None) -> tuple[str, str] | None:
         results = self.lookup_many([callsign])
@@ -196,107 +197,27 @@ class RouteIndex:
                     )
                     if not self._expired(self._routes[flight_id][1], now)
                 ]
-                live_ids = [
-                    flight_id
-                    for flight_id in flight_ids
-                    if flight_id not in self._restored_ids
-                ]
                 routes = {
                     (
                         self._routes[flight_id][0].origin,
                         self._routes[flight_id][0].destination,
                     )
-                    for flight_id in live_ids or flight_ids
+                    for flight_id in flight_ids
                 }
                 if len(routes) == 1:
                     results[callsign] = routes.pop()
         return results
 
-    def save(self, path: Path) -> int:
-        """Write the current routes to path, one per line sorted by callsign.
-
-        The file is written beside path, flushed to disk and then swapped
-        in, so a crash or power cut leaves either the old file or the new.
-        """
-        now = self._clock()
-        with self._lock:
-            routes = sorted(
-                (
-                    (update, updated_at)
-                    for update, updated_at in self._routes.values()
-                    if not self._expired(updated_at, now)
-                ),
-                key=lambda item: (item[0].callsign, item[0].flight_id),
-            )
-        lines = [
-            '    '
-            + json.dumps(
-                {
-                    'callsign': update.callsign,
-                    'origin': update.origin,
-                    'destination': update.destination,
-                    'updated_at': _format_time(updated_at),
-                    'flight_id': update.flight_id,
-                }
-            )
-            for update, updated_at in routes
-        ]
-        text = '{\n  "version": 1,\n  "routes": [\n'
-        text += ',\n'.join(lines) + ('\n' if lines else '') + '  ]\n}\n'
-
-        path.parent.mkdir(parents=True, exist_ok=True)
-        temporary = path.with_name(path.name + '.tmp')
-        with open(temporary, 'w') as file:
-            file.write(text)
-            file.flush()
-            os.fsync(file.fileno())
-        os.replace(temporary, path)
-        _sync_directory(path.parent)
-        return len(routes)
-
-    def load(self, path: Path) -> int:
-        """Restore routes saved by save(), skipping any that have expired.
-
-        Restored routes keep the time the FAA last updated them, so they
-        expire on the same schedule as if the app had kept running.
-        """
-        try:
-            saved = json.loads(path.read_text())
-        except FileNotFoundError:
-            return 0
-        now = self._clock()
-        restored = 0
-        with self._lock:
-            for entry in saved['routes']:
-                update = FlightRouteUpdate(
-                    flight_id=str(entry['flight_id']),
-                    callsign=str(entry['callsign']),
-                    origin=str(entry['origin']),
-                    destination=str(entry['destination']),
-                    status='ACTIVE',
-                )
-                updated_at = min(_parse_time(entry['updated_at']), now)
-                if (
-                    self._expired(updated_at, now)
-                    or update.flight_id in self._routes
-                ):
-                    continue
-                self._add(update, updated_at)
-                self._restored_ids.add(update.flight_id)
-                restored += 1
-        return restored
-
     def _expired(self, updated_at: float, now: float) -> bool:
         return updated_at <= now - self._ttl_seconds
 
-    def _add(self, update: FlightRouteUpdate, updated_at: float) -> None:
-        self._routes[update.flight_id] = (update, updated_at)
+    def _add(self, update: FlightRouteUpdate) -> None:
+        self._routes[update.flight_id] = (update, self._clock())
         self._flight_ids_by_callsign.setdefault(update.callsign, set()).add(
             update.flight_id
         )
 
     def _remove(self, flight_id: str) -> None:
-        self._restored_ids.discard(flight_id)
         record = self._routes.pop(flight_id, None)
         if record is None:
             return
@@ -306,25 +227,3 @@ class RouteIndex:
             flight_ids.discard(flight_id)
             if not flight_ids:
                 self._flight_ids_by_callsign.pop(callsign, None)
-
-
-def _format_time(timestamp: float) -> str:
-    return datetime.fromtimestamp(timestamp, UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
-
-
-def _parse_time(text: str) -> float:
-    return datetime.fromisoformat(text).timestamp()
-
-
-def _sync_directory(directory: Path) -> None:
-    """Make the file swap itself survive a power cut, where supported."""
-    try:
-        descriptor = os.open(directory, os.O_RDONLY)
-    except OSError:
-        return
-    try:
-        os.fsync(descriptor)
-    except OSError:
-        pass
-    finally:
-        os.close(descriptor)

@@ -1,8 +1,9 @@
 import httpx
 import pytest
+from fastapi.testclient import TestClient
 
 import main
-from config import Config
+from config import Config, SwiftConfig
 from sources import tracking
 from sources.base import Aircraft
 from sources.swift_routes import FlightRouteUpdate, RouteIndex
@@ -354,3 +355,115 @@ def test_tracking_endpoints_add_route_and_airport_positions(
 
     assert main.stop_tracking() == {'tracking': False}
     assert main.get_tracking() == {'tracking': False}
+
+
+def test_landing_reports_the_callsign_but_stopping_does_not(lookup, clock):
+    landed = []
+    tracker = FlightTracker(
+        lookup, on_arrived=landed.append, clock=lambda: clock[0]
+    )
+    lookup.results = [make_aircraft()]
+    tracker.start('UAL1234')
+    tracker.stop()
+    tracker.start('UAL1234')
+    lookup.results = [make_aircraft(altitude_ft=None, on_ground=True)]
+    clock[0] += 15
+    tracker.state()
+    clock[0] += 5 * 60
+    assert tracker.state() is None
+    assert landed == ['UAL1234']
+
+
+def test_main_forgets_a_saved_route_when_the_tracked_flight_lands(
+    tracked_routes,
+):
+    tracked_routes.remember('UAL1234', 'a1b2c3', 'KEWR', 'KSFO')
+    main.tracker._on_arrived('UAL1234')
+    assert tracked_routes.get('UAL1234', 'a1b2c3') is None
+
+
+def test_saved_route_fills_in_only_when_the_faa_has_none(
+    monkeypatch, clock, lookup, tracked_routes
+):
+    monkeypatch.setattr(
+        main, 'tracker', FlightTracker(lookup, clock=lambda: clock[0])
+    )
+    route_index = RouteIndex()
+    route_index.apply(
+        FlightRouteUpdate('gufi', 'UAL1234', 'KEWR', 'KSFO', 'ACTIVE')
+    )
+    monkeypatch.setattr(main, 'route_index', route_index)
+    lookup.results = [make_aircraft()]
+    main.start_tracking(main.TrackRequest(flight='UA1234'))
+    assert tracked_routes.get('UAL1234', 'a1b2c3') == ('KEWR', 'KSFO')
+
+    # After a restart the FAA has no route yet; the saved one is used.
+    monkeypatch.setattr(main, 'route_index', RouteIndex())
+    state = main.start_tracking(main.TrackRequest(flight='UA1234'))
+    assert state['aircraft']['destination_display'] == 'SFO'
+    assert state['destination_position'] == pytest.approx(
+        (37.62, -122.38), abs=0.1
+    )
+
+    # A different aircraft on the same flight number gets no saved route.
+    lookup.results = [make_aircraft(icao='ffffff')]
+    state = main.start_tracking(main.TrackRequest(flight='UA1234'))
+    assert state['aircraft']['destination'] is None
+
+    # Live FAA data wins and replaces the saved route.
+    lookup.results = [make_aircraft()]
+    route_index = RouteIndex()
+    route_index.apply(
+        FlightRouteUpdate('gufi', 'UAL1234', 'KEWR', 'KOAK', 'ACTIVE')
+    )
+    monkeypatch.setattr(main, 'route_index', route_index)
+    state = main.start_tracking(main.TrackRequest(flight='UA1234'))
+    assert state['aircraft']['destination'] == 'KOAK'
+    assert tracked_routes.get('UAL1234', 'a1b2c3') == ('KEWR', 'KOAK')
+
+
+def test_faa_report_of_a_finished_flight_forgets_its_saved_route(
+    monkeypatch, tracked_routes
+):
+    class FakeSubscriber:
+        def __init__(self, config, route_index, log_level):
+            pass
+
+        def start(self):
+            pass
+
+        def stop(self):
+            pass
+
+    swift = SwiftConfig(queue='q', username='u', password='p')
+    monkeypatch.setattr(main.config, 'swift', swift)
+    monkeypatch.setattr(main, 'SwiftSubscriber', FakeSubscriber)
+    tracked_routes.remember('N12345', 'a1b2c3', 'KPAO', 'KSMF')
+    tracked_routes.remember('UAL2', 'a00002', 'KEWR', 'KSFO')
+    with TestClient(main.app):
+        main.route_index.apply(
+            FlightRouteUpdate('gufi', 'N12345', None, None, 'COMPLETED')
+        )
+    assert tracked_routes.get('N12345', 'a1b2c3') is None
+    assert tracked_routes.get('UAL2', 'a00002') == ('KEWR', 'KSFO')
+
+
+def test_saved_routes_are_not_used_with_route_data_off(
+    monkeypatch, clock, lookup, tracked_routes
+):
+    monkeypatch.setattr(
+        main, 'tracker', FlightTracker(lookup, clock=lambda: clock[0])
+    )
+    monkeypatch.setattr(main, 'route_index', None)
+    tracked_routes.remember('UAL1234', 'a1b2c3', 'KEWR', 'KSFO')
+    lookup.results = [make_aircraft()]
+    state = main.start_tracking(main.TrackRequest(flight='UA1234'))
+    assert state['aircraft']['destination'] is None
+
+
+def test_flight_phase_sees_the_saved_destination(monkeypatch, tracked_routes):
+    monkeypatch.setattr(main, 'route_index', RouteIndex())
+    tracked_routes.remember('UAL1234', 'a1b2c3', 'KEWR', 'KSFO')
+    assert main.destination_position(make_aircraft()) == pytest.approx(
+        (37.62, -122.38), abs=0.1
+    )
