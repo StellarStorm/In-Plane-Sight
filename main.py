@@ -1,10 +1,11 @@
+import asyncio
+import logging
 from contextlib import asynccontextmanager
 from dataclasses import asdict, replace
 from pathlib import Path
 from typing import Annotated
 
-import httpx
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Request
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -18,11 +19,11 @@ from sources import (
     LocalSource,
 )
 from sources.airport_codes import airport_display_code, airport_position
-from sources.base import Aircraft, AircraftSource
+from sources.base import Aircraft, AircraftSource, SourceError
 from sources.internet import lookup_callsign
 from sources.logging_config import get_logger
 from sources.swift_routes import RouteIndex
-from sources.swift_subscriber import SwiftSubscriber
+from sources.swift_subscriber import SwiftSubscriber, solace_available
 from sources.tracked_routes import TrackedRoutes
 from sources.tracking import FlightTracker
 
@@ -38,7 +39,12 @@ PUBLIC_CONFIG_FIELDS = {
     'flicker_enabled',
     'flicker_strength',
 }
-AIRLINE_ICON_DIR = Path(__file__).resolve().parent / 'static' / 'airline-icons'
+# Files are found next to this one, so the app can start from any folder.
+BASE_DIR = Path(__file__).resolve().parent
+STATIC_DIR = BASE_DIR / 'static'
+TEMPLATE_DIR = BASE_DIR / 'templates'
+AIRLINE_ICON_DIR = STATIC_DIR / 'airline-icons'
+DATA_DIR = BASE_DIR / '.in-plane-sight'
 
 
 def build_source(config: Config) -> AircraftSource:
@@ -56,19 +62,23 @@ try:
     config = Config.load()
 except ConfigError as error:
     raise SystemExit(f'Configuration error. {error}') from None
+# Every app logger follows this unless it was given its own level.
+logging.getLogger().setLevel(config.log_level)
 source = build_source(config)
-logger = get_logger(__name__, config.log_level)
+logger = get_logger(__name__)
 route_index: RouteIndex | None = None
 route_ttl_seconds = round(
     (config.swift.route_ttl_hours if config.swift else 20) * 60 * 60
 )
 tracked_routes = TrackedRoutes(
-    Path('.in-plane-sight/tracked-routes.json'), route_ttl_seconds
+    DATA_DIR / 'tracked-routes.json', route_ttl_seconds
 )
 
 
-def forget_tracked_route(callsign: str) -> None:
-    tracked_routes.forget(callsign)
+def forget_tracked_route(
+    callsign: str, origin: str | None = None, destination: str | None = None
+) -> None:
+    tracked_routes.forget(callsign, origin, destination)
 
 
 def destination_position(aircraft: Aircraft) -> tuple[float, float] | None:
@@ -89,11 +99,26 @@ tracker = FlightTracker(
 )
 
 
+async def advance_tracking() -> None:
+    """Keep recording the tracked flight while no page is open."""
+    while True:
+        await asyncio.sleep(1)
+        try:
+            await asyncio.to_thread(tracker.state)
+        except Exception:
+            logger.exception('Tracking update failed')
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global route_index
     subscriber = None
-    if config.swift is not None:
+    if config.swift is not None and not solace_available():
+        logger.error(
+            'Route data is turned off: the [swift] section is set but the '
+            'solace package is not installed. Run `uv sync --extra swift`.'
+        )
+    elif config.swift is not None:
         route_index = RouteIndex(
             ttl_seconds=route_ttl_seconds,
             on_finished=forget_tracked_route,
@@ -103,43 +128,54 @@ async def lifespan(app: FastAPI):
         )
         subscriber.start()
         logger.info('SWIFT Flight FIXM subscriber enabled')
+    tracking_task = asyncio.create_task(advance_tracking())
     try:
         yield
     finally:
+        tracking_task.cancel()
         if subscriber is not None:
             subscriber.stop()
         route_index = None
 
 
 app = FastAPI(lifespan=lifespan)
-app.mount('/static', StaticFiles(directory='static'), name='static')
+app.mount('/static', StaticFiles(directory=STATIC_DIR), name='static')
+
+
+@app.middleware('http')
+async def revalidate(request: Request, call_next):
+    # Without this, browsers may reuse a cached script from before an update
+    # alongside a newer page, which breaks the page.
+    response = await call_next(request)
+    response.headers.setdefault('Cache-Control', 'no-cache')
+    return response
 
 
 @app.get('/')
 def led_display():
-    return FileResponse('templates/led.html')
+    return FileResponse(TEMPLATE_DIR / 'led.html')
 
 
 @app.get('/list')
 def list_view():
-    return FileResponse('templates/display.html')
+    return FileResponse(TEMPLATE_DIR / 'display.html')
 
 
 @app.get('/map')
 def map_view():
-    return FileResponse('templates/index.html')
+    return FileResponse(TEMPLATE_DIR / 'index.html')
 
 
 @app.get('/track')
 def track_view():
-    return FileResponse('templates/track.html')
+    return FileResponse(TEMPLATE_DIR / 'track.html')
 
 
 @app.get('/config')
 def get_config():
     return {
         **config.model_dump(include=PUBLIC_CONFIG_FIELDS),
-        'route_enrichment_enabled': config.swift is not None,
+        'route_enrichment_enabled': route_index is not None,
     }
 
 
@@ -152,10 +188,13 @@ def get_airline_icons():
 def get_aircraft():
     try:
         aircraft = source.fetch()
-    except httpx.HTTPError as error:
-        print(f'Upstream fetch failed: {error}')
-        return JSONResponse(content=[])
-    aircraft = add_routes(aircraft)
+    except SourceError as error:
+        logger.warning('Aircraft data unavailable: %s', error)
+        return JSONResponse(
+            {'error': 'Aircraft data is unavailable'}, status_code=503
+        )
+    # The board shows aircraft flying overhead, not traffic at the airport.
+    aircraft = add_routes([item for item in aircraft if not item.on_ground])
     if route_index is not None:
         logger.debug(
             'Routes known for %d of %d aircraft with callsigns (%d stored)',

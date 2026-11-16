@@ -22,9 +22,13 @@ class Aircraft:
     on_ground: bool = False
 
 
+class SourceError(Exception):
+    """An upstream source failed or sent data that could not be used."""
+
+
 def parse_aircraft(raw: dict) -> Aircraft:
     """Normalize a raw ADS-B dict (adsb.lol, dump1090, readsb) into an Aircraft."""
-    callsign = raw.get('flight', '').strip() or None
+    callsign = (raw.get('flight') or '').strip() or None
     alt = raw.get('alt_baro')
     speed = raw.get('gs')
     vr = raw.get('baro_rate')

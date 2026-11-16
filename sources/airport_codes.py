@@ -12,18 +12,32 @@ def _airports_by_icao() -> dict[str, dict[str, str]]:
     return airportsdata.load('ICAO')
 
 
-def airport_display_code(icao: str | None) -> str | None:
-    if not icao:
-        return None
-    normalized = icao.strip().upper()
+@lru_cache(maxsize=1)
+def _airports_by_lid() -> dict[str, dict[str, str]]:
+    return airportsdata.load('LID')
+
+
+def _airport(code: str | None) -> dict | None:
+    """An airport by ICAO code, or by FAA location id for US airports that
+    have no ICAO code."""
+    normalized = (code or '').strip().upper()
     if not normalized:
         return None
-    return _airports_by_icao().get(normalized, {}).get('iata') or normalized
+    return _airports_by_icao().get(normalized) or _airports_by_lid().get(
+        normalized
+    )
+
+
+def airport_display_code(icao: str | None) -> str | None:
+    normalized = (icao or '').strip().upper()
+    if not normalized:
+        return None
+    return (_airport(normalized) or {}).get('iata') or normalized
 
 
 def airport_position(icao: str | None) -> tuple[float, float] | None:
     """Latitude and longitude of an airport, or None if unknown."""
-    airport = _airports_by_icao().get((icao or '').strip().upper())
+    airport = _airport(icao)
     if not airport:
         return None
     return float(airport['lat']), float(airport['lon'])

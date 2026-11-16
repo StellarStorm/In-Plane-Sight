@@ -1,3 +1,4 @@
+import importlib.util
 import shutil
 import tempfile
 from pathlib import Path
@@ -9,6 +10,11 @@ from sources.swift_routes import RouteIndex, parse_fixm_message
 
 if TYPE_CHECKING:
     from config import SwiftConfig
+
+
+def solace_available() -> bool:
+    """Whether the solace package (the optional swift extra) is installed."""
+    return importlib.util.find_spec('solace') is not None
 
 
 class SwiftSubscriber:

@@ -79,6 +79,18 @@ def test_forget_removes_the_saved_route(tmp_path, clock):
     assert make_store(path, clock).get('UAL2', 'a00002') == ('KEWR', 'KSFO')
 
 
+def test_forget_with_airports_removes_only_a_matching_route(tmp_path, clock):
+    path = tmp_path / 'tracked-routes.json'
+    store = make_store(path, clock)
+    store.remember('SWA42', 'a00001', 'KPHL', 'KDEN')
+    store.forget('SWA42', 'KDEN', 'KLAX')  # the next leg
+    store.forget('SWA42', None, 'KLAX')
+    assert make_store(path, clock).get('SWA42', 'a00001') == ('KPHL', 'KDEN')
+
+    store.forget('SWA42', 'kphl', None)
+    assert make_store(path, clock).get('SWA42', 'a00001') is None
+
+
 def test_routes_expire_and_are_dropped_from_the_file(tmp_path, clock):
     path = tmp_path / 'tracked-routes.json'
     store = make_store(path, clock)

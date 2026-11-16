@@ -79,6 +79,64 @@ def test_parse_fixm_namespaced_message_and_header_fields():
     ]
 
 
+TWO_FLIGHTS_FIXM = """<?xml version="1.0" encoding="UTF-8"?>
+<ns5:MessageCollection xmlns:ns5="http://www.faa.aero/nas/3.0">
+  <message>
+    <flight timestamp="2026-11-15T16:42:10.500Z">
+      <arrival arrivalPoint="KDEN" />
+      <departure departurePoint="KPHL" />
+      <flightIdentification aircraftIdentification="SWA42" />
+      <flightStatus fdpsFlightStatus="ACTIVE" />
+      <gufi>g1</gufi>
+    </flight>
+  </message>
+  <message>
+    <flight>
+      <arrival arrivalPoint="KLAX" />
+      <departure departurePoint="KJFK" />
+      <flightIdentification aircraftIdentification="AAL1" />
+      <flightStatus fdpsFlightStatus="ACTIVE" />
+      <gufi>g2</gufi>
+    </flight>
+  </message>
+</ns5:MessageCollection>
+"""
+
+
+def test_parse_fixm_reads_each_flight_of_a_collection_from_its_xml():
+    headers = {
+        'FDPS_FlightId': 'SWA42',
+        'FDPS_Origin': 'KPHL',
+        'FDPS_DestId': 'KDEN',
+    }
+    assert parse_fixm_message(TWO_FLIGHTS_FIXM, headers) == [
+        FlightRouteUpdate('g1', 'SWA42', 'KPHL', 'KDEN', 'ACTIVE'),
+        FlightRouteUpdate('g2', 'AAL1', 'KJFK', 'KLAX', 'ACTIVE'),
+    ]
+
+
+def test_parse_fixm_prefers_the_xml_and_falls_back_to_headers():
+    headers = {
+        'FDPS_FlightId': 'SWA99',
+        'FDPS_Origin': 'KBWI',
+        'FDPS_DestId': 'KMDW',
+    }
+    [update] = parse_fixm_message(ACTIVE_FIXM, headers)
+    assert (update.callsign, update.origin, update.destination) == (
+        'SWA42',
+        'KPHL',
+        'KDEN',
+    )
+
+    bare = """<flight>
+      <flightStatus fdpsFlightStatus="completed" />
+    </flight>"""
+    assert parse_fixm_message(bare, headers) == [
+        FlightRouteUpdate('SWA99', 'SWA99', 'KBWI', 'KMDW', 'COMPLETED')
+    ]
+    assert parse_fixm_message(bare) == []  # no callsign at all
+
+
 def test_parse_fixm_ignores_wrong_data_type_and_sensitive_messages():
     assert parse_fixm_message(ACTIVE_FIXM, {'FDPS_DataType': 'Other'}) == []
     assert parse_fixm_message(ACTIVE_FIXM, {'FDPS_Sensitive': 'true'}) == []
@@ -217,11 +275,76 @@ def test_swift_configured_ca_dir_is_used_as_is(tmp_path):
     assert subscriber._default_trust_store is None
 
 
-def test_finished_flights_are_reported_by_callsign():
+def record_finished(finished):
+    def on_finished(callsign, origin, destination):
+        finished.append((callsign, origin, destination))
+
+    return on_finished
+
+
+def test_finished_flights_are_reported_with_their_route():
     finished = []
-    route_index = RouteIndex(on_finished=finished.append)
+    route_index = RouteIndex(on_finished=record_finished(finished))
     route_index.apply(FlightRouteUpdate('g1', 'DAL1', 'KATL', 'KPDX', 'ACTIVE'))
     route_index.apply(FlightRouteUpdate('g1', 'DAL1', None, None, 'ARRIVED'))
-    route_index.apply(FlightRouteUpdate('g2', 'UAL2', None, None, 'CANCELLED'))
-    assert finished == ['DAL1', 'UAL2']
+    route_index.apply(
+        FlightRouteUpdate('g2', 'UAL2', 'KEWR', None, 'CANCELLED')
+    )
+    # Nothing tells which UAL3 this was, so it is not reported.
+    route_index.apply(FlightRouteUpdate('g3', 'UAL3', None, None, 'CANCELLED'))
+    assert finished == [
+        ('DAL1', 'KATL', 'KPDX'),
+        ('UAL2', 'KEWR', None),
+    ]
     assert route_index.lookup('DAL1') is None
+
+
+def test_another_flight_finishing_keeps_the_route():
+    finished = []
+    route_index = RouteIndex(on_finished=record_finished(finished))
+    route_index.apply(
+        FlightRouteUpdate('g1', 'SWA42', 'KPHL', 'KDEN', 'ACTIVE')
+    )
+    # The next leg, with the same flight number, is cancelled.
+    route_index.apply(
+        FlightRouteUpdate('g2', 'SWA42', 'KDEN', 'KLAX', 'CANCELLED')
+    )
+    assert route_index.lookup('SWA42') == ('KPHL', 'KDEN')
+    assert finished == [('SWA42', 'KDEN', 'KLAX')]
+
+
+def test_a_callsign_with_two_different_routes_has_none():
+    route_index = RouteIndex()
+    route_index.apply(
+        FlightRouteUpdate('g1', 'SWA42', 'KPHL', 'KDEN', 'ACTIVE')
+    )
+    route_index.apply(
+        FlightRouteUpdate('g2', 'SWA42', 'KPHL', 'KDEN', 'ACTIVE')
+    )
+    assert route_index.lookup('SWA42') == ('KPHL', 'KDEN')
+
+    route_index.apply(
+        FlightRouteUpdate('g3', 'SWA42', 'KDEN', 'KLAX', 'ACTIVE')
+    )
+    assert route_index.lookup('SWA42') is None
+
+
+def test_a_new_callsign_for_the_same_flight_replaces_the_old_one():
+    route_index = RouteIndex()
+    route_index.apply(
+        FlightRouteUpdate('g1', 'SWA42', 'KPHL', 'KDEN', 'ACTIVE')
+    )
+    route_index.apply(
+        FlightRouteUpdate('g1', 'SWA43', 'KPHL', 'KDEN', 'ACTIVE')
+    )
+    assert route_index.lookup('SWA42') is None
+    assert route_index.lookup('SWA43') == ('KPHL', 'KDEN')
+    assert len(route_index) == 1
+
+
+class Clock:
+    def __init__(self, now=1000.0):
+        self.now = now
+
+    def __call__(self):
+        return self.now

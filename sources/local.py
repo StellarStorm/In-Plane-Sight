@@ -1,6 +1,7 @@
-import httpx
+import httpx2
 
-from .base import Aircraft, AircraftSource, parse_aircraft
+from .base import Aircraft, AircraftSource
+from .internet import get_json, parse_payload
 
 _DEFAULT_URL = 'http://localhost:8080/data/aircraft.json'
 
@@ -12,8 +13,6 @@ class LocalSource(AircraftSource):
         self._url = url
 
     def fetch(self) -> list[Aircraft]:
-        with httpx.Client(timeout=5) as client:
-            response = client.get(self._url)
-            response.raise_for_status()
-        raw = response.json().get('aircraft', [])
-        return [parse_aircraft(a) for a in raw if a.get('lat') and a.get('lon')]
+        with httpx2.Client(timeout=5) as client:
+            payload = get_json(client, self._url)
+        return parse_payload(payload, 'aircraft')

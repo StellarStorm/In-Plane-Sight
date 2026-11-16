@@ -1,10 +1,11 @@
-import httpx
+from .base import Aircraft, AircraftSource, SourceError
+from .logging_config import get_logger
 
-from .base import Aircraft, AircraftSource
+logger = get_logger(__name__)
 
 
 class FallbackSource(AircraftSource):
-    """Uses a secondary source when the primary source raises an HTTP error."""
+    """Uses a secondary source when the primary source fails."""
 
     def __init__(self, primary: AircraftSource, fallback: AircraftSource):
         self._primary = primary
@@ -13,5 +14,6 @@ class FallbackSource(AircraftSource):
     def fetch(self) -> list[Aircraft]:
         try:
             return self._primary.fetch()
-        except httpx.HTTPError:
+        except SourceError as error:
+            logger.warning('Primary source failed, using fallback: %s', error)
             return self._fallback.fetch()

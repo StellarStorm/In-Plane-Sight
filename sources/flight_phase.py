@@ -23,8 +23,10 @@ GO_AROUND_FT = 500
 # it, so descending below it is an approach.
 CRUISE_FLOOR_FT = 18000
 # A level segment this long after descending is a new cruise level, unless
-# the flight is coming down from above CRUISE_FLOOR_FT and is now below it.
+# the flight is coming down from above CRUISE_FLOOR_FT and is now below it,
+# or is near its destination.
 LOWER_CRUISE_SECONDS = 10 * 60
+# Any descent this close to the destination is the approach.
 NEAR_DESTINATION_NM = 150
 # ADS-B emitter categories for large and heavy aircraft, which cruise high.
 AIRLINER_CATEGORIES = {'A3', 'A4', 'A5'}

@@ -64,10 +64,27 @@ class TrackedRoutes:
             self._routes[route.callsign] = route
             self._save(now)
 
-    def forget(self, callsign: str) -> None:
+    def forget(
+        self,
+        callsign: str,
+        origin: str | None = None,
+        destination: str | None = None,
+    ) -> None:
+        """Forgets the callsign's saved route if it matches the given
+        airports; None matches any. Flight numbers are reused, so another
+        flight finishing must not remove this one's route."""
         with self._lock:
-            if self._routes.pop(_normalize(callsign), None) is not None:
-                self._save(self._clock())
+            route = self._routes.get(_normalize(callsign))
+            if route is None:
+                return
+            if origin is not None and route.origin != origin.upper():
+                return
+            if destination is not None and route.destination != (
+                destination.upper()
+            ):
+                return
+            del self._routes[route.callsign]
+            self._save(self._clock())
 
     def _expired(self, route: SavedRoute, now: float) -> bool:
         return route.saved_at <= now - self._ttl_seconds
