@@ -4,11 +4,11 @@ requires-python = ">=3.13"
 
 [[package]]
 name = "airportsdata"
-version = "20261030"
+version = "20261123"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/19/0f/817a8be463f61d632561597ddb9ddc7fb9605d370803aada411e4aaef0a9/airportsdata-20261030.tar.gz", hash = "sha256:b02f4a425a3248fc8812b68b0e00896bdc211ed36f8ac2f040c69f864c6fe383", size = 945906, upload-time = "2026-10-30T13:10:38.402Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/01/da/c90a6292ae138cf95a9fe61d8baa7b35726a3d4a410efe89ba2c681f54a5/airportsdata-20261123.tar.gz", hash = "sha256:190d5af18f9eeaeb5d107db2741ec3ab76e972940343cdb60a3b2598f9fd05ca", size = 949064, upload-time = "2026-11-23T10:26:16.071Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/be/62/4253350b219e4d1f21121cead8036439292a0a60415422d0a504a12fc2a1/airportsdata-20261030-py3-none-any.whl", hash = "sha256:0b50327f8d026be56cc18e1b83df356d2550f26127e13518883dc0f62533eb87", size = 934754, upload-time = "2026-10-30T13:10:36.87Z" },
+    { url = "https://files.pythonhosted.org/packages/cb/c7/f24f13613ba235bf11c8f4cd0cfed74ba866b6317a3a39cdb491c5000247/airportsdata-20261123-py3-none-any.whl", hash = "sha256:37b0bd320be342fc271288d89945be4f14ae5a7da22dd840de45f023865ccddd", size = 937354, upload-time = "2026-11-23T10:26:14.404Z" },
 ]
 
 [[package]]
@@ -171,7 +171,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "airportsdata", specifier = ">=20261030" },
+    { name = "airportsdata", specifier = ">=20261123" },
     { name = "certifi", marker = "extra == 'swift'", specifier = ">=2026.7.22" },
     { name = "fastapi", specifier = ">=0.142.2" },
     { name = "httpx2", specifier = ">=2.16.0" },
