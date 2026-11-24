@@ -529,7 +529,7 @@
           logoRequestId = 0,
           currentHeading = null,
           mainIcon = null,
-          trackProgress = null;
+          routeProgress = null;
         var G = {
           " ": ["00000", "00000", "00000", "00000", "00000", "00000", "00000"],
           "-": ["00000", "00000", "00000", "11111", "00000", "00000", "00000"],
@@ -814,7 +814,7 @@
         // brightens toward the plane, the rest stays dim.
         function drawProgress() {
           var c = document.getElementById("progress-bar");
-          if (trackProgress == null) {
+          if (routeProgress == null) {
             c.style.display = "none";
             return;
           }
@@ -828,7 +828,7 @@
             halfHeight = Math.floor(PLANE.length / 2),
             planeX =
               halfWidth +
-              Math.round(trackProgress * (columns - 1 - 2 * halfWidth)),
+              Math.round(routeProgress * (columns - 1 - 2 * halfWidth)),
             o = c.getContext("2d");
           c.width = Math.ceil(w * ratio);
           c.height = Math.ceil(h * ratio);
@@ -966,11 +966,12 @@
           scheduleLedTextRender();
         }
         function render(ac) {
-          trackProgress = null;
           if (!ac.length) {
+            routeProgress = null;
             showEmpty();
             return;
           }
+          routeProgress = ac[0].progress;
           showFlight(ac[0], ac[0].icao.toUpperCase(), logoKeyFor(ac[0]));
         }
         // Includes the airline code and helicopter flag, as a callsign or
@@ -997,7 +998,7 @@
         function renderTracked(t) {
           var a = t.aircraft || { icao: "" };
           a.callsign = t.callsign;
-          trackProgress = t.progress;
+          routeProgress = t.progress;
           a._dist =
             CENTER && a.lat != null
               ? distanceNm(CENTER[0], CENTER[1], a.lat, a.lon)

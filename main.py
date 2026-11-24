@@ -203,7 +203,20 @@ def get_aircraft():
             sum(1 for item in aircraft if (item.callsign or '').strip()),
             len(route_index),
         )
-    return [asdict(item) for item in aircraft]
+    return [with_progress(item) for item in aircraft]
+
+
+def with_progress(aircraft: Aircraft) -> dict:
+    """An overhead aircraft for the views, with how far along its route it is."""
+    return {
+        **asdict(aircraft),
+        'progress': route_progress(
+            aircraft,
+            airport_position(aircraft.origin),
+            airport_position(aircraft.destination),
+            'airborne',
+        ),
+    }
 
 
 def add_routes(aircraft: list[Aircraft]) -> list[Aircraft]:

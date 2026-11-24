@@ -218,6 +218,7 @@ def test_aircraft_endpoint_enriches_all_views_from_shared_route_index(
     without_swift = main.get_aircraft()
     assert without_swift[0]['origin'] is None
     assert without_swift[0]['destination'] is None
+    assert without_swift[0]['progress'] is None
 
     route_index = RouteIndex()
     route_index.apply(
@@ -230,6 +231,8 @@ def test_aircraft_endpoint_enriches_all_views_from_shared_route_index(
     assert with_swift[0]['destination'] == 'KDEN'
     assert with_swift[0]['origin_display'] == 'PHL'
     assert with_swift[0]['destination_display'] == 'DEN'
+    # Just west of Philadelphia, at the start of the route to Denver.
+    assert with_swift[0]['progress'] == pytest.approx(0, abs=0.02)
 
 
 def test_swift_default_trust_store_holds_certifi_bundle():
