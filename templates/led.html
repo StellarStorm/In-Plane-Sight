@@ -202,6 +202,11 @@
         letter-spacing: 0.035em;
         white-space: nowrap;
       }
+      #progress-bar {
+        display: none;
+        width: 100%;
+        height: clamp(44px, 7.9vw, 110px);
+      }
       #telemetry {
         min-height: 0;
         display: grid;
@@ -482,6 +487,7 @@
             <div id="aircraft-type">----</div>
             <div id="icao-line">------</div>
             <div id="route-line"></div>
+            <canvas id="progress-bar" class="flicker-primary" aria-hidden="true"></canvas>
           </div>
           </section>
           <section id="telemetry">
@@ -522,7 +528,8 @@
           genericIcon = false,
           logoRequestId = 0,
           currentHeading = null,
-          mainIcon = null;
+          mainIcon = null,
+          trackProgress = null;
         var G = {
           " ": ["00000", "00000", "00000", "00000", "00000", "00000", "00000"],
           "-": ["00000", "00000", "00000", "11111", "00000", "00000", "00000"],
@@ -782,6 +789,73 @@
               }
         }
       }
+        // A plane pointing right, drawn at the head of the progress bar.
+        var PLANE = ["01100", "00110", "11111", "00110", "01100"],
+          PROGRESS_ROWS = 11,
+          GROUND_ROW = 8,
+          CRUISE_ROW = 2,
+          // The share of the route spent climbing, and again descending.
+          CLIMB = 0.15;
+        // The flight profile's row at t (0 to 1): climb, cruise, descend.
+        function profileRow(t) {
+          var edge = Math.min(t, 1 - t) / CLIMB;
+          var height = edge >= 1 ? 1 : edge * edge * (3 - 2 * edge);
+          return Math.round(GROUND_ROW - (GROUND_ROW - CRUISE_ROW) * height);
+        }
+        // An LED flight profile from origin to destination: lit up to the
+        // plane, dim after.
+        function drawProgress() {
+          var c = document.getElementById("progress-bar");
+          if (trackProgress == null) {
+            c.style.display = "none";
+            return;
+          }
+          c.style.display = "block";
+          var w = c.clientWidth,
+            h = c.clientHeight,
+            ratio = devicePixelRatio || 1,
+            p = h / PROGRESS_ROWS,
+            columns = Math.floor(w / p),
+            half = Math.floor(PLANE.length / 2),
+            planeX = half + Math.round(trackProgress * (columns - 1 - 2 * half)),
+            o = c.getContext("2d");
+          c.width = Math.ceil(w * ratio);
+          c.height = Math.ceil(h * ratio);
+          o.setTransform(ratio, 0, 0, ratio, 0, 0);
+          o.clearRect(0, 0, w, h);
+          function dot(x, y, color, alpha, glow) {
+            o.globalAlpha =
+              alpha *
+              InPlaneSightAirlines.ledBrightness(99, x, y, LED_BRIGHTNESS_VARIATION);
+            o.fillStyle = "rgb(" + color + ")";
+            o.shadowColor = "rgba(" + color + ",.4)";
+            o.shadowBlur = glow;
+            o.beginPath();
+            o.arc(x * p + p / 2, y * p + p / 2, Math.max(1, p * 0.36), 0, Math.PI * 2);
+            o.fill();
+          }
+          var previous = profileRow(0);
+          for (var x = 0; x < columns; x++) {
+            var row = profileRow(x / (columns - 1));
+            if (Math.abs(x - planeX) > half) {
+              var flown = x < planeX;
+              // Fill the rows between neighbouring columns so steep parts
+              // stay joined.
+              for (var y = Math.min(row, previous); y <= Math.max(row, previous); y++) {
+                if (y === previous && y !== row) continue;
+                if (flown) dot(x, y, "93,242,255", 1, 4);
+                else dot(x, y, "60,72,110", 0.8, 0);
+              }
+            }
+            previous = row;
+          }
+          var planeRow = profileRow(planeX / (columns - 1));
+          PLANE.forEach(function (line, py) {
+            for (var px = 0; px < line.length; px++)
+              if (line[px] === "1")
+                dot(planeX - half + px, planeRow - half + py, "255,255,255", 1, 4);
+          });
+        }
         function showFallback(h) {
           genericIcon = false;
           mainIcon = null;
@@ -873,6 +947,7 @@
           scheduleLedTextRender();
         }
         function render(ac) {
+          trackProgress = null;
           if (!ac.length) {
             showEmpty();
             return;
@@ -903,6 +978,7 @@
         function renderTracked(t) {
           var a = t.aircraft || { icao: "" };
           a.callsign = t.callsign;
+          trackProgress = t.progress;
           a._dist =
             CENTER && a.lat != null
               ? distanceNm(CENTER[0], CENTER[1], a.lat, a.lon)
@@ -946,6 +1022,7 @@
           ? (a.origin_display || a.origin) + "-" +
               (a.destination_display || a.destination)
             : "";
+        drawProgress();
         fitHeadlineText();
         scheduleLedTextRender();
         if (logoKey !== prevIcao) {
@@ -1057,6 +1134,7 @@
           fitHeadlineText();
           scheduleLedTextRender();
           redrawLogo();
+          drawProgress();
         });
       </script>
     </body>

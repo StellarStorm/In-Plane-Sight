@@ -406,6 +406,7 @@ def test_tracking_endpoints_add_route_and_airport_positions(
     assert state['destination_position'] == pytest.approx(
         (37.62, -122.38), abs=0.1
     )
+    assert state['progress'] == pytest.approx(0.12, abs=0.02)
     assert main.get_tracking()['callsign'] == 'UAL1234'
     assert 'path' not in main.get_tracking()
     assert main.get_tracking(path_from=0)['path'] == [[41.0, -80.0]]
@@ -533,3 +534,11 @@ def test_flight_phase_sees_the_saved_destination(monkeypatch, tracked_routes):
     assert main.destination_position(make_aircraft()) == pytest.approx(
         (37.62, -122.38), abs=0.1
     )
+
+
+def test_progress_needs_both_airports_even_after_arrival():
+    aircraft = make_aircraft()
+    ewr, sfo = (40.69, -74.17), (37.62, -122.38)
+    assert main.route_progress(aircraft, ewr, sfo, 'arrived') == 1.0
+    assert main.route_progress(aircraft, None, sfo, 'arrived') is None
+    assert main.route_progress(aircraft, ewr, None, 'airborne') is None
