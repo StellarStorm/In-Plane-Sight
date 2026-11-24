@@ -90,7 +90,7 @@
       }
       #board.font-normal #callsign,
       #board.font-normal #aircraft-type,
-      #board.font-normal #icao-line,
+      #board.font-normal #status-line,
       #board.font-normal #route-line,
       #board.font-normal .metric-label,
       #board.font-normal .metric-value {
@@ -105,7 +105,7 @@
       }
       #board.font-broad #callsign,
       #board.font-broad #aircraft-type,
-      #board.font-broad #icao-line,
+      #board.font-broad #status-line,
       #board.font-broad #route-line,
       #board.font-broad .metric-label,
       #board.font-broad .metric-value {
@@ -136,7 +136,7 @@
         background-size: 8px 8px;
         filter: drop-shadow(0 0 5px rgba(148, 159, 255, 0.24));
       }
-      #board.font-broad #icao-line {
+      #board.font-broad #status-line {
         background-image: radial-gradient(
           circle,
           rgba(150, 157, 178, 0.58) 0 36%,
@@ -195,12 +195,17 @@
         letter-spacing: 0.035em;
         white-space: nowrap;
       }
-      #icao-line {
+      #status-line {
         overflow: hidden;
         font-size: clamp(15px, 2vw, 31px);
         line-height: 1.1;
         letter-spacing: 0.035em;
         white-space: nowrap;
+      }
+      /* With routes enabled, an empty route line keeps its height so the
+         letters stay put from one flight to the next. */
+      #board.routes #route-line {
+        min-height: 1.08em;
       }
       #progress-bar {
         display: none;
@@ -367,7 +372,7 @@
         #aircraft-type {
           font-size: clamp(14px, 7.5vh, 64px);
         }
-        #icao-line {
+        #status-line {
           font-size: clamp(10px, 4vh, 31px);
         }
         #telemetry {
@@ -421,7 +426,7 @@
         #aircraft-type {
           font-size: clamp(14px, 5.6vw, 32px);
         }
-        #icao-line {
+        #status-line {
           font-size: clamp(10px, 3.4vw, 18px);
         }
         #telemetry {
@@ -485,7 +490,7 @@
           <div id="flight-summary">
             <div id="callsign">------</div>
             <div id="aircraft-type">----</div>
-            <div id="icao-line">------</div>
+            <div id="status-line"></div>
             <div id="route-line"></div>
             <canvas id="progress-bar" class="flicker-primary" aria-hidden="true"></canvas>
           </div>
@@ -529,7 +534,8 @@
           logoRequestId = 0,
           currentHeading = null,
           mainIcon = null,
-          routeProgress = null;
+          routeProgress = null,
+          routesEnabled = false;
         var G = {
           " ": ["00000", "00000", "00000", "00000", "00000", "00000", "00000"],
           "-": ["00000", "00000", "00000", "11111", "00000", "00000", "00000"],
@@ -589,7 +595,7 @@
             radius: 0.23,
             glow: 1,
           },
-          "icao-line": {
+          "status-line": {
             color: [150, 157, 178],
             scale: 0.8,
             radius: 0.22,
@@ -636,7 +642,7 @@
         function initializeLedText() {
         addRenderer(callsign, "callsign");
         addRenderer(document.getElementById("aircraft-type"), "aircraft-type");
-        addRenderer(document.getElementById("icao-line"), "icao-line");
+        addRenderer(document.getElementById("status-line"), "status-line");
         addRenderer(document.getElementById("route-line"), "route-line");
         document.querySelectorAll(".metric-label").forEach(function (e) {
           addRenderer(e, "metric-label");
@@ -660,15 +666,20 @@
         function fitAircraftType() {
           fitTextToWidth(document.getElementById("aircraft-type"), 9);
         }
-        var SUMMARY_LINES = ["callsign", "aircraft-type", "icao-line", "route-line"];
+        var SUMMARY_LINES = ["callsign", "aircraft-type", "status-line", "route-line"];
+        // The logo never shrinks below this when making room for the text.
+        var MIN_LOGO_PX = 96;
         // If the logo and flight lines are taller than the space above the
-        // telemetry (e.g. a phone held sideways, with a route showing), shrink
-        // the flight lines until they fit rather than letting them overflow.
+        // telemetry (e.g. a phone, with a route showing), make them fit
+        // rather than letting them overflow. A logo stacked above the text
+        // shrinks first, so the LED lettering keeps its size.
         function fitSummaryHeight() {
           var box = document.getElementById("main-display"),
             summary = document.getElementById("flight-summary"),
-            logo = document.getElementById("logo-frame");
-          for (var pass = 0; pass < 3; pass++) {
+            logo = document.getElementById("logo-frame"),
+            logoWidth = logo.style.width;
+          logo.style.width = "";
+          for (var pass = 0; pass < 4; pass++) {
             var cs = getComputedStyle(box),
               available =
                 box.clientHeight -
@@ -678,7 +689,12 @@
               l = logo.getBoundingClientRect(),
               used = Math.max(s.bottom, l.bottom) - Math.min(s.top, l.top),
               over = used - available;
-            if (over <= 1 || s.height <= 0) return;
+            if (over <= 1 || s.height <= 0) break;
+            var smaller = Math.max(MIN_LOGO_PX, Math.floor(l.width - over));
+            if (l.bottom <= s.top && smaller < l.width - 1) {
+              logo.style.width = smaller + "px";
+              continue;
+            }
             var ratio = Math.max(0.4, (s.height - over) / s.height);
             SUMMARY_LINES.forEach(function (id) {
               var el = document.getElementById(id),
@@ -686,9 +702,10 @@
               el.style.fontSize = Math.max(8, Math.floor(size * ratio)) + "px";
             });
           }
+          if (logo.style.width !== logoWidth) redrawLogo();
         }
         function fitHeadlineText() {
-          fitTextToWidth(document.getElementById("icao-line"), 8);
+          fitTextToWidth(document.getElementById("status-line"), 8);
           fitTextToWidth(callsign, 16);
           fitTextToWidth(document.getElementById("route-line"), 16);
           fitAircraftType();
@@ -814,11 +831,13 @@
         // brightens toward the plane, the rest stays dim.
         function drawProgress() {
           var c = document.getElementById("progress-bar");
+          // Like the route line, the bar keeps its space whenever routes
+          // are enabled, and is left blank for a flight without one.
+          c.style.display = routesEnabled ? "block" : "none";
           if (routeProgress == null) {
-            c.style.display = "none";
+            c.getContext("2d").clearRect(0, 0, c.width, c.height);
             return;
           }
-          c.style.display = "block";
           var w = c.clientWidth,
             h = c.clientHeight,
             ratio = devicePixelRatio || 1,
@@ -972,7 +991,7 @@
             return;
           }
           routeProgress = ac[0].progress;
-          showFlight(ac[0], ac[0].icao.toUpperCase(), logoKeyFor(ac[0]));
+          showFlight(ac[0], "", logoKeyFor(ac[0]));
         }
         // Includes the airline code and helicopter flag, as a callsign or
         // category can arrive after the aircraft is first seen.
@@ -1020,7 +1039,10 @@
         callsign.textContent = a.callsign || a.icao.toUpperCase();
         document.getElementById("aircraft-type").textContent =
           InPlaneSight.aircraftType(a) || (a.icao ? "UNKNOWN" : "----");
-        document.getElementById("icao-line").textContent = infoLine;
+        // Only a tracked flight has a status to show.
+        var statusLine = document.getElementById("status-line");
+        statusLine.textContent = infoLine;
+        statusLine.style.display = infoLine ? "" : "none";
         document.getElementById("s-alt").textContent =
           a.altitude_ft != null
             ? (a.altitude_ft / 1000).toFixed(1) + "k ft"
@@ -1130,6 +1152,8 @@
           InPlaneSight.configure(cfg);
           var board = document.getElementById("board");
           board.classList.toggle("font-normal", fontThickness === "normal");
+          routesEnabled = cfg.route_enrichment_enabled === true;
+          board.classList.toggle("routes", routesEnabled);
           board.classList.toggle("font-broad", fontThickness === "broad");
           initializeLedText();
           var root = document.documentElement,
