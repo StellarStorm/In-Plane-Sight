@@ -10,7 +10,8 @@ radius_nm = 20
 
 # --- Aircraft data source ---
 # "internet" uses adsb.fi, with adsb.lol as a fallback.
-# "local" uses a running dump1090-fa or readsb instance (RTL-SDR) - not yet developed!
+# "local" uses a running dump1090-fa or readsb receiver (RTL-SDR). It shows
+# everything the receiver hears, whatever radius_nm is.
 source = "internet"
 local_url = "http://localhost:8080/data/aircraft.json"  # only used when source = "local"
 refresh_seconds = 15

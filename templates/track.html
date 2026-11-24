@@ -184,6 +184,7 @@
       <nav><a href="/">BOARD</a><a href="/map">MAP</a><a href="/list">LIST</a></nav>
     </main>
 
+    <script src="/static/common.js"></script>
     <script>
       var form = document.getElementById("track-form"),
         input = document.getElementById("flight"),
@@ -262,7 +263,7 @@
           addDetail(
             details,
             "Last seen",
-            new Date(state.last_seen_at * 1000).toLocaleTimeString(),
+            InPlaneSight.formatTime(new Date(state.last_seen_at * 1000)),
           );
         }
       }
@@ -324,17 +325,18 @@
           });
       });
 
-      fetch("/config")
-        .then(function (r) {
-          return r.json();
-        })
+      // The first refresh waits for /config so times use its time_format.
+      InPlaneSight.fetchJson("/config")
         .then(function (cfg) {
+          InPlaneSight.configure(cfg);
+          refresh();
           setInterval(refresh, cfg.refresh_seconds * 1000);
         })
-        .catch(function () {
+        .catch(function (error) {
+          console.error(error);
+          refresh();
           setInterval(refresh, 15000);
         });
-      refresh();
     </script>
   </body>
 </html>

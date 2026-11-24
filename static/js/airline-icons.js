@@ -25,10 +25,11 @@
       return manifestRequest;
     }
 
+    // A failure is not remembered, so the next request tries again.
     manifestRequest = fetch('/airline-icons')
       .then(function (response) {
         if (!response.ok) {
-          return [];
+          throw new Error('/airline-icons returned ' + response.status);
         }
         return response.json();
       })
@@ -36,9 +37,8 @@
         availableCodes = new Set(codes);
         return availableCodes;
       })
-      .catch(function () {
-        availableCodes = new Set();
-        return availableCodes;
+      .finally(function () {
+        manifestRequest = null;
       });
 
     return manifestRequest;
@@ -51,7 +51,7 @@
 
     const response = await fetch('/static/airline-icons/' + code + '.json');
     if (!response.ok) {
-      return null;
+      throw new Error(code + '.json returned ' + response.status);
     }
     return response.json();
   }
@@ -128,7 +128,7 @@
         return icon;
       })
       .catch(function () {
-        cache.set(code, null);
+        // Not cached, so a failed load is tried again next time.
         pending.delete(code);
         return null;
       });

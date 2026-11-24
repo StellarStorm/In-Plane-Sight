@@ -7,7 +7,7 @@ requires-python = ">=3.13"
 dependencies = [
     "airportsdata>=20261030",
     "fastapi>=0.142.2",
-    "httpx>=0.28.1",
+    "httpx2>=2.16.0",
     "pydantic-settings>=2.16.3",
     "rich>=15.0.0",
     "uvicorn>=0.54.0",

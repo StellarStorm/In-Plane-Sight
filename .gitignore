@@ -21,5 +21,8 @@ jumpstart-python-latest/
 # macOS files
 .DS_Store
 
+# icon_leds.py --preview output
+static/airline-icons/*.png
+
 # Don't include local route-specific files
 .in-plane-sight/

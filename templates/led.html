@@ -86,7 +86,7 @@
         font-size: clamp(72px, 10vw, 150px);
         line-height: 1;
         color: rgba(136, 153, 212, 0.62);
-        transform: rotate(-45deg);
+        transform: rotate(-90deg);
       }
       #board.font-normal #callsign,
       #board.font-normal #aircraft-type,
@@ -521,7 +521,8 @@
           fontThickness = "normal",
           genericIcon = false,
           logoRequestId = 0,
-          currentHeading = null;
+          currentHeading = null,
+          mainIcon = null;
         var G = {
           " ": ["00000", "00000", "00000", "00000", "00000", "00000", "00000"],
           "-": ["00000", "00000", "00000", "11111", "00000", "00000", "00000"],
@@ -783,9 +784,10 @@
       }
         function showFallback(h) {
           genericIcon = false;
+          mainIcon = null;
           airlineLogo.style.display = "none";
           planeFallback.style.display = "block";
-          planeFallback.style.transform = "rotate(" + ((h || 0) - 45) + "deg)";
+          planeFallback.style.transform = "rotate(" + ((h || 0) - 90) + "deg)";
         }
         var airlineLogo = document.getElementById("airline-logo"),
           planeFallback = document.getElementById("plane-fallback"),
@@ -794,6 +796,7 @@
           var requestId = ++logoRequestId;
           currentHeading = h;
           genericIcon = false;
+          mainIcon = null;
           planeFallback.style.display = "none";
           airlineLogo.style.display = "block";
           airlineLogo.style.visibility = "hidden";
@@ -838,7 +841,13 @@
           "rotate(" + (rotation != null ? rotation : 0) + "deg)";
         airlineLogo.style.visibility = "visible";
         airlineLogo.setAttribute("aria-label", icon.label);
+        mainIcon = icon;
       }
+        // The canvas bitmap is sized when drawn, so redraw it at the new
+        // size rather than letting CSS stretch it.
+        function redrawLogo() {
+          if (mainIcon) renderMainIcon(mainIcon, genericIcon ? currentHeading : 0);
+        }
         function distanceNm(a, b, c, d) {
           var R = 3440.065,
             x = ((c - a) * Math.PI) / 180,
@@ -860,6 +869,7 @@
           logoRequestId += 1;
           currentHeading = null;
           genericIcon = false;
+          mainIcon = null;
           scheduleLedTextRender();
         }
         function render(ac) {
@@ -867,13 +877,23 @@
             showEmpty();
             return;
           }
-          showFlight(ac[0], ac[0].icao.toUpperCase(), ac[0].icao);
+          showFlight(ac[0], ac[0].icao.toUpperCase(), logoKeyFor(ac[0]));
+        }
+        // Includes the airline code and helicopter flag, as a callsign or
+        // category can arrive after the aircraft is first seen.
+        function logoKeyFor(a) {
+          return [
+            a.icao,
+            InPlaneSightAirlines.getCode(a.callsign) || "",
+            InPlaneSightAirlines.isHelicopter(a.category),
+          ].join(":");
         }
         function trackStatus(t) {
           if (t.status === "airborne" && t.phase) return t.phase.toUpperCase();
           return (
             {
               waiting: "WAITING",
+              airborne: "AIRBORNE",
               on_ground: "ON GROUND",
               signal_lost: "SIGNAL LOST",
               arrived: "ARRIVED",
@@ -890,7 +910,7 @@
           showFlight(
             a,
             "TRACKING - " + trackStatus(t),
-            "track:" + t.callsign + ":" + a.icao,
+            "track:" + logoKeyFor(a),
           );
         }
         // The logo is reloaded only when logoKey changes.
@@ -935,51 +955,43 @@
           airlineLogo.style.transform = "rotate(" + (a.heading || 0) + "deg)";
         } else if (planeFallback.style.display !== "none") {
           planeFallback.style.transform =
-            "rotate(" + ((a.heading || 0) - 45) + "deg)";
+            "rotate(" + ((a.heading || 0) - 90) + "deg)";
         }
       }
-        function fetchJson(url) {
-          return fetch(url).then(function (r) {
-            if (!r.ok) throw new Error(url + " returned " + r.status);
-            return r.json();
+        function showOverhead(ac) {
+          ac.forEach(function (a) {
+            a._dist = CENTER
+              ? distanceNm(CENTER[0], CENTER[1], a.lat, a.lon)
+              : null;
           });
+          ac.sort(function (a, b) {
+            return (a._dist || 9999) - (b._dist || 9999);
+          });
+          render(ac);
+          document.getElementById("aircraft-count").textContent =
+            ac.length + " AIRCRAFT IN RANGE";
         }
+        // A failed poll leaves the last view on screen; /aircraft is only
+        // needed when no flight is tracked.
         function fetchAircraft() {
-        Promise.all([
-          fetchJson("/aircraft"),
-          fetchJson("/tracking").catch(function (e) {
-            console.error(e);
-            return { tracking: false };
-          }),
-        ])
-          .then(function (results) {
-            var ac = results[0],
-              tracked = results[1];
-            ac.forEach(function (a) {
-              a._dist = CENTER
-                ? distanceNm(CENTER[0], CENTER[1], a.lat, a.lon)
-                : null;
-            });
-            ac.sort(function (a, b) {
-              return (a._dist || 9999) - (b._dist || 9999);
-            });
-            if (tracked.tracking) {
+          InPlaneSight.fetchJson("/tracking")
+            .then(function (tracked) {
+              if (!tracked.tracking) {
+                return InPlaneSight.fetchJson("/aircraft").then(showOverhead);
+              }
               renderTracked(tracked);
-            } else {
-              render(ac);
-            }
-            document.getElementById("aircraft-count").textContent =
-              tracked.tracking
-                ? "TRACKING " + tracked.callsign
-                : ac.length + " AIRCRAFT IN RANGE";
-            document.getElementById("updated").textContent =
-              "UPDATED " + InPlaneSight.formatTime(new Date());
-          })
-          .catch(function (e) {
-            document.getElementById("updated").textContent = "FETCH FAILED";
-            console.error(e);
-          });
-      }
+              document.getElementById("aircraft-count").textContent =
+                "TRACKING " + tracked.callsign;
+            })
+            .then(function () {
+              document.getElementById("updated").textContent =
+                "UPDATED " + InPlaneSight.formatTime(new Date());
+            })
+            .catch(function (e) {
+              document.getElementById("updated").textContent = "FETCH FAILED";
+              console.error(e);
+            });
+        }
         // Drop ?track= from the address so a reload doesn't restart old tracking.
         function startTrackingFromUrl() {
           var params = new URLSearchParams(location.search),
@@ -1013,10 +1025,7 @@
         : Promise.resolve()
       )
         .then(function () {
-          return fetch("/config");
-        })
-        .then(function (r) {
-          return r.json();
+          return InPlaneSight.fetchJson("/config");
         })
         .then(function (cfg) {
           CENTER = [cfg.lat, cfg.lon];
@@ -1047,6 +1056,7 @@
         addEventListener("resize", function () {
           fitHeadlineText();
           scheduleLedTextRender();
+          redrawLogo();
         });
       </script>
     </body>

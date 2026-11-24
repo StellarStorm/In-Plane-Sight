@@ -1,11 +1,12 @@
-import httpx
+import threading
+
 import pytest
 from fastapi.testclient import TestClient
 
 import main
 from config import Config, SwiftConfig
 from sources import tracking
-from sources.base import Aircraft
+from sources.base import Aircraft, SourceError
 from sources.swift_routes import FlightRouteUpdate, RouteIndex
 from sources.tracking import FlightTracker, to_callsign
 
@@ -201,9 +202,14 @@ def test_signal_lost_at_cruise_waits_before_giving_up(tracker, lookup, clock):
 def test_lookup_errors_keep_tracking(tracker, lookup, clock):
     lookup.results = [make_aircraft()]
     tracker.start('UAL1234')
-    lookup.results = httpx.ConnectError('offline')
+    lookup.results = SourceError('offline')
     clock[0] += 15
     assert tracker.state()['status'] == 'airborne'
+
+
+def test_a_failed_lookup_does_not_stop_tracking_from_starting(tracker, lookup):
+    lookup.results = SourceError('offline')
+    assert tracker.start('UAL1234')['status'] == 'waiting'
 
 
 def test_maximum_duration_ends_a_flight_that_never_appears(tracker, clock):
@@ -285,11 +291,25 @@ def test_path_is_recorded_and_sent_in_increments(tracker, lookup, clock):
     assert len(tracker.state(full['path_id'], path_from=99)['path']) == 4
 
 
+def test_parked_aircraft_with_the_callsign_is_ignored_during_a_gap(
+    tracker, lookup, clock
+):
+    lookup.results = [make_aircraft(icao='flying')]
+    tracker.start('UAL1234')
+    clock[0] += 15
+    lookup.results = [
+        make_aircraft(icao='parked', altitude_ft=None, on_ground=True)
+    ]
+    state = tracker.state()
+    assert state['status'] == 'airborne'
+    assert state['aircraft']['icao'] == 'flying'
+
+
 def test_new_airframe_starts_a_new_path(tracker, lookup, clock):
     lookup.results = [make_aircraft(icao='first', lon=-80.0)]
     tracker.start('UAL1234')
     first = tracker.state(path_from=0)
-    clock[0] += 15
+    clock[0] += tracking.LIVE_SECONDS + 1
     lookup.results = [make_aircraft(icao='second', lon=10.0)]
     second = tracker.state(first['path_id'], path_from=1)
     assert second['path_id'] != first['path_id']
@@ -310,6 +330,43 @@ def test_long_paths_are_thinned(tracker, lookup, clock, monkeypatch):
     assert state['path_id'] != path_id
     assert state['path_offset'] == 0
     assert [lon for _, lon in state['path']] == [0.0, 2.0, 4.0]
+
+    # Thinning again must not bring back an id a map may still hold.
+    ids = {path_id, state['path_id']}
+    for lon in (5.0, 6.0):
+        clock[0] += 15
+        lookup.results = [make_aircraft(lon=lon)]
+        tracker.state()
+    assert tracker.state(path_from=0)['path_id'] not in ids
+
+
+class SlowLookup:
+    """A lookup that waits until released, like a source that hangs."""
+
+    def __init__(self):
+        self.started = threading.Event()
+        self.release = threading.Event()
+
+    def __call__(self, callsign: str) -> list[Aircraft]:
+        self.started.set()
+        self.release.wait(5)
+        return [make_aircraft()]
+
+
+def test_stop_does_not_wait_for_a_slow_lookup():
+    slow = SlowLookup()
+    tracker = FlightTracker(slow)
+    starting = threading.Thread(target=tracker.start, args=('UAL1234',))
+    starting.start()
+    assert slow.started.wait(5)
+    stopping = threading.Thread(target=tracker.stop)
+    stopping.start()
+    stopping.join(1)
+    stopped_promptly = not stopping.is_alive()
+    slow.release.set()
+    starting.join(5)
+    assert stopped_promptly
+    assert tracker.state() is None  # the late result is dropped
 
 
 def test_tracking_settings_have_defaults_and_env_overrides(
@@ -422,6 +479,10 @@ def test_saved_route_fills_in_only_when_the_faa_has_none(
     assert tracked_routes.get('UAL1234', 'a1b2c3') == ('KEWR', 'KOAK')
 
 
+def always_available() -> bool:
+    return True
+
+
 def test_faa_report_of_a_finished_flight_forgets_its_saved_route(
     monkeypatch, tracked_routes
 ):
@@ -438,11 +499,16 @@ def test_faa_report_of_a_finished_flight_forgets_its_saved_route(
     swift = SwiftConfig(queue='q', username='u', password='p')
     monkeypatch.setattr(main.config, 'swift', swift)
     monkeypatch.setattr(main, 'SwiftSubscriber', FakeSubscriber)
+    monkeypatch.setattr(main, 'solace_available', always_available)
     tracked_routes.remember('N12345', 'a1b2c3', 'KPAO', 'KSMF')
     tracked_routes.remember('UAL2', 'a00002', 'KEWR', 'KSFO')
     with TestClient(main.app):
         main.route_index.apply(
-            FlightRouteUpdate('gufi', 'N12345', None, None, 'COMPLETED')
+            FlightRouteUpdate('gufi', 'N12345', 'KPAO', 'KSMF', 'COMPLETED')
+        )
+        # Another flight with the same number does not count.
+        main.route_index.apply(
+            FlightRouteUpdate('gufi2', 'UAL2', 'KSFO', 'KEWR', 'CANCELLED')
         )
     assert tracked_routes.get('N12345', 'a1b2c3') is None
     assert tracked_routes.get('UAL2', 'a00002') == ('KEWR', 'KSFO')

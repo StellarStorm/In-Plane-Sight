@@ -9,6 +9,7 @@ Settings are read from ``config.toml`` (all optional; see
     IPS_SWIFT_PASSWORD=...   (sets ``password`` in the [swift] section)
 """
 
+import os
 import tomllib
 from pathlib import Path
 from typing import Literal
@@ -31,7 +32,14 @@ from pydantic_settings import (
 
 from sources.logging_config import get_logger
 
-CONFIG_FILE = Path(__file__).resolve().parent / 'config.toml'
+ENV_PREFIX = 'IPS_'
+# Lets tests and unusual installs point at another file.
+CONFIG_FILE = Path(
+    os.environ.get(
+        'IN_PLANE_SIGHT_CONFIG',
+        Path(__file__).resolve().parent / 'config.toml',
+    )
+)
 
 logger = get_logger(__name__)
 
@@ -92,7 +100,7 @@ class TrackingConfig(BaseModel):
 
 class Config(BaseSettings):
     model_config = SettingsConfigDict(
-        env_prefix='IPS_',
+        env_prefix=ENV_PREFIX,
         env_nested_delimiter='_',
         env_nested_max_split=1,
         extra='forbid',
@@ -168,6 +176,12 @@ class Config(BaseSettings):
             raise ConfigError(
                 f'{path.name} is not valid TOML: {error}'
             ) from None
+        unknown = unknown_env_vars(os.environ)
+        if unknown:
+            raise ConfigError(
+                'Unknown IPS_* environment variables (check the spelling): '
+                + ', '.join(unknown)
+            )
         try:
             return cls(**data)
         except ValidationError as error:
@@ -187,3 +201,20 @@ class Config(BaseSettings):
     ) -> tuple[PydanticBaseSettingsSource, ...]:
         # Environment variables win over values from the TOML file.
         return env_settings, init_settings
+
+
+def unknown_env_vars(environ) -> list[str]:
+    """IPS_* variables that do not name a setting, so typos are not ignored."""
+    known = set()
+    for name, field in Config.model_fields.items():
+        known.add(name)
+        nested = field.annotation
+        if isinstance(nested, type) and issubclass(nested, BaseModel):
+            known.update(f'{name}_{sub}' for sub in nested.model_fields)
+    known.update(f'swift_{sub}' for sub in SwiftConfig.model_fields)
+    return sorted(
+        key
+        for key in environ
+        if key.upper().startswith(ENV_PREFIX)
+        and key[len(ENV_PREFIX) :].lower() not in known
+    )
