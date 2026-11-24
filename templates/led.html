@@ -330,6 +330,10 @@
         body {
           height: 100dvh;
         }
+        /* Seven LEDs tall: just the plane, on a flat line. */
+        #progress-bar {
+          height: 28px;
+        }
         body {
           display: flex;
           flex-direction: column;
@@ -827,6 +831,7 @@
           var height = edge >= 1 ? 1 : edge * edge * (3 - 2 * edge);
           return Math.round(GROUND_ROW - (GROUND_ROW - CRUISE_ROW) * height);
         }
+          var SMALL_SCREEN = matchMedia("(max-width: 700px), (max-height: 500px)");
         // An LED flight profile from origin to destination: the flown part
         // brightens toward the plane, the rest stays dim.
         function drawProgress() {
@@ -841,7 +846,8 @@
           var w = c.clientWidth,
             h = c.clientHeight,
             ratio = devicePixelRatio || 1,
-            p = h / PROGRESS_ROWS,
+            flat = SMALL_SCREEN.matches,
+            p = h / (flat ? PLANE.length : PROGRESS_ROWS),
             columns = Math.floor(w / p),
             halfWidth = Math.floor(PLANE[0].length / 2),
             halfHeight = Math.floor(PLANE.length / 2),
@@ -864,9 +870,12 @@
             o.arc(x * p + p / 2, y * p + p / 2, Math.max(1, p * size), 0, Math.PI * 2);
             o.fill();
           }
-          var previous = profileRow(0);
+          function rowAt(t) {
+            return flat ? halfHeight : profileRow(t);
+          }
+          var previous = rowAt(0);
           for (var x = 0; x < columns; x++) {
-            var row = profileRow(x / (columns - 1));
+            var row = rowAt(x / (columns - 1));
             // One dark column either side keeps the plane's outline clear.
             if (Math.abs(x - planeX) > halfWidth + 1) {
               // Fill the rows between neighbouring columns so steep parts
@@ -880,7 +889,7 @@
             }
             previous = row;
           }
-          var planeRow = profileRow(planeX / (columns - 1));
+          var planeRow = rowAt(planeX / (columns - 1));
           PLANE.forEach(function (line, py) {
             for (var px = 0; px < line.length; px++)
               if (line[px] === "1")
