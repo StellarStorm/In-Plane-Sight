@@ -205,7 +205,7 @@
       #progress-bar {
         display: none;
         width: 100%;
-        height: clamp(44px, 7.9vw, 110px);
+        height: clamp(48px, 8.6vw, 120px);
       }
       #telemetry {
         min-height: 0;
@@ -789,21 +789,29 @@
               }
         }
       }
-        // A plane pointing right, drawn at the head of the progress bar.
-        var PLANE = ["01100", "00110", "11111", "00110", "01100"],
-          PROGRESS_ROWS = 11,
+        // A plane seen from above, nose right: tail fins, swept wings.
+        var PLANE = [
+            "0010000",
+            "0011000",
+            "1001100",
+            "1111111",
+            "1001100",
+            "0011000",
+            "0010000",
+          ],
+          PROGRESS_ROWS = 12,
           GROUND_ROW = 8,
-          CRUISE_ROW = 2,
+          CRUISE_ROW = 3,
           // The share of the route spent climbing, and again descending.
-          CLIMB = 0.15;
+          CLIMB = 0.18;
         // The flight profile's row at t (0 to 1): climb, cruise, descend.
         function profileRow(t) {
           var edge = Math.min(t, 1 - t) / CLIMB;
           var height = edge >= 1 ? 1 : edge * edge * (3 - 2 * edge);
           return Math.round(GROUND_ROW - (GROUND_ROW - CRUISE_ROW) * height);
         }
-        // An LED flight profile from origin to destination: lit up to the
-        // plane, dim after.
+        // An LED flight profile from origin to destination: the flown part
+        // brightens toward the plane, the rest stays dim.
         function drawProgress() {
           var c = document.getElementById("progress-bar");
           if (trackProgress == null) {
@@ -816,35 +824,39 @@
             ratio = devicePixelRatio || 1,
             p = h / PROGRESS_ROWS,
             columns = Math.floor(w / p),
-            half = Math.floor(PLANE.length / 2),
-            planeX = half + Math.round(trackProgress * (columns - 1 - 2 * half)),
+            halfWidth = Math.floor(PLANE[0].length / 2),
+            halfHeight = Math.floor(PLANE.length / 2),
+            planeX =
+              halfWidth +
+              Math.round(trackProgress * (columns - 1 - 2 * halfWidth)),
             o = c.getContext("2d");
           c.width = Math.ceil(w * ratio);
           c.height = Math.ceil(h * ratio);
           o.setTransform(ratio, 0, 0, ratio, 0, 0);
           o.clearRect(0, 0, w, h);
-          function dot(x, y, color, alpha, glow) {
+          function dot(x, y, color, alpha, size, glow) {
             o.globalAlpha =
               alpha *
               InPlaneSightAirlines.ledBrightness(99, x, y, LED_BRIGHTNESS_VARIATION);
             o.fillStyle = "rgb(" + color + ")";
-            o.shadowColor = "rgba(" + color + ",.4)";
+            o.shadowColor = "rgba(" + color + ",.45)";
             o.shadowBlur = glow;
             o.beginPath();
-            o.arc(x * p + p / 2, y * p + p / 2, Math.max(1, p * 0.36), 0, Math.PI * 2);
+            o.arc(x * p + p / 2, y * p + p / 2, Math.max(1, p * size), 0, Math.PI * 2);
             o.fill();
           }
           var previous = profileRow(0);
           for (var x = 0; x < columns; x++) {
             var row = profileRow(x / (columns - 1));
-            if (Math.abs(x - planeX) > half) {
-              var flown = x < planeX;
+            // One dark column either side keeps the plane's outline clear.
+            if (Math.abs(x - planeX) > halfWidth + 1) {
               // Fill the rows between neighbouring columns so steep parts
               // stay joined.
               for (var y = Math.min(row, previous); y <= Math.max(row, previous); y++) {
                 if (y === previous && y !== row) continue;
-                if (flown) dot(x, y, "93,242,255", 1, 4);
-                else dot(x, y, "60,72,110", 0.8, 0);
+                if (x < planeX)
+                  dot(x, y, "93,242,255", 0.5 + 0.5 * (x / planeX), 0.3, 4);
+                else dot(x, y, "60,74,115", 0.9, 0.26, 0);
               }
             }
             previous = row;
@@ -853,7 +865,14 @@
           PLANE.forEach(function (line, py) {
             for (var px = 0; px < line.length; px++)
               if (line[px] === "1")
-                dot(planeX - half + px, planeRow - half + py, "255,255,255", 1, 4);
+                dot(
+                  planeX - halfWidth + px,
+                  planeRow - halfHeight + py,
+                  "255,255,255",
+                  1,
+                  0.36,
+                  5,
+                );
           });
         }
         function showFallback(h) {
