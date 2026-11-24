@@ -759,23 +759,27 @@
             Math.max(3, (fs * s.scale) / 7),
             adv ? adv / 6 : Infinity,
           ),
-          top = Math.max(0, (b.height - 7 * p) / 2),
+          // The 3px minimum pitch can make small text's letters taller
+          // than its line, so the canvas grows evenly above and below
+          // (with 2px for the glow) rather than cutting off the bottom rows.
+          height = Math.max(b.height, 7 * p + 4),
+          top = (height - 7 * p) / 2,
           ratio = devicePixelRatio || 1;
         c.style.cssText +=
           ";display:block;left:" +
           b.left +
           "px;top:" +
-          b.top +
+          (b.top - (height - b.height) / 2) +
           "px;width:" +
           b.width +
           "px;height:" +
-          b.height +
+          height +
           "px";
         c.width = Math.max(1, Math.ceil(b.width * ratio));
-        c.height = Math.max(1, Math.ceil(b.height * ratio));
+        c.height = Math.max(1, Math.ceil(height * ratio));
         var o = c.getContext("2d");
         o.setTransform(ratio, 0, 0, ratio, 0, 0);
-        o.clearRect(0, 0, b.width, b.height);
+        o.clearRect(0, 0, b.width, height);
         var opacity = s.opacity == null ? 1 : s.opacity,
           rad = Math.max(1.25, p * s.radius),
           color = s.color;
