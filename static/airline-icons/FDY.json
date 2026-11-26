@@ -1,0 +1,31 @@
+{
+  "code": "FDY",
+  "label": "Southern Airways Express",
+  "palette": {
+    "G": "#a0a2a8"
+  },
+  "rows": [
+    "           GGGGGGGGGG           ",
+    "         GGGGGGGGGGGGGG         ",
+    "       GGGGGGGGGGGGGGGGGG       ",
+    "      GGGGGGG      GGGGGGG      ",
+    "     GGGGG            GGGGG     ",
+    "    GGGGG              GGGGG    ",
+    "   GGGG                  GGGG   ",
+    "  GGGG                   GGGGG  ",
+    "  GGGG                GGG GGGG  ",
+    " GGGG               GGGGG  GGGG ",
+    " GGGGGGGGGGGGGGGGGGGGGGG    GGG ",
+    " GGG  GGGGGGGGGGGGGGGGG     GGG ",
+    "GGGG    GGGGGGGGGGGGGGG     GGGG",
+    "GGGG       GGGGGGGGGGG      GGGG",
+    "GGG           GGGGGGGG       GGG",
+    "GGG          GGGGGGGGG       GGG",
+    "GGG         GGGGGGGGG        GGG",
+    "GGG         GGGGGGGGG        GGG",
+    "GGGG       GGGGG  GGG       GGGG",
+    " GGG      GGGGG   GGG       GGG ",
+    " GGGG    GGGG     GGG       GGG ",
+    " GGGGGGG GG       GGG      GGGG "
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "code": "CKK",
+  "label": "China Cargo Airlines",
+  "palette": {
+    "R": "#e82828",
+    "B": "#333399"
+  },
+  "rows": [
+    "                              R",
+    "                             RR",
+    "                            RR ",
+    "                          RRR  ",
+    "                         RRR   ",
+    "                       RRRR    ",
+    "                      RRRR     ",
+    "                    RRRRR      ",
+    "                  RRRRRR       ",
+    "                 RRRRRRR       ",
+    "               RRRRRRRR        ",
+    "              RRRRRRRR       B ",
+    "            RRRRRRRRR       BB ",
+    "           RRRRRRRRR      BBB  ",
+    "         RRRRRRRRRRR     BBB   ",
+    "        RRRRRRRRRRR    BBBB    ",
+    "      RRRRRRRRRRRR    BBBB     ",
+    "     RRRRRRRRRRRR   BBBBB      ",
+    "   RRRRRRRRRRRRR   BBBBB       ",
+    " RRRRRRRRRRRRRR  BBBBBB        ",
+    " RRRRRRRRRRRRRR BBBBBBB        ",
+    "RRRRRRRRRRRRRRBBBBBBBB         ",
+    "RRRRRRRRRRRRRRBBBBBBB          ",
+    "  RRRRRRRRRRRR  BBBBB          ",
+    "    RRRRRRRRRR    BBBB         ",
+    "      RRRRRRRRR     BBB        ",
+    "        RRRRRRRR     BBB       ",
+    "           RRRRRR      B       ",
+    "             RRRRR             ",
+    "               RRR             ",
+    "                 RRR           ",
+    "                   RR          "
+  ]
+}

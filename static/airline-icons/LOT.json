@@ -1,0 +1,21 @@
+{
+  "code": "LOT",
+  "label": "LOT Polish Airlines",
+  "palette": {
+    "B": "#2446a8",
+    "W": "#ffffff"
+  },
+  "rows": [
+    "   BBBB    BBBBBBBBBBBBBBBBBBBBB",
+    "   BBBB   BBBBBBBBBBBBBBBBBBBBBB",
+    "  BBBB   BBBBBBBBBBBBBBBBBBBBBB ",
+    "  BBBB  BBBBBWWBBBBB   BBBB     ",
+    "  BBBB  BBBBWWWWBBBB   BBBB     ",
+    " BBBB   BBBBWWWWBBBB   BBBB     ",
+    " BBBB   BBBBWWWWBBBB  BBBB      ",
+    " BBBB   BBBBBWWBBBBB  BBBB      ",
+    " BBBBBBBBBBBBBBBBBB   BBBB      ",
+    "BBBBBBBBBBBBBBBBBBB   BBBB      ",
+    "BBBBBBBBBBBBBBBBB    BBBB       "
+  ]
+}

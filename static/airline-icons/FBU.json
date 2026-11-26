@@ -1,0 +1,43 @@
+{
+  "code": "FBU",
+  "label": "French Bee",
+  "palette": {
+    "C": "#00b0e8",
+    "B": "#78d0f0",
+    "b": "#1050a0",
+    "A": "#5090d0"
+  },
+  "rows": [
+    "           CCCC                 ",
+    "          CCCCCCC               ",
+    "          CCCCCCCCC             ",
+    "         CCCCCCCCCCC            ",
+    "         CCCCCCCCCCCC           ",
+    "         CCCCCCCCCCCCC          ",
+    "         CCCCCCCCCCCCCC         ",
+    "         CCCCCCCCCCCCCC         ",
+    "          CCCCCCCCCCCCCC        ",
+    "          CCCCCCCCCCCCCC        ",
+    "          CCCCCCCCCCCCCC        ",
+    "          CCCCCCCCCCCCC         ",
+    "          CCCCCCCCCCCCC         ",
+    "           CCCCCCCCCCCC         ",
+    "           CCCCCCCCCCC        B ",
+    "            CCCCCCCCC      BBBBB",
+    "    bbbbb   CCCCCCCC     BBBBBBB",
+    "   bbbbbbbb  CCCCCC    BBBBBBBB ",
+    "  bbbbbbbbbb CCCCC   BBBBBBBBBB ",
+    " bbbbbbbbbbbb CCC  BBBBBBBBBBB  ",
+    " bbbbbbbbbbbbb C  BBBBBBBBBBB   ",
+    "bbbbbbbbbbbbbb  BBBBBBBBBBBB    ",
+    "bbbbbbbbbbbbb   BBBBBBBBBBB     ",
+    "bbbbbbbbbbb  AAA BBBBBBBBB      ",
+    "  bbbbb     AAAA  BBBBBBB       ",
+    "           AAAAA                ",
+    "          AAAAA                 ",
+    "         AAAAAA                 ",
+    "        AAAAAA                  ",
+    "        AAAAA                   ",
+    "        AAA                     "
+  ]
+}

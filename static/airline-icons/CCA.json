@@ -1,0 +1,41 @@
+{
+  "code": "CCA",
+  "label": "Air China",
+  "palette": {
+    "R": "#e00010"
+  },
+  "rows": [
+    "                            R",
+    "                          RR ",
+    "                       RRRRR ",
+    "                RRRRRRRRRRR  ",
+    "              RRRRRRRRRRRR   ",
+    "             RRRRRRRRRRR  R  ",
+    "            RRRRRRR     RRR  ",
+    "           RRRRRR    RRRRR   ",
+    "          RRRRR  RRRRRRRRR   ",
+    "       RR RRRR  RRRRRRRR     ",
+    "    RRRR RRRRR RRRRRRR       ",
+    "RRRRR    RRRR RRRR           ",
+    "   RRR   RRRR RRR            ",
+    "   RRR  RRRR RRRR   RRR      ",
+    "   RRR  RRRR RRR  RRRRRR     ",
+    "   RRR  RRRR RRR  RRRRRRR    ",
+    "   RRR  RRRR RRR RRRRRRRRR   ",
+    "   RRR  RRRR RRR RRR  RRRR   ",
+    "   RRR  RRRR RRR RRR  RRRR   ",
+    "   RRR  RRRR RRR RRR RRRR    ",
+    "   RRR  RRRR RRR RRR  RR     ",
+    "   RRR  RRRR RRR RRR         ",
+    "   RRR  RRRR RRR RRR         ",
+    "   RRRRRRRRR RRR RRR         ",
+    "   RRRRRRRR  RRR RRR         ",
+    "    RRRRRRR RRRR RRR         ",
+    "     RRRRR RRRRR RR          ",
+    "          RRRRR RRR          ",
+    "     RRRRRRRRR  RR           ",
+    "      RRRRRRR  RR            ",
+    "             RRR             ",
+    "          RRRR               "
+  ]
+}

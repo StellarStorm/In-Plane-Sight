@@ -1,0 +1,41 @@
+{
+  "code": "SIA",
+  "label": "Singapore Airlines",
+  "palette": {
+    "O": "#f8b030"
+  },
+  "rows": [
+    "       O              ",
+    "      OO              ",
+    "      OOO             ",
+    "      OOOO            ",
+    "      OOOO            ",
+    "    OO OOOO           ",
+    "   OOO OOOOO          ",
+    "   OOOO OOOO          ",
+    "   OOOO OOOOO         ",
+    " OO OOOO OOOO         ",
+    " OO OOOOO OOOO        ",
+    "OOOO OOOO OOOOO       ",
+    "OOOO OOOOO OOOO       ",
+    "OOOOO OOOOO OOOO      ",
+    " OOOOO OOOO OOOO      ",
+    "  OOOO OOOOO OOOO     ",
+    "  OOOOO OOOO OOOO     ",
+    "   OOOO OOOOO OOO     ",
+    "    OOOO OOOO OOO     ",
+    "    OOOOO OOO OO      ",
+    "     OOOO OOO OO      ",
+    "     OOOO OO OO  OOOO ",
+    "      OO OO OOO OOOOOO",
+    "      OO OO OO OO   OO",
+    "     OO OO OO OO   OOO",
+    "    OO OOO OO OO  OOO ",
+    "    OO OO OO OO   OO  ",
+    "   OO OO OO OOO  OO   ",
+    "  OOO OO OOOOO  OOO   ",
+    "  OO            OO    ",
+    " OOOOOOOOOOOOOOOO     ",
+    " OOOOOOOOOOOOOOO      "
+  ]
+}

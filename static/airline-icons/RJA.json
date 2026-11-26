@@ -1,0 +1,33 @@
+{
+  "code": "RJA",
+  "label": "Royal Jordanian",
+  "palette": {
+    "O": "#b08a4c"
+  },
+  "rows": [
+    "               OO               ",
+    "               OO               ",
+    "               OO               ",
+    "              OOOO              ",
+    "        OOOOOO OO OOOOOO        ",
+    "       OOOOO OO  OO OOOOO       ",
+    "     OOOOO    OOOO    OOOOO     ",
+    "  OOOOOOOO    OOOO    OOOOOOOO  ",
+    " OOOOOOOOO    OOOO    OOOOOOOOO ",
+    " OOO   OOO    OOOO    OOO   OOO ",
+    "OOOO   OOO    OOOO    OOO   OOOO",
+    " OOO   OOO    OOOO    OOO   OOO ",
+    "OOOO   OOOO   OOOO   OOOO   OOOO",
+    " OOO    OOO    OO    OOO    OOO ",
+    " OOOO    OO    OO    OO    OOOO ",
+    "  OOO    OO    OO    OO    OOO  ",
+    "   OOO    O  OOOOOO  O    OOO   ",
+    "     OOOOOOOOOOOOOOOOOOOOOO     ",
+    "     OOOOOOOOOOOOOOOOOOOOOO     ",
+    "      OO  OO OO  OO OO  OO      ",
+    "      OOOOOOOOOOOOOOOOOOOO      ",
+    "                                ",
+    "      OOOOOOOOOOOOOOOOOOOO      ",
+    "      OOOOOOOOOOOOOOOOOOOO      "
+  ]
+}

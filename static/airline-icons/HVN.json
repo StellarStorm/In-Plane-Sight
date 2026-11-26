@@ -1,0 +1,29 @@
+{
+  "code": "HVN",
+  "label": "Vietnam Airlines",
+  "palette": {
+    "O": "#d89808"
+  },
+  "rows": [
+    "            O       O           ",
+    "            OO     OO           ",
+    "            OOO   OOO           ",
+    "            OOO   OOO           ",
+    "            OOOO OOOO           ",
+    "           OOOOO OOOOO          ",
+    "  OOO      OOOOO OOOOO      OOO ",
+    "  OOOOOO   OOOOO OOOOO   OOOOOO ",
+    "   OOOOOO  OOOOO OOOOO  OOOOOO  ",
+    "    OOOOOO OOOOO OOOOO OOOOOO   ",
+    "    OOOOOO OOOOO OOOOO OOOOOO   ",
+    "     OOOOO OOOO   OOOO OOOOO    ",
+    "     OOOOO OOO     OOO OOOOO    ",
+    "      OOOOO OO OOO OO OOOOO     ",
+    "    OO OOOOO O OOO O OOOOO OO   ",
+    "  OOOOO  OOOO   O   OOOO  OOOOO ",
+    " OOOOOOOO  OOO OOO OOO  OOOOOOOO",
+    "OOOOOOOOOOO  OOOOOOO  OOOOOOOOOO",
+    "   OOOOOOOOOOOOO OOOOOOOOOOOOO  ",
+    "       OOOOOO       OOOOOO      "
+  ]
+}

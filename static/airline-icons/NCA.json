@@ -1,0 +1,20 @@
+{
+  "code": "NCA",
+  "label": "Nippon Cargo Airlines",
+  "palette": {
+    "B": "#1028b0"
+  },
+  "rows": [
+    "BBBB   BBB  BBBBBBBBBB    BBBBBB",
+    "BBBBB  BBB  BBBBBBBBBB   BBBBBBB",
+    "BBBBB  BBB BBBBBBBBBBB  BBBBBBBB",
+    "BBBBBB BBB BBB         BBBB  BBB",
+    "BBBBBB BBB BBB         BBB   BBB",
+    "BBBBBBBBBB BBB        BBBB   BBB",
+    "BBB BBBBBB BBB       BBBBBBBBBBB",
+    "BBB BBBBBB BBB       BBBBBBBBBBB",
+    "BBB  BBBBB BBBBBBBBBBBBBBBBBBBBB",
+    "BBB  BBBBB  BBBBBBBBBBB      BBB",
+    "BBB   BBBB  BBBBBBBBBB       BBB"
+  ]
+}

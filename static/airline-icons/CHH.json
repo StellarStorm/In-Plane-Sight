@@ -1,0 +1,37 @@
+{
+  "code": "CHH",
+  "label": "Hainan Airlines",
+  "palette": {
+    "R": "#e80010"
+  },
+  "rows": [
+    "        RRR          RRR        ",
+    "     RRRR     RRRR     RRRR     ",
+    "    R R R    RRRRRR    R R R    ",
+    "   R R R     RRRRRR     R R R   ",
+    "  RR R R     RRRRRR     R R RR  ",
+    " RR R  R     RRRRRR     R  R RR ",
+    " RR R  R      RRRR      R  R RR ",
+    "RRR R   R              R   R RRR",
+    "RRR  R  RR            RR  R  RRR",
+    "RRRR RR   RR        RR   RR RRRR",
+    "RRRR  RR    RRRRRRRR    RR  RRRR",
+    "RRRRR  RRR     RR     RRR  RRRRR",
+    " RRRRR   RRRR      RRRR   RRRRR ",
+    " RRRRRRR    RRRRRRRR    RRRRRRR ",
+    "  RRRRRRR     RRRR     RRRRRRR  ",
+    "   RRRRRRRRR        RRRRRRRRR   ",
+    "     RRRRRRRRR    RRRRRRRRR     ",
+    "       RRRRRRRR  RRRRRRRR       ",
+    "         RRRRRRRRRRRRRR         ",
+    "           RRRRRRRRRR           ",
+    "    RRRRRRR  RRRRRR  RRRRRRR    ",
+    "   RRRRRRRRR  RRRR  RRRRRRRRR   ",
+    "  RRRR    RRR RRRR RRR    RRRR  ",
+    "  RRRR  R   RR RR RR   R  RRRR  ",
+    "  RRR   R    RRRRRR    R   RRR  ",
+    "  RRRRRRR     RRRR     RRRRRRR  ",
+    "   RRRRRR      RR      RRRRRR   ",
+    "    RRRR                RRRR    "
+  ]
+}

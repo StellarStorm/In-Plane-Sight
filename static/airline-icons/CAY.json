@@ -1,0 +1,43 @@
+{
+  "code": "CAY",
+  "label": "Cayman Airways",
+  "palette": {
+    "B": "#1b5199",
+    "R": "#c01030",
+    "G": "#409928"
+  },
+  "rows": [
+    "    RRRRRR                 ",
+    "  RRRRRRRRRR               ",
+    "RRRRRRRRRRRRRR          RRR",
+    " RRRRRRRRRRRRRR       RRRRR",
+    "  BBBBBBBBRRRRR      RRRRRR",
+    "  GGGGGGGGGRRRR     RRRRRR ",
+    " GGGBGGGGGGRRR     RRRRRRR ",
+    " GGGGGGGGGGRRR   RRRRRRRR  ",
+    " BBBBBGGGGGRR  RRRRRRRRR   ",
+    "   GGGGGGGGR RRRRRRRR      ",
+    "      RRRRRRRRRRRRR        ",
+    "      RRRRRRRRR            ",
+    "      BBBBB GGG            ",
+    "     BBRRRB GGG G          ",
+    "    BBBBBBB     GG         ",
+    "   BBBBRBBB GGG GG         ",
+    "  BBBBRRBRR GGG            ",
+    " BBBBRBBBRB GGG GGG        ",
+    " BBBBRBBBRB     GGG        ",
+    " BB BBBBBBB GGG GGG        ",
+    "  B BBBBBBB GGG            ",
+    "    BBGGBBB GGG GGG        ",
+    "   BBGGGBBB     GGG        ",
+    "    BBBBBBBB GGG           ",
+    "    BBBBBBBB GGG           ",
+    "    BBBB BBB  GG           ",
+    "    BBBB BBBBB             ",
+    "   BBBB  BBBBBB            ",
+    "   B     RRRR  B           ",
+    "  B      RRRRR  B          ",
+    " B       RRRRRRR B         ",
+    "B        RR  RRR  BB       "
+  ]
+}

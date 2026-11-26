@@ -1,0 +1,22 @@
+{
+  "code": "VIV",
+  "label": "Viva Aerobus",
+  "palette": {
+    "G": "#00b040",
+    "g": "#80d000"
+  },
+  "rows": [
+    "                            gggg",
+    "                            g  g",
+    "                            gg g",
+    "GG    GG GG GG    GG  GGGGGG g g",
+    "GG    GG GG GG    GG GG  GGG  gg",
+    " GG  GG  GG  GG  GG GG    GG    ",
+    " GG  GG  GG  GG  GG GG    GG    ",
+    " GG  GG  GG  GG  GG GG    GG    ",
+    "  GGGG   GG   GGGG  GG    GG    ",
+    "  GGGG   GG   GGGG  GG    GG    ",
+    "   GG    GG    GG    GG  GGG    ",
+    "   GG    GG    GG     GGGG G    "
+  ]
+}

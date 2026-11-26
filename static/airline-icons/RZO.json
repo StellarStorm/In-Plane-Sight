@@ -1,0 +1,43 @@
+{
+  "code": "RZO",
+  "label": "Azores Airlines",
+  "palette": {
+    "B": "#0080c0",
+    "C": "#48c8e8",
+    "b": "#2a48b0"
+  },
+  "rows": [
+    " bb                       ",
+    " bbbbb                    ",
+    "  bbbbC                   ",
+    "  bbbCCC                  ",
+    "   bbCCCC                 ",
+    "   bbCCCBB                ",
+    "    bCBBBBB               ",
+    "    CBBBBBBB              ",
+    "     BBBBBBBB             ",
+    "     BBBBBBBBB            ",
+    "     BBBBBBBBBB           ",
+    "     BBBBBBBBBB           ",
+    "      BBBBBBBBBC          ",
+    "      BBBBBBBBCC          ",
+    "      BBBBBBBBCCC         ",
+    "      BBBBBBBBCCC         ",
+    "       BBBBBBBCCCC        ",
+    "       BBBBBBCCCCC        ",
+    "       BBBBBBCCCCCC       ",
+    "        BBBBBCCCCCC bbbbb ",
+    "         BBBCCCCCCBBBBBBBb",
+    "          BBCCCBBBBBBBBB b",
+    "           BCBBBBBBBBBB   ",
+    "           bbbBBBBBBBB    ",
+    "          bbbbbbbbbbB     ",
+    "         bbbbbbbb         ",
+    "        bbbbbb            ",
+    "       bbbb               ",
+    "  CCCCbbb                 ",
+    "CCCCCbb                   ",
+    " CCCbb                    ",
+    "   C                      "
+  ]
+}

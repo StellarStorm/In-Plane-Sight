@@ -1,0 +1,18 @@
+{
+  "code": "ITY",
+  "label": "ITA Airways",
+  "palette": {
+    "G": "#00a060",
+    "R": "#e02818"
+  },
+  "rows": [
+    " GG GGGGGGGGGGGGGGG GGGGGGG     ",
+    "GGG GGGGGGGGGGGGGG  GGG GGG     ",
+    "GGG       GG       GGG   GGG    ",
+    "GGG       GG      GGG     GGG   ",
+    "GGG       GG     GGG       GGG  ",
+    "GGG       GG     GGG RRR   GGG  ",
+    "GGG       GG    GGG RRR     GGG ",
+    "GG        GG   GGG RRR       GGG"
+  ]
+}

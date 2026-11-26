@@ -1,0 +1,36 @@
+{
+  "code": "SJX",
+  "label": "Starlux Airlines",
+  "palette": {
+    "B": "#986a4c",
+    "O": "#86754d"
+  },
+  "rows": [
+    "               BBBBBBBBB        ",
+    "             BBBBBBBBBB    B    ",
+    "            BBBBBBBBBB     B    ",
+    "           BBBBBBBBBB      B    ",
+    "          BBBBBBBBBB     B B B  ",
+    "         BBBBBBBBBB       BBB   ",
+    "        BBBBBBBBBB    BBBBBBBBBB",
+    "       BBBBBBBBBBB        BBB   ",
+    "      BBBBBBBBBBB        B B B  ",
+    "     BBBBBBBBBBB           B    ",
+    "    BBBBBBBBBBB            B    ",
+    "   BBBBBBBBBB              B    ",
+    "  BBBBBBBBB                     ",
+    "              OOOOOOOOOO        ",
+    "            OOOOOOOOOOO         ",
+    "           OOOOOOOOOOO          ",
+    "          OOOOOOOOOOO           ",
+    "          OOOOOOOOOO            ",
+    "         OOOOOOOOOO             ",
+    "        OOOOOOOOOO              ",
+    "       OOOOOOOOOOO              ",
+    "      OOOOOOOOOOO               ",
+    "     OOOOOOOOOOO                ",
+    "    OOOOOOOOOOO                 ",
+    "  OOOOOOOOOOO                   ",
+    "OOOOOOOOOOO                     "
+  ]
+}

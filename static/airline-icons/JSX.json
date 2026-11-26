@@ -1,0 +1,21 @@
+{
+  "code": "JSX",
+  "label": "JSX",
+  "palette": {
+    "S": "#a0a0a0",
+    "R": "#e83830"
+  },
+  "rows": [
+    "      S       SSSS     RR     RR",
+    "      S      S    S     RR   RR ",
+    "      S      S           RR RR  ",
+    "      S      S            RRR   ",
+    "      S       SS           R    ",
+    "      S         SS              ",
+    "      S           S        R    ",
+    "      S           S       RRR   ",
+    "      S           S      RR RR  ",
+    "S    S      SS   S      RR   RR ",
+    " SSSS         SSS      RR     RR"
+  ]
+}

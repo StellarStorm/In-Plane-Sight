@@ -1,0 +1,43 @@
+{
+  "code": "VOI",
+  "label": "Volaris",
+  "palette": {
+    "W": "#eeefef",
+    "L": "#b5d5f0",
+    "C": "#6cadde",
+    "P": "#d6a6cc",
+    "M": "#91268f",
+    "G": "#8dc63f",
+    "Y": "#dae7a2"
+  },
+  "rows": [
+    "            WWWW            ",
+    "            WWWW            ",
+    "            WWWW            ",
+    "            WWWW            ",
+    "            LLLL            ",
+    "            LLLL            ",
+    "            LLLL            ",
+    "            LLLL            ",
+    "        LLLLCCCCLLLL        ",
+    "        LLLLCCCCLLLL        ",
+    "        LLLLCCCCLLLL        ",
+    "        LLLLCCCCLLLL        ",
+    "WWWWPPPPMMMM    GGGGYYYYWWWW",
+    "WWWWPPPPMMMM    GGGGYYYYWWWW",
+    "WWWWPPPPMMMM    GGGGYYYYWWWW",
+    "WWWWPPPPMMMM    GGGGYYYYWWWW",
+    "        PPPPMMMMYYYY        ",
+    "        PPPPMMMMYYYY        ",
+    "        PPPPMMMMYYYY        ",
+    "        PPPPMMMMYYYY        ",
+    "            PPPP            ",
+    "            PPPP            ",
+    "            PPPP            ",
+    "            PPPP            ",
+    "            WWWW            ",
+    "            WWWW            ",
+    "            WWWW            ",
+    "            WWWW            "
+  ]
+}

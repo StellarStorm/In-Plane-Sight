@@ -1,0 +1,41 @@
+{
+  "code": "SCX",
+  "label": "Sun Country Airlines",
+  "palette": {
+    "O": "#f88038",
+    "B": "#1a5cb0"
+  },
+  "rows": [
+    "             O                ",
+    "            OO                ",
+    "           OOO OO             ",
+    "         OOOOO OOOOO          ",
+    "       OOOOOOO OOOOOOOOOO     ",
+    "      OOOOOOOO OOOOOOOOO      ",
+    "   O OOOOOO OO OOOOOOOOO      ",
+    "   OO OOOOO OO OOO OOO OO     ",
+    "   OOO OOOOOOO OO OOO OOOO    ",
+    "   OOOO OOOOOOOOOOOO OOOOO    ",
+    "  OOOOOOOOOOBBBBBBOOOOOOOOO   ",
+    "  OOOOOOOOBBBBOOOBBOOOOOOOO   ",
+    "  OOO  OOBBBBOOOOBBOOO  OOO   ",
+    "  OOOOOOOBBBBOOOOOBOOOOOOOOO  ",
+    " OOOOOOOOBBBBBOOOOOOOOOOOOOOOO",
+    " OOOOOOOOOBBBBBBOOOOO         ",
+    "        OOOBBBBBBBOOOOOOOOOO  ",
+    "OOOOOOOOOOOOOBBBBBBOOOOOOOOO  ",
+    " OOOOOOOOBOOOOOOBBBBOOOOOOO   ",
+    "  OOOOOOOBBOOOOOOBBBOO  OOO   ",
+    "  OOO  OOBBOOOOOBBBBOOOOOOO   ",
+    "  OOOOOOOOBBBBBBBBBOOOOOOOO   ",
+    "   OOOOOOOOOBBBBBOOOO OOOO    ",
+    "   OOOOO OOOOOOOOOOOOO OOO    ",
+    "    OOO OOOOOOO OOOOOOO OO    ",
+    "     O OOOOO OO OO OOOOO O    ",
+    "      OOOOO OOO OOO OOO       ",
+    "     OOOOOOOOOO OOOOOO        ",
+    "         OOOOOO OOOO          ",
+    "            OOO OO            ",
+    "                O             "
+  ]
+}

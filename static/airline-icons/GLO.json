@@ -1,0 +1,23 @@
+{
+  "code": "GLO",
+  "label": "Gol Linhas Aereas",
+  "palette": {
+    "O": "#ff7020",
+    "G": "#a0a0a0"
+  },
+  "rows": [
+    "    OOOOO     OOOOOGG     OO    ",
+    "  OOOOOOO   OOOOOOOOOGG   OO    ",
+    " OOOO  OO  OOOOGG OOOOGG  OO    ",
+    " OOO       OOOGG   OOOGGG OO    ",
+    "OOO       OOOGG     OOOGG OO    ",
+    "OO     OOOOOGGG      OOGG OO    ",
+    "OO     OOOOOGGG      OOGG OO    ",
+    "OO     OOOOOGGG      OOGG OO    ",
+    "OOO       OOGGG     OOGGG OO    ",
+    " OOO     OOOOGGG   OOGGGG OO    ",
+    " OOOO   OOOOOOGGGGOOGGGG  OO    ",
+    "  OOOOOOOOO OOOGGGGGGGGG  OOOOOO",
+    "    OOOOO     OOGGGGG     OOOOOO"
+  ]
+}

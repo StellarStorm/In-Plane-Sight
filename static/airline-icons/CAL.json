@@ -1,0 +1,42 @@
+{
+  "code": "CAL",
+  "label": "China Airlines",
+  "palette": {
+    "R": "#c85868",
+    "A": "#e08898",
+    "L": "#f0b0bc",
+    "W": "#ffffff",
+    "r": "#a8203a"
+  },
+  "rows": [
+    "            RRRRRR              ",
+    "          RRRRRRRRAA            ",
+    "         AAARRRRRRAAA           ",
+    "        AAAARRRRRRRAA           ",
+    "        AAARRRRRRRRAAR          ",
+    "        RAARRRRRRRRAAR          ",
+    "       ARAAARRRRRRAARAARRR      ",
+    "       ARAAARRRRRRAARLAAARRRR   ",
+    " RRRRRAARLAAAARRAAARRLLAAARRRRR ",
+    "RRRRAAALLRAAAArrAAARLLLAAARRRRRR",
+    "RRRAAALLLRrrAArrAAWRALLAAARRRRRR",
+    "RRRAALLLLArrALAALWWrrLLLAAARRRRR",
+    "RRAALLLLLAAALWLLWWArrLLLAAARRRR ",
+    "RAALLLLrrAWLLLWWWLLLLRRAAAAARRR ",
+    "RAALLLLrrAWWWWWWWLLLLrrRRAAAAR  ",
+    "RAALLLLLAALLLLWWWWWWWrrRRRAAR   ",
+    "RAALLLLLLALLLWWWWLLLAAAAARRAR   ",
+    " AALLLLLrrLLWLLLWWLLAAAAAARR    ",
+    "  AALLLLrrLWLLLAAWLLrrAAAR      ",
+    "    LLLLRRRLLLLArrLLrrAAARRrr   ",
+    "   RrrRRLLLLrrAArrLLAAAAARrrr   ",
+    "   RrrrLLLLLrrAARALLAAAAARRrr   ",
+    "   RrrALLLLLAAAARAAAAAAARRRR    ",
+    "    rrRAAAAAAARRRAAAAAARRRR     ",
+    "    RRRRAAAARRRRRRAAARRRRR      ",
+    "     RRRRRRRRRRRrrRRRRRRRR      ",
+    "      RRRRRRRRRrrrrRRRRR        ",
+    "       RRRRRRR Rrr              ",
+    "                 R              "
+  ]
+}

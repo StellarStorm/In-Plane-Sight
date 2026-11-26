@@ -1,0 +1,36 @@
+{
+  "code": "CES",
+  "label": "China Eastern Airlines",
+  "palette": {
+    "R": "#e00010",
+    "B": "#1d2699"
+  },
+  "rows": [
+    "             RRRRRRRRRRRRRRRR   ",
+    "            RRRRRRRRRRRRRR      ",
+    "           RRRRRRRRRRRR         ",
+    "          RRRRRRRRRRR           ",
+    "         RRRRRRRRRR             ",
+    "         RRRRRRRRR              ",
+    "        RRRRRRRR                ",
+    "       RRRRRRRR                 ",
+    "       RRRRRRR                  ",
+    "      RRRRRRR              BBBBB",
+    "     RRRRRRR        BBBBBBBBBB  ",
+    "    RRRRRRR     BBBBBBBBB       ",
+    "RRRRRRRRRRR  BBBBBBBBB          ",
+    " RRRRRRRRR BBBBBBBB             ",
+    " RRRRRRRRRBBBBBBB               ",
+    "  RRRRRRRRBBBBBB                ",
+    "  RRRRRRRRBBBBBB                ",
+    "  RRRRRRRRBBBBBB                ",
+    "   RRRRRRR BBBBBB               ",
+    "    RRRRRR   BBBBBB             ",
+    "    RRRRRRR     BBBBB           ",
+    "     RRRRRRR         BBB        ",
+    "      RRRRRRR                   ",
+    "       RRRRRRR                  ",
+    "        RRRRRRRR                ",
+    "          RRRRRRRRR             "
+  ]
+}
