@@ -1,0 +1,41 @@
+{
+  "code": "TSC",
+  "label": "Air Transat",
+  "palette": {
+    "B": "#00b0f0"
+  },
+  "rows": [
+    "                    BB    ",
+    "                  BBB     ",
+    "                 BB       ",
+    "                BB        ",
+    "               BB         ",
+    "              BB  B       ",
+    "             BB   B       ",
+    "            BB    B       ",
+    "        BBBBBB    B       ",
+    "    BBBBBBB      BBBBBB   ",
+    "BBBBBB               BBBBB",
+    " BBBB                   BB",
+    "    BBB               BBBB",
+    "     BBBB           BBBB  ",
+    "       BBB        BBBB    ",
+    "       BB         BBB     ",
+    "       BB         BBB     ",
+    "      BB     BB    BB     ",
+    "      B     BBBB   BB     ",
+    "      B    BBBBBBB BB     ",
+    "     BB   BBB  BBBB B     ",
+    "     B  BBBB    BBBBBB    ",
+    "     B  BBB       BBBB    ",
+    "       BB           BB    ",
+    "      BB             BB   ",
+    "     BB                   ",
+    "    BB                    ",
+    "   BB                     ",
+    "  BB                      ",
+    " BB                       ",
+    " B                        ",
+    "B                         "
+  ]
+}

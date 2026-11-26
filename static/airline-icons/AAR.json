@@ -1,0 +1,39 @@
+{
+  "code": "AAR",
+  "label": "Asiana Airlines",
+  "palette": {
+    "R": "#e80010"
+  },
+  "rows": [
+    "                         RRRR   ",
+    "                      RRRRRRRRR ",
+    "                   RRRRRRRRRRRR ",
+    "                 RRRRRRRRRRRRRRR",
+    "              RRRRRRRRRRRRRRRRRR",
+    "           RRRRRRRRRRRRRRRRRRRRR",
+    "         RRRRRRRRRRRRRRRRRRRRRRR",
+    "      RRRRRRRRRRRRRRRRRRRRRRRRR ",
+    "   RRRRRRRRRRRRRRRRRRRRRRRRRRRR ",
+    "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR ",
+    "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRR  ",
+    "RRRRRRRRRRRRRRRRRRR  RRRRRRRRR  ",
+    "RRRRRRRRRRRRRRRRR    RRRRRRRRR  ",
+    "RRRRRRRRRRRRRR      RRRRRRRRR   ",
+    "RRRRRRRRRRR         RRRRRRRRR   ",
+    "RRRRRRRRR           RRRRRRRRR   ",
+    "RRRRRR             RRRRRRRRR    ",
+    "RRRR               RRRRRRRRR    ",
+    "R                 RRRRRRRRR     ",
+    "                  RRRRRRRRR     ",
+    "                  RRRRRRRRR     ",
+    "                 RRRRRRRRR      ",
+    "                 RRRRRRRRR      ",
+    "                RRRRRRRRRR      ",
+    "                RRRRRRRRR       ",
+    "                RRRRRRRRR       ",
+    "               RRRRRRRRR        ",
+    "               RRRRRRRRR        ",
+    "              RRRRRRRRRR        ",
+    "              RRRRRRRRRR        "
+  ]
+}

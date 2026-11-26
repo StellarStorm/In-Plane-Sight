@@ -1,0 +1,36 @@
+{
+  "code": "EVA",
+  "label": "EVA Air",
+  "palette": {
+    "G": "#00a850",
+    "W": "#ffffff",
+    "R": "#f04a28"
+  },
+  "rows": [
+    "                  GGGGGGGGGGGGGG",
+    "                  GGGGGGGGGGGGGG",
+    "                 GGGGGGGGGGGGGG ",
+    "                GGGGGGGGGGGGGGG ",
+    "               GRRGGGGGGGGGGGG  ",
+    "               GWWRRGGGGGGGGGG  ",
+    "              GWWWWWRRGGGGGGGG  ",
+    "             GWWWWWWWRRGGGGGG   ",
+    "            GWWWGWWWWWRGGGGGG   ",
+    "            GWWWGWWWWWWRGGGGG   ",
+    "           GWWGWGWGWWWWRGGGG    ",
+    "          GWWWWGGGWWWWWRGGGG    ",
+    "         GWWGGGGGGGGGWWRGGGG    ",
+    "         GWWWWWGGGWWWWWRGGG     ",
+    "        GWWWWWGWGWGWWWWRGGG     ",
+    "       GRWWWWWWWGWWWWWWRGGG     ",
+    "      GGGRWWWWWWGWWWWWRGGG      ",
+    "      GGGRRWWWWWWWWWWRGGGG      ",
+    "     GGGGGRRWWWWWWWWRRGGGG      ",
+    "    GGGGGGGGRRWWWWRRGGGGG       ",
+    "   GGGGGGGGGGGRRRRGGGGGGG       ",
+    "   GGGGGGGGGGGGGGGGGGGGGG       ",
+    "  GGGGGGGGGGGGGGGGGGGGGG        ",
+    " GGGGGGGGGGGGGGGGGGGGGGG        ",
+    "GGGGGGGGGGGGGGGGGGGGGGGG        "
+  ]
+}

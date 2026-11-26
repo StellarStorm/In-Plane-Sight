@@ -1,0 +1,20 @@
+{
+  "code": "SAS",
+  "label": "Scandinavian Airlines",
+  "palette": {
+    "B": "#0000c0"
+  },
+  "rows": [
+    "      BBBBBB     BBBB     BBBBBB",
+    "     BBB   B    BBBBB    BBB   B",
+    "    BBBB        BBBBB   BBBB    ",
+    "    BBBB      BBBBBB    BBBB    ",
+    "    BBBB      B BBBB     BBB    ",
+    "     BBBB    BB BBBB     BBBB   ",
+    "     BBBB   BB  BBBB     BBBB   ",
+    "     BBBB  BBBBBBBBB     BBBB   ",
+    "B    BBBB BB   BBBB B    BBBB   ",
+    "BB   BBBB B    BBBB BB   BBBB   ",
+    " BBBBBB  BB    BBBB  BBBBBB     "
+  ]
+}

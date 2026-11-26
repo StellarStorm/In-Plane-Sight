@@ -1,0 +1,41 @@
+{
+  "code": "ANZ",
+  "label": "Air New Zealand",
+  "palette": {
+    "K": "#999999"
+  },
+  "rows": [
+    "                 KKKKK          ",
+    "               KKKKKKKKK        ",
+    "             KKKKKKKKKKKK       ",
+    "            KKKKKK   KKKKK      ",
+    "           KKKKK      KKKK      ",
+    "          KKKKK    KK  KKK      ",
+    "         KKKK    KKKK  KKK      ",
+    "        KKKK     KKKKKKKKK      ",
+    "       KKKK      KKKKKKKK       ",
+    "      KKKK        KKKKKKK       ",
+    "     KKKK           K           ",
+    "    KKKKK                       ",
+    "   KKKKK                       K",
+    "  KKKKKKKKKKKKKKKKKKKKKKKKKKKKKK",
+    " KKKKKKKKKKKKKKKKKKKKKKKKKKKKKK ",
+    " KKKKKKKKKKKKKKKKKKKKKKKKKKKKKK ",
+    "                                ",
+    "KKKKKKKKKKKKKKKKKKKKKKKKKKKKKK  ",
+    "KKKKKKKKKKKKKKKKKKKKKKKKKKKKK   ",
+    " KKKKKKKKKKKKKKKKKKKKKKKKKKKK   ",
+    " KKKK                           ",
+    "  KKK                           ",
+    "  KKKK      KK                  ",
+    "   KKK    KKKKKKK               ",
+    "   KKK    KKKKKKK               ",
+    "   KKKK   KKKKKKK               ",
+    "    KKKK  KKKK KKK              ",
+    "     KKK       KKK              ",
+    "     KKKKK    KKK               ",
+    "      KKKKKKKKKKK               ",
+    "       KKKKKKKKK                ",
+    "          KKKK                  "
+  ]
+}

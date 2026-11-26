@@ -1,0 +1,38 @@
+{
+  "code": "KQA",
+  "label": "Kenya Airways",
+  "palette": {
+    "R": "#f02028"
+  },
+  "rows": [
+    "             RRRRRRR            ",
+    "          RRRRRRRRRRRRR         ",
+    "        RRRRRRRRRRRRRRRRR       ",
+    "       RRRRRR          RRR      ",
+    "      RRRRR              RR     ",
+    "    RRRRRR             RR RR    ",
+    "    RRRR    RRRRR     RRR  R    ",
+    "   RRRR   RRRRRR     RRRR  RR   ",
+    "  RRRR   RRRRRRR   RRRRRR   R   ",
+    "  RRR    RRRRRR   RRRRRRR   R   ",
+    " RRRR    RRRRRR RRRRRRRR    R   ",
+    " RRR     RRRRRR RRRRRRRR    R   ",
+    " RRR     RRRRRRRRRRRRR      RR  ",
+    "RRR      RRRRRRRRRRRR       RR  ",
+    "RRR     RRRRRRRRRRR         R   ",
+    "RR      RRRRRRRR            R   ",
+    "RR     RRRRRRRRRR          RR   ",
+    "RR     RRRRR  RRRR         RR   ",
+    "RR     RRRRR  RRRRR       RR    ",
+    "RR     RRRRR  RRRRRR      RR    ",
+    " R     RRRRR   RRRRRR    RR     ",
+    " RR    RRRRR    RRRRRRR RRR     ",
+    "  R    RRRRR    RRRRRRRRRR     R",
+    "  RR   RRRRR     RRRRRRRRRRRRRRR",
+    "   RR             RRRRRRRRRRRRRR",
+    "   RRR             RRRRRRRRRRRR ",
+    "     RR          RRRRRRRRRRRRRR ",
+    "      RRRRRRRRRRRRRR   RRRRRR   ",
+    "         RRRRRRRR               "
+  ]
+}

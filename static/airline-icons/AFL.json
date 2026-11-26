@@ -1,0 +1,21 @@
+{
+  "code": "AFL",
+  "label": "Aeroflot",
+  "palette": {
+    "B": "#0050a0"
+  },
+  "rows": [
+    "                BB              ",
+    "                  B             ",
+    "                   B            ",
+    "                B  B            ",
+    "              BBBB B            ",
+    "BBBBBBBBBBBBB BBB  BBBBBBBBBBBBB",
+    "   BBBBBBBB B   B  B BBBBBBBB   ",
+    "     BBBBBBB B   BB BBBBBBB     ",
+    "        BBBBB BBBB BBBBB        ",
+    "             BBBBBB             ",
+    "             B    B             ",
+    "            B      B            "
+  ]
+}

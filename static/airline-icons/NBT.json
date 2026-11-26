@@ -1,0 +1,41 @@
+{
+  "code": "NBT",
+  "label": "Norse Atlantic Airways",
+  "palette": {
+    "B": "#264c99"
+  },
+  "rows": [
+    "     BBBBB              ",
+    "   BBBBBBBBB            ",
+    " BBBBBBBBBBB            ",
+    " BBB     BBBB           ",
+    "BBB      BBBB           ",
+    "BBB      BBBB           ",
+    "BBB    BBBBBB           ",
+    "BBBBBBBB BBBB           ",
+    "  BBBB   BBBB           ",
+    "        BBBBB           ",
+    "       BBBBBB           ",
+    "       BBBBBB           ",
+    "      BBBBBBB           ",
+    "     BBBBBBBBB          ",
+    "     BBBB  BBB          ",
+    "    BBBBB  BBBB         ",
+    "   BBBBB    BBB         ",
+    "   BBBBB    BBBB        ",
+    "   BBBB      BBBBB      ",
+    "  BBBBB       BBBBB     ",
+    "  BBBBB        BBBBBBB B",
+    "  BBBBB          BBBBBBB",
+    "  BBBBB            BBBB ",
+    "  BBBBB               B ",
+    "  BBBBB                 ",
+    "   BBBB                 ",
+    "   BBBBB                ",
+    "   BBBBB                ",
+    "    BBBBB               ",
+    "     BBBBB              ",
+    "     BBBBBB             ",
+    "       BBBBB            "
+  ]
+}

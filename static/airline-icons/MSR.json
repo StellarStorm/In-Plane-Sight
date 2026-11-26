@@ -1,0 +1,41 @@
+{
+  "code": "MSR",
+  "label": "EgyptAir",
+  "palette": {
+    "B": "#004099"
+  },
+  "rows": [
+    "           BBBBBBBBB         ",
+    "       BBBBBBBBBBBBBBBBB     ",
+    "    BBBBBBBBBBBBBBBBBBBBBB   ",
+    "    BBBBBBBB             BBB ",
+    "   BBBBBB    BBBBBBBBB      B",
+    "  BBBB    BBBBBB       BBB   ",
+    "  BBB   BBBBBB  BB   B B B   ",
+    " BB   BBBBBB  BB    BBBB  BB ",
+    " B  BBBBBB  BBB BB       B   ",
+    "   BBBBB  BBB  BB      BB    ",
+    "  BBBBB  BBB  BBB     BB     ",
+    "BBBBBB  BBB BBBB B  BB       ",
+    "BBBBB BBBB  BBB BB  BB       ",
+    "BBBB  BBB  BBB  BB BB        ",
+    "BBB  BBB  BBBB BBBBB         ",
+    "BB  BBBB  BBB  BBBB          ",
+    "B  BBBB  BBB  BBBB           ",
+    "   BBB  BBBB  BBBB           ",
+    "  BBBB  BBB  BBBB            ",
+    "  BBB  BBBB  BBBB            ",
+    " BBBB  BBBB  BBBB            ",
+    "  BB  BBBB   BBB             ",
+    "  BB  BBBB  BBBB             ",
+    "  BB  BBBB  BBBB             ",
+    "      BBB   BBBB             ",
+    "     BBBB   BBB              ",
+    "     BBBB   BBB              ",
+    "      BBB  BBBB              ",
+    "       BB  BBBB              ",
+    "        B  BBBB              ",
+    "           BBBB              ",
+    "             BBB             "
+  ]
+}

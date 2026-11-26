@@ -1,0 +1,32 @@
+{
+  "code": "AEA",
+  "label": "Air Europa",
+  "palette": {
+    "B": "#0870c8"
+  },
+  "rows": [
+    "          BBBB        BBBBBBB   ",
+    "       BBBBBBBBB    BBBBBBBBBBB ",
+    "      BBBBBBBBBBBBBBBBBBBBBBBBB ",
+    "    BBBBBB    BBBBBBBB     BBBBB",
+    "    BBBBB      BBBBBB      BBBBB",
+    "   BBBBB       BBBBB       BBBBB",
+    "  BBBBB        BBBBB       BBBBB",
+    "  BBBBB       BBBBB        BBBB ",
+    " BBBBB        BBBBB       BBBBB ",
+    " BBBBB        BBBBB      BBBB   ",
+    " BBBBB       BBBBB     BBBBB    ",
+    "BBBBB        BBBBB    BBBB      ",
+    "BBBBB        BBBBB  BBBBB       ",
+    "BBBBB        BBBBB  BBB         ",
+    "BBBBB        BBBBB  B           ",
+    "BBBBB       BBBBBB              ",
+    "BBBBBB       BBBBB           B  ",
+    "BBBBBB      BBBBBBB        BBBB ",
+    " BBBBBB   BBBBBBBBB      BBBBB  ",
+    " BBBBBBBBBBBBBBBBBBBBBBBBBBB    ",
+    " BBBBBBBBBBB  BBBBBBBBBBBBB     ",
+    "  BBBBBBBBB    BBBBBBBBBBB      ",
+    "    BBBB         BBBBBB         "
+  ]
+}

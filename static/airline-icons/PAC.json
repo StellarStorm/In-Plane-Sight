@@ -1,0 +1,41 @@
+{
+  "code": "PAC",
+  "label": "Polar Air Cargo",
+  "palette": {
+    "B": "#004c99"
+  },
+  "rows": [
+    "            BBBBBBB             ",
+    "         BBBBBBBB   BBB         ",
+    "         BBBBBBB BBBBBBBB       ",
+    "      B BBBB        BBBBBB      ",
+    "    BBB BB            BBBBB     ",
+    "    BBBBB               BBBB    ",
+    "   BBB      BBBBBBB       BBB   ",
+    "  BBBB    BBBBBBBBBBB     B     ",
+    "  BBB    BBBBBBBBBBBBBB   BBB   ",
+    " BBBB   BBBBBBBBBBBBBBBB   BBBB ",
+    " BBB   BBBB         BBBB    BBB ",
+    " BBB   BBBB           BBB   BBB ",
+    "  B   BBBBB           BBB    BBB",
+    "B B   BBBBB   BBBBBB   BBB   BBB",
+    "BBB   BBBBB   BBBBBB   BBB   BBB",
+    "BB    BBBBB   BBB      BBB   BBB",
+    "BBB  BBBBBB           BBBB    BB",
+    "BBB   BBBBB         BBBBBB   BBB",
+    "BBB   BBBBB   BBBBBBBBBBBB  BB B",
+    "BBB   BBBBB   BBBBBBBBBBB    B  ",
+    " BBB  BBBBB   BBBBBBBBBBB   BBB ",
+    " BBB   BBBB    BBBBBBBBBB   BBB ",
+    " BBBB   BBBBBBBBBBBBBBBB   BBBB ",
+    "   BBB  BBBBBBBBBBBBBBB    BBB  ",
+    "  BB      BBBBBBBBBBBB    BBBB  ",
+    "   BBB      BBBBBBBB      BBB   ",
+    "    BBBB       B       B BBB    ",
+    "    BBBBBB            BB BB     ",
+    "      BBBBBB B      BBBBBB      ",
+    "       BBBBBBB  BBBBBBB B       ",
+    "         BBB  BBBBBBBBB         ",
+    "            BBBBBBBB            "
+  ]
+}

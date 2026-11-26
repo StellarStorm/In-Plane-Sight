@@ -1,0 +1,43 @@
+{
+  "code": "AIC",
+  "label": "Air India",
+  "palette": {
+    "O": "#ffd8a0",
+    "o": "#a88050",
+    "A": "#d0b078"
+  },
+  "rows": [
+    "     OOOOOO                 ",
+    "  OOOOOOOOOOOO              ",
+    "OOOOOOOOOOOOOOOO            ",
+    "OOOOOOOOOOOOOOOOOOO         ",
+    "O    OOOOOOOOOOOOOOOO       ",
+    "         OOOOOOOOOOOOOOO    ",
+    "           OOOOOOOOOOOOo    ",
+    "             OOOOOOOOOoo    ",
+    "                OOOOooooo   ",
+    "                  Ooooooo   ",
+    "                   oooooo   ",
+    "                    oooooo  ",
+    "                    oooooo  ",
+    "                    oooooo  ",
+    "                     oooooo ",
+    "                     ooooAA ",
+    "                     oooAAA ",
+    "                      AAAAAA",
+    "                      AAAAAA",
+    "                      AAAAAA",
+    "                       AAAAA",
+    "                       AAAAA",
+    "                       AAAAA",
+    "                       AAAAA",
+    "                       AAAA ",
+    "                       AAAA ",
+    "                       AAA  ",
+    "                       AAA  ",
+    "                       AA   ",
+    "                      AA    ",
+    "                      A     ",
+    "                     A      "
+  ]
+}

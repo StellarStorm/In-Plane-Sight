@@ -1,0 +1,42 @@
+{
+  "code": "LAN",
+  "label": "LATAM Airlines",
+  "palette": {
+    "P": "#2d0099",
+    "M": "#f01850"
+  },
+  "rows": [
+    "    MM              ",
+    "    MMMMM           ",
+    "     MMMMMMM        ",
+    "     MMMMMMMMMM     ",
+    "MM      MMMMMMMMMM  ",
+    "MMMMM      MMMMMMMMM",
+    "MMMMMMM      MMMMMPP",
+    "MMMMMMMMMM     PPPPP",
+    "   MMMMMMMMMPPPPPPPP",
+    "      MMMPPPPPPPPPP ",
+    "MM     PPPPPPPPPMM  ",
+    "MMMMPPPPPPPPPPMMMMMP",
+    "MPPPPPPPPPP   MMMPPP",
+    "PPPPPPPP      PPPPPP",
+    "    P      PPPPPPPPP",
+    "         PPPPPPPPP  ",
+    "     PPPPPPPPPPP    ",
+    "     PPPPPPPP       ",
+    "    PPPPPP          ",
+    "    PPP             ",
+    "           PP       ",
+    "        PPPPP       ",
+    "     PPPPPPP        ",
+    "    PPPPPPPP        ",
+    "     PPPP           ",
+    "    PPP             ",
+    "                    ",
+    "       P            ",
+    "     PPP            ",
+    "    PPPP            ",
+    "     PPP            ",
+    "    PP              "
+  ]
+}

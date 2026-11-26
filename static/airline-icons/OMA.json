@@ -1,0 +1,38 @@
+{
+  "code": "OMA",
+  "label": "Oman Air",
+  "palette": {
+    "S": "#a8a8b0",
+    "O": "#b89858"
+  },
+  "rows": [
+    "        SS O                   O",
+    "     SSSSOOOOOOOOOO          OO ",
+    "   SSSSS OOOOOOOOOOOOOOOOOOOOO  ",
+    "   SSSSS OOOOOOOOOOOOOOOOOO  O  ",
+    "  SSSSSS OOO              OOO   ",
+    " SSSSSSSSO OOOOOOOOOOOOOOOOO    ",
+    " S SSSSSSSOOOOOOOOOOOOOOOO O    ",
+    "SSSSSSSSSS OOOOOOOOOOO   OO     ",
+    "SSS SSSSSSS OOOO     OOOOOO     ",
+    "SSSS SSSSSSSS O OOOOOOOOO       ",
+    "SSSSSSSSSSSSSS OOOOOOOOO        ",
+    "SSSSS SSSSSSSSS OOOOO           ",
+    "SSSSSS SSSSSSSSS OO             ",
+    " SSSSSS SSSSSSSSS O             ",
+    " SSSSSSS SSSSSSSSS              ",
+    "  SSSSSSS SSSSSSSSS             ",
+    "   SSSSSSS SSSSSSSSS            ",
+    "   SSSSSSSS SSSSSSSS            ",
+    "    SSSSSSSS SSSSSSS            ",
+    "     SSSSSSSS SSSSSSS           ",
+    "     SSSSSSSSSSSSSSS            ",
+    "      SSSSSSSS SSSSS            ",
+    "      SSSSSSSS SSSS             ",
+    "       SSSSSSS SSS              ",
+    "       SSSSSSSSSS               ",
+    "       SSSSSSS                  ",
+    "       SSSSSS                   ",
+    "       SSSS                     "
+  ]
+}

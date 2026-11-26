@@ -1,0 +1,40 @@
+{
+  "code": "BEL",
+  "label": "Brussels Airlines",
+  "palette": {
+    "R": "#e80028"
+  },
+  "rows": [
+    "                          RRR  ",
+    "  RRR         RRR        RRRRR ",
+    " RRRRR       RRRRR      RRRRRRR",
+    " RRRRR       RRRRR      RRRRRRR",
+    " RRRRR       RRRRR      RRRRRRR",
+    "  RRR         RRR        RRRRR ",
+    "                          RRR  ",
+    "                               ",
+    "                               ",
+    "                               ",
+    "                               ",
+    "             RRRRR             ",
+    "  RRR       RRRRRRR       RRR  ",
+    " RRRRR     RRRRRRRRR     RRRRR ",
+    "RRRRRRR    RRRRRRRRR    RRRRRRR",
+    "RRRRRRR    RRRRRRRRR    RRRRRRR",
+    "RRRRRRR    RRRRRRRRR    RRRRRRR",
+    " RRRRR     RRRRRRRRR     RRRRR ",
+    "  RRR       RRRRRRR       RRR  ",
+    "             RRRRR             ",
+    "                               ",
+    "                               ",
+    "                               ",
+    "                               ",
+    "              RRR              ",
+    "  RRR        RRRRR        RRR  ",
+    " RRRRR      RRRRRRR      RRRRR ",
+    " RRRRR      RRRRRRR      RRRRR ",
+    " RRRRR      RRRRRRR      RRRRR ",
+    "  RRR        RRRRR        RRR  ",
+    "              RRR              "
+  ]
+}

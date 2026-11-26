@@ -1,0 +1,33 @@
+{
+  "code": "GTI",
+  "label": "Atlas Air",
+  "palette": {
+    "O": "#ffb808"
+  },
+  "rows": [
+    "O    O      O      O      O    O",
+    "O    O   OOOOOOOOOOOOOO   O    O",
+    "O    OOOO   O      O   OOOO    O",
+    "O  OOO      O      O      OOO  O",
+    " OO  O      O      O      O  OO ",
+    " O    O     O      O     O    O ",
+    " OO   O     O      O     O   OO ",
+    "  O   O   OOOOOOOOOOOO   O   O  ",
+    "   O  OOOO   O    O   OOOO  O   ",
+    "   OOO O     O    O     O OOO   ",
+    "    O   O    O    O    O   O    ",
+    "     O  OO OOOOOOOOOO OO  O     ",
+    "      OO OO  O    O  OO OO      ",
+    "        OOOO  O  O  OOOO        ",
+    "         OOOO   O  OOOO         ",
+    "           OOOOOOOOOO           ",
+    "             O  OOOO            ",
+    "              O  OO             ",
+    "               OOOO             ",
+    "               OO O             ",
+    "              O OOO             ",
+    "              OOOO              ",
+    "              OOOO              ",
+    "               O OO             "
+  ]
+}

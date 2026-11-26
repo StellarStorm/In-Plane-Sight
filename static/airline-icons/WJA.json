@@ -1,0 +1,38 @@
+{
+  "code": "WJA",
+  "label": "WestJet",
+  "palette": {
+    "C": "#00b0a0",
+    "B": "#005699"
+  },
+  "rows": [
+    "                    C           ",
+    "                   CC           ",
+    "                  CCC           ",
+    "                 CCCC           ",
+    "            CC  CCCCCC  CC      ",
+    "            CCCCCCCCCCCCC       ",
+    "            CCCCCCCCCCCC        ",
+    "            CCCCCCCCCCCC        ",
+    "       C    CCCCCCCCCCC   CC    ",
+    "       CC   CCCCCCCCCCC CCC     ",
+    " CCCCCCCC  CCCCCCCCCC CCCCCCCCCC",
+    " CCCCCCCCC CCCCC     CCCCCCCCCC ",
+    " CCCCCCCCCCC         CCCCCCCCC  ",
+    " CCCCCC        BB   CCCCCCCCC   ",
+    " C    BBBBBBBBBBB  CCCCCCCCCC   ",
+    "BBBBBBBBBBBBBBBB  CCCCCCCCCCCC  ",
+    "BBBBBBBBBBBBBBB  CCCCCCCCCCC    ",
+    " BBBBBBBBBBBBBB CCCCCCCCCC      ",
+    "  BBBBBBBBBBBB CCCCCCCCCC       ",
+    "   BBBBBBBBBBB CCCCCCCC         ",
+    "   BBBBBBBBBB CCCCCCC           ",
+    "    BBBBBBBB CCCCCCC            ",
+    "   BBBBBBBBBCCCCCCCC            ",
+    "  BBB    BB     CCCC            ",
+    "         BB                     ",
+    "         B                      ",
+    "        BB                      ",
+    "        B                       "
+  ]
+}

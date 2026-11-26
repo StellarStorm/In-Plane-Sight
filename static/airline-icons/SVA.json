@@ -1,0 +1,32 @@
+{
+  "code": "SVA",
+  "label": "Saudia",
+  "palette": {
+    "G": "#009947"
+  },
+  "rows": [
+    "                G               ",
+    "             GGGGGG             ",
+    "           GGGGGGGGGG           ",
+    "            GGGGGGGG            ",
+    "           G GGGGGG G           ",
+    "          G G G  G G G          ",
+    "GG          G G  G G          GG",
+    " GGGGGG       G  G       GGGGGG ",
+    "  GGGGGGGGGG        GGGGGGGGGG  ",
+    "   GGGGGGGGGGGG  GGGGGGGGGGGG   ",
+    "    GGGGGGGGGGG  GGGGGGGGGGG    ",
+    "     GG  GGGGGG  GGGGGG  GG     ",
+    "      GGGG  GGG  GGG  GGGG      ",
+    "       GGGGG  G  G  GGGGG       ",
+    "       GGGGGGGG  GGGGGGGG       ",
+    "        GGGGGG    GGGGGG        ",
+    "         GGG  G  G  GGG         ",
+    "          G GGG  GGG G          ",
+    "        GGGGGGG  GGGGGGG        ",
+    "      GGG   GGG  GGG   GGG      ",
+    "             GG  GG             ",
+    "              GGGG              ",
+    "              GGGG              "
+  ]
+}

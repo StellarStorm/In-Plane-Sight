@@ -1,0 +1,41 @@
+{
+  "code": "KAP",
+  "label": "Cape Air",
+  "palette": {
+    "B": "#2050a0"
+  },
+  "rows": [
+    "B                            ",
+    "BB                           ",
+    " BBB                         ",
+    " BBBB                        ",
+    "  BBBB                       ",
+    " BB BBBB                     ",
+    "  B BBBBB                    ",
+    "   B BBBBB                   ",
+    "   BBBBBBBB                  ",
+    "       BBBBB                 ",
+    "     B BBBBBB                ",
+    "      BBBBBBB                ",
+    "        BBBBBB               ",
+    "       BBBBBBB               ",
+    "       BBBBBBB               ",
+    "        BBBBBBB              ",
+    "        BBBBBBB              ",
+    "        BBBBBBBB       BB    ",
+    "         BBBBBBBB    BBB     ",
+    "         BBBBBBBBB BBBB      ",
+    "          BBBBBBB BBBB       ",
+    "          BBBBBBBBBBBB       ",
+    "           BBBBBBBBBBB       ",
+    "            BBBBBBBBBB       ",
+    "            BBBBBBBBBB       ",
+    "       BBBBBBBBBBBBBBB       ",
+    "       BBBBBBBBBBBBBBBB      ",
+    "       BBBBBBBBBBBBBBBBB     ",
+    "        BBBBBBBBBBBBBBBBB    ",
+    "        BBBBBBB  BBBBBBBBB   ",
+    "        BBBBBBB  BBBBBBBBBBB ",
+    "          BBBBBB  BBBBBBBBBBB"
+  ]
+}

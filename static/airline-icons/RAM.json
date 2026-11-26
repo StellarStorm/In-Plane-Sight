@@ -1,0 +1,25 @@
+{
+  "code": "RAM",
+  "label": "Royal Air Maroc",
+  "palette": {
+    "R": "#c00830"
+  },
+  "rows": [
+    "               RR               ",
+    "               RR               ",
+    "           RRRRRRRRRR           ",
+    "           R  R  R  R           ",
+    "           R  RRR   R           ",
+    "            RR    RR            ",
+    "             RRRRRR             ",
+    "            R  RR  R            ",
+    "           R   RR   R           ",
+    "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+    "RR        R R R  R R R        RR",
+    "  RRRR    R  RR  RR  R    RRRR  ",
+    "   RRRRR  R   RRRR   R  RRRRR   ",
+    "   RR  R   R RRRRRR R   R  RR   ",
+    "     R     R RR  RR R     R     ",
+    "     RRRRRRRRR    RRRRRRRRR     "
+  ]
+}

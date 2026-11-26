@@ -1,0 +1,17 @@
+{
+  "code": "ARG",
+  "label": "Aerolineas Argentinas",
+  "palette": {
+    "B": "#0080c8"
+  },
+  "rows": [
+    "     BBBBBBBB                  ",
+    "         BBBBBBBBBBBBBBBBBBB   ",
+    "             BBBBBBBBBBBBBBB   ",
+    "               BBBBBBBBBBBBB   ",
+    "                BBBBBBBBBBB    ",
+    "             BBBBBBBBBBBB      ",
+    "       BBBBBBBBBBBBBBBBB  BBBBB",
+    "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+  ]
+}

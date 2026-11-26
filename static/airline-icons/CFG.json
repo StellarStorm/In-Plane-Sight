@@ -1,0 +1,41 @@
+{
+  "code": "CFG",
+  "label": "Condor",
+  "palette": {
+    "K": "#999999"
+  },
+  "rows": [
+    "            KKKKKKKK            ",
+    "         KKKKKKKKKKKKKK         ",
+    "       KKKK          KKKK       ",
+    "      KKK              KKK      ",
+    "    KKK                  KKK    ",
+    "    KK                    KK    ",
+    "   KK                      KK   ",
+    "  KK                        KK  ",
+    "  KK                        KK  ",
+    " KK                          KK ",
+    " KK                          KK ",
+    " K  KKKKKKK  KKKKKKKKKKKKKKKK K ",
+    "KK   KKKKKK KKKKKKKKKKKKKKKK  KK",
+    "KK     KKK   KK        KKK    KK",
+    "KK      KKKK KK       KKK     KK",
+    "KK        KKK KK     KK       KK",
+    "KK         KKKKKK  KKK        KK",
+    "KK           KKKKK  K         KK",
+    "KK             KKKK           KK",
+    "KK              KKKK          KK",
+    " K                KKK         K ",
+    " KK                KKKK       K ",
+    " KK                  KKK     KK ",
+    "  KK                  KKKK   K  ",
+    "  KK                    KK  KK  ",
+    "   KK                    K KK   ",
+    "    KK                    KK    ",
+    "    KKK                  KKK    ",
+    "      KK                KK      ",
+    "       KKK            KKK       ",
+    "         KKKKK    KKKKK         ",
+    "            KKKKKKKK            "
+  ]
+}

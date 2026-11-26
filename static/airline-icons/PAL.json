@@ -1,0 +1,29 @@
+{
+  "code": "PAL",
+  "label": "Philippine Airlines",
+  "palette": {
+    "R": "#e83030",
+    "B": "#333b99",
+    "O": "#f8b828"
+  },
+  "rows": [
+    "                     B         R",
+    "                    BB        RR",
+    "                   BB        RRR",
+    "                 BOBB       RRR ",
+    "                BBOBB      RRRR ",
+    "               OBBOBB    RRRRRR ",
+    "              BOOBOB    RRRRRRR ",
+    "             OBBOBOB   RRRRRRRR ",
+    "           BBOOBOBOB  RRRRRRRR  ",
+    "          BOBBOBOOOB RRRRRRRRR  ",
+    "         BBBOOBOBOORRRRRRRRRRR  ",
+    "        OOOBBOOOOORRRRRRRRRRRR  ",
+    "       BBBOOOBOOORRRRRRRRRRRRR  ",
+    "     OOOOBBBOOOORRRRRRRRRRRRRR  ",
+    "    BBBBOOOOBORRRRRRRRRRRRRRR   ",
+    "   BBBBBBBBBORRRRRRRRRRRRRRRR   ",
+    "  OOOOOOOOOORRRRRRRRRRRRRRRRR   ",
+    "BBBBBBBBBBBRRRRRRRRRRRRRRRRRR   "
+  ]
+}
