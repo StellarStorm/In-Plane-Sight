@@ -90,7 +90,7 @@
       }
       #board.font-normal #callsign,
       #board.font-normal #aircraft-type,
-      #board.font-normal #icao-line,
+      #board.font-normal #status-line,
       #board.font-normal #route-line,
       #board.font-normal .metric-label,
       #board.font-normal .metric-value {
@@ -105,7 +105,7 @@
       }
       #board.font-broad #callsign,
       #board.font-broad #aircraft-type,
-      #board.font-broad #icao-line,
+      #board.font-broad #status-line,
       #board.font-broad #route-line,
       #board.font-broad .metric-label,
       #board.font-broad .metric-value {
@@ -136,7 +136,7 @@
         background-size: 8px 8px;
         filter: drop-shadow(0 0 5px rgba(148, 159, 255, 0.24));
       }
-      #board.font-broad #icao-line {
+      #board.font-broad #status-line {
         background-image: radial-gradient(
           circle,
           rgba(150, 157, 178, 0.58) 0 36%,
@@ -195,12 +195,17 @@
         letter-spacing: 0.035em;
         white-space: nowrap;
       }
-      #icao-line {
+      #status-line {
         overflow: hidden;
         font-size: clamp(15px, 2vw, 31px);
         line-height: 1.1;
         letter-spacing: 0.035em;
         white-space: nowrap;
+      }
+      #progress-bar {
+        display: none;
+        width: 100%;
+        height: clamp(28px, 5vw, 70px);
       }
       #telemetry {
         min-height: 0;
@@ -320,6 +325,9 @@
         body {
           height: 100dvh;
         }
+        #progress-bar {
+          height: 28px;
+        }
         body {
           display: flex;
           flex-direction: column;
@@ -362,7 +370,7 @@
         #aircraft-type {
           font-size: clamp(14px, 7.5vh, 64px);
         }
-        #icao-line {
+        #status-line {
           font-size: clamp(10px, 4vh, 31px);
         }
         #telemetry {
@@ -416,7 +424,7 @@
         #aircraft-type {
           font-size: clamp(14px, 5.6vw, 32px);
         }
-        #icao-line {
+        #status-line {
           font-size: clamp(10px, 3.4vw, 18px);
         }
         #telemetry {
@@ -455,7 +463,8 @@
           gap: 4px;
         }
         #nav-links {
-          gap: 20px;
+          gap: 16px;
+          margin-left: auto;
         }
         #utility a {
           padding: 6px 0;
@@ -480,8 +489,9 @@
           <div id="flight-summary">
             <div id="callsign">------</div>
             <div id="aircraft-type">----</div>
-            <div id="icao-line">------</div>
+            <div id="status-line"></div>
             <div id="route-line"></div>
+            <canvas id="progress-bar" class="flicker-primary" aria-hidden="true"></canvas>
           </div>
           </section>
           <section id="telemetry">
@@ -522,7 +532,8 @@
           genericIcon = false,
           logoRequestId = 0,
           currentHeading = null,
-          mainIcon = null;
+          mainIcon = null,
+          routeProgress = null;
         var G = {
           " ": ["00000", "00000", "00000", "00000", "00000", "00000", "00000"],
           "-": ["00000", "00000", "00000", "11111", "00000", "00000", "00000"],
@@ -582,7 +593,7 @@
             radius: 0.23,
             glow: 1,
           },
-          "icao-line": {
+          "status-line": {
             color: [150, 157, 178],
             scale: 0.8,
             radius: 0.22,
@@ -629,7 +640,7 @@
         function initializeLedText() {
         addRenderer(callsign, "callsign");
         addRenderer(document.getElementById("aircraft-type"), "aircraft-type");
-        addRenderer(document.getElementById("icao-line"), "icao-line");
+        addRenderer(document.getElementById("status-line"), "status-line");
         addRenderer(document.getElementById("route-line"), "route-line");
         document.querySelectorAll(".metric-label").forEach(function (e) {
           addRenderer(e, "metric-label");
@@ -653,15 +664,20 @@
         function fitAircraftType() {
           fitTextToWidth(document.getElementById("aircraft-type"), 9);
         }
-        var SUMMARY_LINES = ["callsign", "aircraft-type", "icao-line", "route-line"];
+        var SUMMARY_LINES = ["callsign", "aircraft-type", "status-line", "route-line"];
+        // The logo never shrinks below this when making room for the text.
+        var MIN_LOGO_PX = 96;
         // If the logo and flight lines are taller than the space above the
-        // telemetry (e.g. a phone held sideways, with a route showing), shrink
-        // the flight lines until they fit rather than letting them overflow.
+        // telemetry (e.g. a phone, with a route showing), make them fit
+        // rather than letting them overflow. A logo stacked above the text
+        // shrinks first, so the LED lettering keeps its size.
         function fitSummaryHeight() {
           var box = document.getElementById("main-display"),
             summary = document.getElementById("flight-summary"),
-            logo = document.getElementById("logo-frame");
-          for (var pass = 0; pass < 3; pass++) {
+            logo = document.getElementById("logo-frame"),
+            logoWidth = logo.style.width;
+          logo.style.width = "";
+          for (var pass = 0; pass < 4; pass++) {
             var cs = getComputedStyle(box),
               available =
                 box.clientHeight -
@@ -671,7 +687,12 @@
               l = logo.getBoundingClientRect(),
               used = Math.max(s.bottom, l.bottom) - Math.min(s.top, l.top),
               over = used - available;
-            if (over <= 1 || s.height <= 0) return;
+            if (over <= 1 || s.height <= 0) break;
+            var smaller = Math.max(MIN_LOGO_PX, Math.floor(l.width - over));
+            if (l.bottom <= s.top && smaller < l.width - 1) {
+              logo.style.width = smaller + "px";
+              continue;
+            }
             var ratio = Math.max(0.4, (s.height - over) / s.height);
             SUMMARY_LINES.forEach(function (id) {
               var el = document.getElementById(id),
@@ -679,9 +700,10 @@
               el.style.fontSize = Math.max(8, Math.floor(size * ratio)) + "px";
             });
           }
+          if (logo.style.width !== logoWidth) redrawLogo();
         }
         function fitHeadlineText() {
-          fitTextToWidth(document.getElementById("icao-line"), 8);
+          fitTextToWidth(document.getElementById("status-line"), 8);
           fitTextToWidth(callsign, 16);
           fitTextToWidth(document.getElementById("route-line"), 16);
           fitAircraftType();
@@ -731,23 +753,27 @@
             Math.max(3, (fs * s.scale) / 7),
             adv ? adv / 6 : Infinity,
           ),
-          top = Math.max(0, (b.height - 7 * p) / 2),
+          // The 3px minimum pitch can make small text's letters taller
+          // than its line, so the canvas grows evenly above and below
+          // (with 2px for the glow) rather than cutting off the bottom rows.
+          height = Math.max(b.height, 7 * p + 4),
+          top = (height - 7 * p) / 2,
           ratio = devicePixelRatio || 1;
         c.style.cssText +=
           ";display:block;left:" +
           b.left +
           "px;top:" +
-          b.top +
+          (b.top - (height - b.height) / 2) +
           "px;width:" +
           b.width +
           "px;height:" +
-          b.height +
+          height +
           "px";
         c.width = Math.max(1, Math.ceil(b.width * ratio));
-        c.height = Math.max(1, Math.ceil(b.height * ratio));
+        c.height = Math.max(1, Math.ceil(height * ratio));
         var o = c.getContext("2d");
         o.setTransform(ratio, 0, 0, ratio, 0, 0);
-        o.clearRect(0, 0, b.width, b.height);
+        o.clearRect(0, 0, b.width, height);
         var opacity = s.opacity == null ? 1 : s.opacity,
           rad = Math.max(1.25, p * s.radius),
           color = s.color;
@@ -782,6 +808,71 @@
               }
         }
       }
+        // A plane seen from above, nose right: tail fins, swept wings.
+        var PLANE = [
+            "0010000",
+            "0011000",
+            "1001100",
+            "1111111",
+            "1001100",
+            "0011000",
+            "0010000",
+            ];
+            // An LED line from origin to destination with the plane on it: the
+            // flown part brightens toward the plane, the rest stays dim.
+        function drawProgress() {
+          var c = document.getElementById("progress-bar");
+          if (routeProgress == null) {
+            c.style.display = "none";
+            return;
+          }
+          c.style.display = "block";
+          var w = c.clientWidth,
+            h = c.clientHeight,
+            ratio = devicePixelRatio || 1,
+            p = h / PLANE.length,
+            columns = Math.floor(w / p),
+            halfWidth = Math.floor(PLANE[0].length / 2),
+            halfHeight = Math.floor(PLANE.length / 2),
+            planeX =
+              halfWidth +
+              Math.round(routeProgress * (columns - 1 - 2 * halfWidth)),
+            o = c.getContext("2d");
+          c.width = Math.ceil(w * ratio);
+          c.height = Math.ceil(h * ratio);
+          o.setTransform(ratio, 0, 0, ratio, 0, 0);
+          o.clearRect(0, 0, w, h);
+          function dot(x, y, color, alpha, size, glow) {
+            o.globalAlpha =
+              alpha *
+              InPlaneSightAirlines.ledBrightness(99, x, y, LED_BRIGHTNESS_VARIATION);
+            o.fillStyle = "rgb(" + color + ")";
+            o.shadowColor = "rgba(" + color + ",.45)";
+            o.shadowBlur = glow;
+            o.beginPath();
+            o.arc(x * p + p / 2, y * p + p / 2, Math.max(1, p * size), 0, Math.PI * 2);
+            o.fill();
+          }
+          for (var x = 0; x < columns; x++) {
+            // One dark column either side keeps the plane's outline clear.
+            if (Math.abs(x - planeX) <= halfWidth + 1) continue;
+            if (x < planeX)
+              dot(x, halfHeight, "93,242,255", 0.5 + 0.5 * (x / planeX), 0.3, 4);
+            else dot(x, halfHeight, "60,74,115", 0.9, 0.26, 0);
+          }
+          PLANE.forEach(function (line, py) {
+            for (var px = 0; px < line.length; px++)
+              if (line[px] === "1")
+                dot(
+                  planeX - halfWidth + px,
+                  py,
+                  "255,255,255",
+                  1,
+                  0.36,
+                  5,
+                );
+          });
+        }
         function showFallback(h) {
           genericIcon = false;
           mainIcon = null;
@@ -874,10 +965,12 @@
         }
         function render(ac) {
           if (!ac.length) {
+            routeProgress = null;
             showEmpty();
             return;
           }
-          showFlight(ac[0], ac[0].icao.toUpperCase(), logoKeyFor(ac[0]));
+          routeProgress = ac[0].progress;
+          showFlight(ac[0], "", logoKeyFor(ac[0]));
         }
         // Includes the airline code and helicopter flag, as a callsign or
         // category can arrive after the aircraft is first seen.
@@ -903,6 +996,7 @@
         function renderTracked(t) {
           var a = t.aircraft || { icao: "" };
           a.callsign = t.callsign;
+          routeProgress = t.progress;
           a._dist =
             CENTER && a.lat != null
               ? distanceNm(CENTER[0], CENTER[1], a.lat, a.lon)
@@ -924,7 +1018,10 @@
         callsign.textContent = a.callsign || a.icao.toUpperCase();
         document.getElementById("aircraft-type").textContent =
           InPlaneSight.aircraftType(a) || (a.icao ? "UNKNOWN" : "----");
-        document.getElementById("icao-line").textContent = infoLine;
+        // Only a tracked flight has a status to show.
+        var statusLine = document.getElementById("status-line");
+        statusLine.textContent = infoLine;
+        statusLine.style.display = infoLine ? "" : "none";
         document.getElementById("s-alt").textContent =
           a.altitude_ft != null
             ? (a.altitude_ft / 1000).toFixed(1) + "k ft"
@@ -946,6 +1043,7 @@
           ? (a.origin_display || a.origin) + "-" +
               (a.destination_display || a.destination)
             : "";
+        drawProgress();
         fitHeadlineText();
         scheduleLedTextRender();
         if (logoKey !== prevIcao) {
@@ -1057,6 +1155,7 @@
           fitHeadlineText();
           scheduleLedTextRender();
           redrawLogo();
+          drawProgress();
         });
       </script>
     </body>

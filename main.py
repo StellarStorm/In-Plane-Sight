@@ -20,6 +20,7 @@ from sources import (
 )
 from sources.airport_codes import airport_display_code, airport_position
 from sources.base import Aircraft, AircraftSource, SourceError
+from sources.geo import distance_nm
 from sources.internet import lookup_callsign
 from sources.logging_config import get_logger
 from sources.swift_routes import RouteIndex
@@ -202,7 +203,20 @@ def get_aircraft():
             sum(1 for item in aircraft if (item.callsign or '').strip()),
             len(route_index),
         )
-    return [asdict(item) for item in aircraft]
+    return [with_progress(item) for item in aircraft]
+
+
+def with_progress(aircraft: Aircraft) -> dict:
+    """An overhead aircraft for the views, with how far along its route it is."""
+    return {
+        **asdict(aircraft),
+        'progress': route_progress(
+            aircraft,
+            airport_position(aircraft.origin),
+            airport_position(aircraft.destination),
+            'airborne',
+        ),
+    }
 
 
 def add_routes(aircraft: list[Aircraft]) -> list[Aircraft]:
@@ -288,7 +302,35 @@ def tracking_response(state: dict | None) -> dict:
         response['destination_position'] = airport_position(
             aircraft.destination
         )
+        response['progress'] = route_progress(
+            aircraft,
+            response['origin_position'],
+            response['destination_position'],
+            state['status'],
+        )
     return response
+
+
+def route_progress(
+    aircraft: Aircraft,
+    origin: tuple[float, float] | None,
+    destination: tuple[float, float] | None,
+    status: str,
+) -> float | None:
+    """How far along its route the flight is, from 0 to 1, or None."""
+    if origin is None or destination is None:
+        return None
+    if status == 'arrived':
+        return 1.0
+    if aircraft.lat is None:
+        return None
+    # Flown over flown plus remaining, rather than over the direct route, so
+    # a detour or hold never pushes it past the end.
+    flown = distance_nm(*origin, aircraft.lat, aircraft.lon)
+    remaining = distance_nm(aircraft.lat, aircraft.lon, *destination)
+    if flown + remaining == 0:
+        return None
+    return flown / (flown + remaining)
 
 
 @app.get('/favicon.ico')
