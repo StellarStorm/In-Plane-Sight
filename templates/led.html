@@ -202,15 +202,10 @@
         letter-spacing: 0.035em;
         white-space: nowrap;
       }
-      /* With routes enabled, an empty route line keeps its height so the
-         letters stay put from one flight to the next. */
-      #board.routes #route-line {
-        min-height: 1.08em;
-      }
       #progress-bar {
         display: none;
         width: 100%;
-        height: clamp(60px, 10.75vw, 150px);
+        height: clamp(28px, 5vw, 70px);
       }
       #telemetry {
         min-height: 0;
@@ -330,7 +325,6 @@
         body {
           height: 100dvh;
         }
-        /* Seven LEDs tall: just the plane, on a flat line. */
         #progress-bar {
           height: 28px;
         }
@@ -538,8 +532,7 @@
           logoRequestId = 0,
           currentHeading = null,
           mainIcon = null,
-          routeProgress = null,
-          routesEnabled = false;
+          routeProgress = null;
         var G = {
           " ": ["00000", "00000", "00000", "00000", "00000", "00000", "00000"],
           "-": ["00000", "00000", "00000", "11111", "00000", "00000", "00000"],
@@ -823,35 +816,20 @@
             "1001100",
             "0011000",
             "0010000",
-          ],
-          PROGRESS_ROWS = 15,
-          GROUND_ROW = 11,
-          CRUISE_ROW = 3,
-          // The share of the route spent climbing, and again descending.
-          CLIMB = 0.18;
-        // The flight profile's row at t (0 to 1): climb, cruise, descend.
-        function profileRow(t) {
-          var edge = Math.min(t, 1 - t) / CLIMB;
-          var height = edge >= 1 ? 1 : edge * edge * (3 - 2 * edge);
-          return Math.round(GROUND_ROW - (GROUND_ROW - CRUISE_ROW) * height);
-        }
-          var SMALL_SCREEN = matchMedia("(max-width: 700px), (max-height: 500px)");
-        // An LED flight profile from origin to destination: the flown part
-        // brightens toward the plane, the rest stays dim.
+            ];
+            // An LED line from origin to destination with the plane on it: the
+            // flown part brightens toward the plane, the rest stays dim.
         function drawProgress() {
           var c = document.getElementById("progress-bar");
-          // Like the route line, the bar keeps its space whenever routes
-          // are enabled, and is left blank for a flight without one.
-          c.style.display = routesEnabled ? "block" : "none";
           if (routeProgress == null) {
-            c.getContext("2d").clearRect(0, 0, c.width, c.height);
+            c.style.display = "none";
             return;
           }
+          c.style.display = "block";
           var w = c.clientWidth,
             h = c.clientHeight,
             ratio = devicePixelRatio || 1,
-            flat = SMALL_SCREEN.matches,
-            p = h / (flat ? PLANE.length : PROGRESS_ROWS),
+            p = h / PLANE.length,
             columns = Math.floor(w / p),
             halfWidth = Math.floor(PLANE[0].length / 2),
             halfHeight = Math.floor(PLANE.length / 2),
@@ -874,32 +852,19 @@
             o.arc(x * p + p / 2, y * p + p / 2, Math.max(1, p * size), 0, Math.PI * 2);
             o.fill();
           }
-          function rowAt(t) {
-            return flat ? halfHeight : profileRow(t);
-          }
-          var previous = rowAt(0);
           for (var x = 0; x < columns; x++) {
-            var row = rowAt(x / (columns - 1));
             // One dark column either side keeps the plane's outline clear.
-            if (Math.abs(x - planeX) > halfWidth + 1) {
-              // Fill the rows between neighbouring columns so steep parts
-              // stay joined.
-              for (var y = Math.min(row, previous); y <= Math.max(row, previous); y++) {
-                if (y === previous && y !== row) continue;
-                if (x < planeX)
-                  dot(x, y, "93,242,255", 0.5 + 0.5 * (x / planeX), 0.3, 4);
-                else dot(x, y, "60,74,115", 0.9, 0.26, 0);
-              }
-            }
-            previous = row;
+            if (Math.abs(x - planeX) <= halfWidth + 1) continue;
+            if (x < planeX)
+              dot(x, halfHeight, "93,242,255", 0.5 + 0.5 * (x / planeX), 0.3, 4);
+            else dot(x, halfHeight, "60,74,115", 0.9, 0.26, 0);
           }
-          var planeRow = rowAt(planeX / (columns - 1));
           PLANE.forEach(function (line, py) {
             for (var px = 0; px < line.length; px++)
               if (line[px] === "1")
                 dot(
                   planeX - halfWidth + px,
-                  planeRow - halfHeight + py,
+                  py,
                   "255,255,255",
                   1,
                   0.36,
@@ -1165,8 +1130,6 @@
           InPlaneSight.configure(cfg);
           var board = document.getElementById("board");
           board.classList.toggle("font-normal", fontThickness === "normal");
-          routesEnabled = cfg.route_enrichment_enabled === true;
-          board.classList.toggle("routes", routesEnabled);
           board.classList.toggle("font-broad", fontThickness === "broad");
           initializeLedText();
           var root = document.documentElement,
