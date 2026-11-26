@@ -1,0 +1,41 @@
+{
+  "code": "UAE",
+  "label": "Emirates",
+  "palette": {
+    "R": "#d81820"
+  },
+  "rows": [
+    "              R       R       ",
+    "             RR      R        ",
+    "             RRR   RRR        ",
+    "             RRRR  RR         ",
+    "              RRR  RR         ",
+    "              RR  RRR         ",
+    "       RRRR   R   RRR         ",
+    "     RRRRRRRR R   RRR         ",
+    "     RR   RRRRR   RRR         ",
+    "    RRR    RRRR   RRR         ",
+    "     RR    RRRRR  RRR         ",
+    "  R   R   RR RRR  RRR         ",
+    "  R      RR   RR  RRR         ",
+    "  R     RR     R  RRR         ",
+    "  RR   R       R  RR  R       ",
+    "  R RRRRRRRRRRRR  RR RR       ",
+    "  R  RRRRRRRRRR  R  RR     RRR",
+    "  R  RRRRRRRRR  R  RR   R RRRR",
+    "  RR               RR   RRR RR",
+    "   RR             RRR   RR  RR",
+    "RR RRRRRRRRRRRRRRRRRRRRR RRRR ",
+    " R  RRRRRRRRRRRRRRRRRR   RR   ",
+    " R    RRRRRRRRRRRRRRR  R      ",
+    " R                RRR  RR     ",
+    " R    R   R  RR   RRR  RR     ",
+    " R  RRR  RRR RR   RRR  RR     ",
+    " R  RRRRRRRRR RR  RRR   RR    ",
+    " R   RR  RRR  RR  RRR   RR    ",
+    " RR  RR   R    R  RRR    R    ",
+    " RR            R  RRR   RR    ",
+    "  RRR          R  RR    RR    ",
+    "  RRRRRRRRRRRRR   R    RRR    "
+  ]
+}

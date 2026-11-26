@@ -1,0 +1,37 @@
+{
+  "code": "ETH",
+  "label": "Ethiopian Airlines",
+  "palette": {
+    "G": "#6c9948",
+    "Y": "#f8c810",
+    "R": "#c03028"
+  },
+  "rows": [
+    "                              GG",
+    "                             GGG",
+    "                            GGGG",
+    "                           GGGGG",
+    "                         GGGGGGG",
+    "                        GGGGGGG ",
+    "                       GGGGGGGG ",
+    "                      GGGGGGGGG ",
+    "                     GGGGGGGGG  ",
+    "                    GGGGGGGGG   ",
+    "                   GGGGGGGGG    ",
+    "                  GGGGGGGG Y    ",
+    "                 GGGGGGG  YYY   ",
+    "               GGGGGGGG YYYY    ",
+    "              GGGGGGG YYYYYY    ",
+    "             GGGGGG YYYYYYY     ",
+    "           GGGGGG YYYYYYYY      ",
+    "          GGGGG YYYYYYYYYY      ",
+    "         GGGG YYYYYYYYYY        ",
+    "       GGGG  YYYYYYYYY          ",
+    "      GGGYYYYYYYYYY  RRRR       ",
+    "    GGGYYYYYYYYY  RRRRRR        ",
+    "   GGYYYYYYY   RRRRRRRRR        ",
+    "GGGYYYY    RRRRRRRRRRRR         ",
+    "YYYYYRRRRRRRRRRRRRRRRR          ",
+    "     RRRRRRRRRRRRRRR            "
+  ]
+}

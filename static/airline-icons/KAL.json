@@ -1,0 +1,41 @@
+{
+  "code": "KAL",
+  "label": "Korean Air",
+  "palette": {
+    "B": "#0c2399"
+  },
+  "rows": [
+    "           BBBBBBBB           ",
+    "         BBBBBBBBBBBB         ",
+    "       BBBBBBBBBBBBBBBB       ",
+    "      BBBBB         BBBB      ",
+    "    BBBB               BBB    ",
+    "    BBB                  BB   ",
+    "   BB                     B   ",
+    "  BB               BBBBBB  B  ",
+    "  B              BBBBBBBBB    ",
+    " BB             BBBBBBBBBBBB  ",
+    " B             BBBBBBBBBBBBB  ",
+    " B             BBBBBBBBBBBBBB ",
+    "BB             BBBB      BBBB ",
+    "BB             BB          BBB",
+    "BB             BB           BB",
+    "BB            BB            BB",
+    "BB            BB            BB",
+    "BB           BB             BB",
+    "BBB          BB             BB",
+    " BBBB      BBBB             BB",
+    " BBBBBBBBBBBBBB             B ",
+    "  BBBBBBBBBBBBB             B ",
+    "  BBBBBBBBBBBB             BB ",
+    "    BBBBBBBBB              B  ",
+    "  B  BBBBBB               BB  ",
+    "   B                     BB   ",
+    "   BB                  BBB    ",
+    "    BBB               BBBB    ",
+    "      BBBB         BBBBB      ",
+    "       BBBBBBBBBBBBBBBB       ",
+    "         BBBBBBBBBBBB         ",
+    "           BBBBBBBB           "
+  ]
+}
