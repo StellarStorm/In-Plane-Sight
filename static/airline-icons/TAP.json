@@ -8,13 +8,6 @@
     "r": "#b81018"
   },
   "rows": [
-    "                                ",
-    "                                ",
-    "                                ",
-    "                                ",
-    "                                ",
-    "                                ",
-    "                                ",
     "YYYYYYYYYGGGGYYYYRRRRRRRRRRR    ",
     "YYYYYYYYYGGGGYYYYRRRRRRRRRRRRR  ",
     "YYYYYYYYGGGGGYYYYRRRRRRRRRRRRRR ",
@@ -32,13 +25,6 @@
     "    YGGGGYYYYYYYYrrrRR          ",
     "    YGGGGY      YrrrrR          ",
     "    GGGGGY      YrrrrR          ",
-    "    GGGGG       rrrrrr          ",
-    "                                ",
-    "                                ",
-    "                                ",
-    "                                ",
-    "                                ",
-    "                                ",
-    "                                "
+    "    GGGGG       rrrrrr          "
   ]
 }

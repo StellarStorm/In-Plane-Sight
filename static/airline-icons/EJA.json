@@ -11,11 +11,6 @@
     "g": "#696a6c"
   },
   "rows": [
-    "                                ",
-    "                                ",
-    "                                ",
-    "                                ",
-    "                                ",
     "                               n",
     "                              NN",
     "                            nNNN",
@@ -40,8 +35,6 @@
     "GGGGGGGGGGGGGg                  ",
     "GGGGGGGGGGg                     ",
     "GGGGGGgg                        ",
-    "gg                              ",
-    "                                ",
-    "                                "
+    "gg                              "
   ]
 }

@@ -1,0 +1,40 @@
+{
+  "code": "CLX",
+  "label": "Cargolux",
+  "palette": {
+    "R": "#d00000"
+  },
+  "rows": [
+    "               RR               ",
+    "             RRRRRR             ",
+    "            RRRRRRRR            ",
+    "          RRRRR  RRRRR          ",
+    "       RRRRRR      RRRRR        ",
+    "       RRRRR        RRRRR       ",
+    "       RRRRRR      RRRRRR       ",
+    "       RRRRRRRR  RRRRRRRR       ",
+    "       RRR RRRRRRRRRR RRR       ",
+    "       RRR   RRRRRR   RRR       ",
+    "       RRR    RRRR    RRR       ",
+    "       RRR     RR     RRR       ",
+    "       RRR     RR     RRR       ",
+    "       RRRR    RR    RRRR       ",
+    "     RRRRRRR   RR  RRRRRRRR     ",
+    "   RRRRRRRRRRRRRRRRRRRRRRRRRR   ",
+    " RRRRRR    RRRRRRRRRR    RRRRRR ",
+    "RRRRR       RRRRRRRR       RRRRR",
+    "RRRRR       RRRRRRRR       RRRRR",
+    "RRRRRRR    RRRRRRRRRR    RRRRRRR",
+    "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+    "RRR  RRRRRRRR  RR  RRRRRRRR  RRR",
+    "RRR    RRRR    RR    RRRR    RRR",
+    "RRR    RRR     RR     RRR    RRR",
+    "RRR    RRR     RR     RRR    RRR",
+    "RRR    RRR    RRRR    RRR    RRR",
+    "RRRR   RRR   RRRRRR   RRR  RRRRR",
+    "RRRRRR RRR RRRRRRRRRR RRR RRRRR ",
+    "   RRRRRRRRRRRR  RRRRRRRRRRRR   ",
+    "    RRRRRRRRR      RRRRRRRRR    ",
+    "      RRRRR          RRRRR      "
+  ]
+}

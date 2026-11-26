@@ -8,8 +8,6 @@
     "A": "#b8d0f0"
   },
   "rows": [
-    "                                ",
-    "                                ",
     "  B                          B  ",
     " BB                          BB ",
     " BBB                        BBB ",
@@ -37,8 +35,6 @@
     "           BB  BB  BB           ",
     "             BBBBBB             ",
     "              BBBB              ",
-    "               BB               ",
-    "                                ",
-    "                                "
+    "               BB               "
   ]
 }
