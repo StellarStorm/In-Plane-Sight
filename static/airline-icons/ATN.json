@@ -1,0 +1,39 @@
+{
+  "code": "ATN",
+  "label": "Air Transport International",
+  "palette": {
+    "R": "#d8282e",
+    "W": "#ffffff"
+  },
+  "rows": [
+    "            RWRRRWRRRWRRRRRRRRRR",
+    "          RRWRRRRWRRRRWRRRRRRRRR",
+    "        RRRWRRRRRWRRRRRWRRRRRRR ",
+    "       WWWWWWWWWWWWWWWWWWWWWWWW ",
+    "     RRRRRWRRRRRRWRRRRRRRWRRRR  ",
+    "   RRRRRRWRRRRRRRWRRRRRRRRWRR   ",
+    "  RRRRRRWRRRRRRRRWRRRRRRRRWRR   ",
+    " RRRRRRRWRRRRRRRRWRRRRRRRRRW    ",
+    " RRRRRRWRRRRRRRRRWRRRRRRRRRR    ",
+    "RRRRRRWRRRRRRRRRRWRRRRRRRRR     ",
+    "RRRRRRWRRRRRRRRRRWRRRRRRRRR     ",
+    "WWWWWWWWWWWWWWWWWWWWWWWWWW      ",
+    "RRRRRRWRRRRRRRRRRWRRRRRRRR      ",
+    "RRRRRRWRRRRRRRRRRWRRRRRRR       ",
+    "RRRRRRRWRRRRRRRRRWRRRRRR        ",
+    " RRRRRRWRRRRRRRRRWRRRRRR        ",
+    " RRRRRRRWRRRRRRRRWRRRRR         ",
+    " RRRRRRRWRRRRRRRRWRRRRR         ",
+    "  RRRRRRRWRRRRRRRWRRRR          ",
+    "  WWWWWWWWWWWWWWWWWWWW          ",
+    "   RRRRRRRWRRRRRRWRRR           ",
+    "   RRRRRRRRWRRRRRWRRR           ",
+    "    RRRRRRRWRRRRRWRR            ",
+    "     RRRRRRRWRRRRWRR            ",
+    "      RRRRRRRWRRRWR             ",
+    "       RRRRRRRWRRW              ",
+    "        RRRRRRRWRW              ",
+    "          RRRRRRW               ",
+    "            RRRRR               "
+  ]
+}

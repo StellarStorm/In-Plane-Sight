@@ -1,0 +1,35 @@
+{
+  "code": "OAE",
+  "label": "Omni Air International",
+  "palette": {
+    "R": "#d8282e",
+    "W": "#ffffff"
+  },
+  "rows": [
+    "                               W",
+    "                              W ",
+    "                        WWWWWW  ",
+    "                          WWW   ",
+    "                   R        WW  ",
+    "                 RR      WWW W  ",
+    "                R RR   W   W W  ",
+    "                   RR W      W  ",
+    "                   RRW          ",
+    "                    WR          ",
+    "           RR      W RR         ",
+    "           RRR    W   RRR       ",
+    "           R RR WW   RR         ",
+    "           R  RWR               ",
+    "           RRRW RR R            ",
+    "    RRRRR   RW   RR             ",
+    "   R   RRR  W    R              ",
+    "  R     RR WR                   ",
+    "  R      WW R R                 ",
+    "W RR    W R RR                  ",
+    "W RR   W  R                     ",
+    "W RRR W   R                     ",
+    "W  RRW   R                      ",
+    "W  WWRRRR                       ",
+    " WW                             "
+  ]
+}

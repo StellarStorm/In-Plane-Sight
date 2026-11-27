@@ -1,0 +1,39 @@
+{
+  "code": "QFA",
+  "label": "Qantas",
+  "palette": {
+    "R": "#e40000",
+    "W": "#ffffff",
+    "G": "#b0b0b0"
+  },
+  "rows": [
+    "RRRRRRRR                        ",
+    " RRRRRRRRRR                     ",
+    " RRRRRRRRRRRR                   ",
+    " WRRRRRRRRRRRR                  ",
+    "  WRRRRRRRRRRRRR                ",
+    "  WWRRRRRRRRRRRRR               ",
+    "   WWRRRRRRRRRRRRR              ",
+    "   RWWWWRRRRRRRRRRR             ",
+    "   RRWWGWWWRRRRRRRRR            ",
+    "   RRRWWGGWWWRRRRRRRR           ",
+    "    RRRRWGGGWWRRRRRRR           ",
+    "    RRRRRWGGWWWWRRRRRR          ",
+    "     RRRRRWGGWWWWRRWWRR         ",
+    "     RRRRRRWGWWWWWWWWRRR        ",
+    "     RRRRRRRGWWWWWWWWWRRR       ",
+    "      RRRRRRRGWWWRRRRRRRRR      ",
+    "      RRRRRRRGWWRRRRRRRRRRR     ",
+    "       RRRRRRRWWRRRRRRRRRRRR    ",
+    "       RRRRRRRWWWRRRRRRRRRRRR   ",
+    "       RRRRRRRWWWWWRRRRRRRRRRR  ",
+    "        RRRRRRRRWWWWWRRRRRRRRRR ",
+    "        RRRRRRRRRRRRGGWRRRRRRRRR",
+    "        RRRRRRRRRRRRRRGWRRRRRRRR",
+    "         RRRRRRRRRRRRRRRGWRRRRRR",
+    "         RRRRRRRRRRRRRRRRRWRRRRR",
+    "          RRRRRRRRRRRRRRRRRWRRRR",
+    "          RRRRRRRRRRRRRRRRRRRRRR",
+    "          RRRRRRRRRRRRRRRRRRRRRR"
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "code": "ABX",
+  "label": "ABX Air",
+  "palette": {
+    "R": "#d8282e"
+  },
+  "rows": [
+    "                              RR",
+    "                            RRR ",
+    "                           RRR  ",
+    "                         RRRRR  ",
+    "                        RRRRR   ",
+    "      R               RRR RR    ",
+    "       RR            RRR RRR    ",
+    "         RR        RRRR RRR     ",
+    "          RR      RRR  RRR      ",
+    "           RR    RRR  RRRR      ",
+    "            RRRRRRR  RRRR       ",
+    "             RRRRR  RRRR        ",
+    "            RRRRR  RRRR         ",
+    "           RRRRRR  RRRR         ",
+    "         RRRRRRRRRRRRR          ",
+    "        RRRRR RRRRRRR           ",
+    "       RRRRR  RRRRRRR           ",
+    "      RRRRR   RRRRRR            ",
+    "    RRRRRR    RRRRRR            ",
+    "   RRRRRR     RRRRR             ",
+    "  RRRRRR      RRRR              ",
+    " RRRRRR      RRRRR              ",
+    "RRRRRR       RRRR               "
+  ]
+}
