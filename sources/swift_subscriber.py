@@ -1,15 +1,27 @@
 import importlib.util
 import shutil
 import tempfile
+from collections.abc import Mapping
 from pathlib import Path
 from threading import Event, Lock, Thread
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
 from sources.logging_config import get_logger
-from sources.swift_routes import RouteIndex, parse_fixm_message
 
 if TYPE_CHECKING:
-    from config import SwiftConfig
+    from config import FeedConfig
+
+# The FAA's broker compresses the XML about four to five times, which matters
+# for the TFMS feed: it cannot be filtered and sends up to ~1 MB/s.
+COMPRESSION_LEVEL = 9
+
+
+class FeedConsumer(Protocol):
+    def handle_message(
+        self, payload: str | bytes, headers: Mapping[str, object]
+    ) -> None: ...
+
+    def expire(self) -> object: ...
 
 
 def solace_available() -> bool:
@@ -20,12 +32,16 @@ def solace_available() -> bool:
 class SwiftSubscriber:
     def __init__(
         self,
-        config: 'SwiftConfig',
-        route_index: RouteIndex,
+        config: 'FeedConfig',
+        consumer: FeedConsumer,
         log_level: str = 'INFO',
+        name: str = 'FDPS',
     ):
+        """Reads a SWIFT queue on a background thread, passing each message
+        to consumer.handle_message. name labels the feed in log messages."""
         self._config = config
-        self._route_index = route_index
+        self._consumer = consumer
+        self._name = name
         self._stop_event = Event()
         self._connection_lock = Lock()
         self._messaging_service = None
@@ -33,7 +49,7 @@ class SwiftSubscriber:
         self._default_trust_store: tempfile.TemporaryDirectory | None = None
         self._thread = Thread(
             target=self._run,
-            name='swift-flight-fixm-consumer',
+            name=f'swift-{name.lower()}-consumer',
             daemon=True,
         )
 
@@ -114,7 +130,7 @@ class SwiftSubscriber:
 
     def _run(self) -> None:
         while not self._stop_event.is_set():
-            self._route_index.expire()
+            self._consumer.expire()
             messaging_service = None
             receiver = None
             try:
@@ -138,6 +154,7 @@ class SwiftSubscriber:
                         {
                             transport_layer_properties.HOST: self._config.host,
                             service_properties.VPN_NAME: self._config.vpn,
+                            transport_layer_properties.COMPRESSION_LEVEL: COMPRESSION_LEVEL,
                         }
                     )
                     .with_authentication_strategy(
@@ -172,34 +189,32 @@ class SwiftSubscriber:
                 with self._connection_lock:
                     self._receiver = receiver
                 self._logger.info(
-                    f'Listening to SWIFT queue {self._config.queue}'
+                    f'Listening to SWIFT {self._name} queue '
+                    f'{self._config.queue}'
                 )
 
                 while not self._stop_event.is_set():
                     message = receiver.receive_message(timeout=1000)
-                    self._route_index.expire()
+                    self._consumer.expire()
                     if message is None:
                         continue
                     try:
                         payload = message.get_payload_as_string()
                         if payload is None:
                             payload = message.get_payload_as_bytes()
-                        updates = parse_fixm_message(
-                            payload,
-                            message.get_properties() or {},
+                        self._consumer.handle_message(
+                            payload, message.get_properties() or {}
                         )
-                        for update in updates:
-                            self._route_index.apply(update)
                     except Exception:
                         self._logger.exception(
-                            'Unable to process a SWIFT Flight FIXM message'
+                            f'Unable to process a SWIFT {self._name} message'
                         )
                     finally:
                         receiver.ack(message)
             except Exception as error:
                 if not self._stop_event.is_set():
                     self._logger.exception(
-                        'SWIFT subscriber disconnected; retrying'
+                        f'SWIFT {self._name} subscriber disconnected; retrying'
                     )
                     if 'certificate' in str(error).lower():
                         self._log_certificate_hint()

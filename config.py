@@ -7,6 +7,7 @@ Settings are read from ``config.toml`` (all optional; see
     IPS_RADIUS_NM=30
     IPS_TIME_FORMAT=12
     IPS_SWIFT_PASSWORD=...   (sets ``password`` in the [swift] section)
+    IPS_TFMS_PASSWORD=...    (sets ``password`` in the [tfms] section)
 """
 
 import os
@@ -21,6 +22,7 @@ from pydantic import (
     Field,
     SecretStr,
     ValidationError,
+    ValidationInfo,
     ValidatorFunctionWrapHandler,
     field_validator,
 )
@@ -42,6 +44,8 @@ CONFIG_FILE = Path(
 )
 
 logger = get_logger(__name__)
+# What each optional FAA feed adds, for messages about it.
+FEED_PURPOSES = {'swift': 'Route data', 'tfms': 'Regional airline data'}
 
 
 class ConfigError(Exception):
@@ -67,25 +71,38 @@ def describe_errors(error: ValidationError) -> str:
     return '\n'.join(lines)
 
 
-class SwiftConfig(BaseModel):
-    """FAA SWIFT route feed. Present in config means enabled."""
+class FeedConfig(BaseModel):
+    """Connection to an FAA SWIFT (SCDS) subscription. Present in config
+    means enabled."""
 
     model_config = ConfigDict(extra='forbid')
 
     host: str = 'tcps://ems1.swim.faa.gov:55443'
-    vpn: str = 'FDPS'
     queue: str = Field(min_length=1)
     username: str = Field(min_length=1)
     password: SecretStr = Field(min_length=1)
     # Folder of trusted root certificates (PEM files). Leave unset to use the
     # Mozilla roots bundled with certifi
     ca_dir: DirectoryPath | None = None
-    route_ttl_hours: float = Field(20, gt=0)
 
     @field_validator('ca_dir', mode='before')
     @classmethod
     def _blank_ca_dir_means_default(cls, value):
         return None if isinstance(value, str) and not value.strip() else value
+
+
+class SwiftConfig(FeedConfig):
+    """FDPS Flight FIXM feed, for routes."""
+
+    vpn: str = 'FDPS'
+    route_ttl_hours: float = Field(20, gt=0)
+
+
+class TfmsConfig(FeedConfig):
+    """TFMS R14 Flight Data feed, for the airline a regional flight flies
+    for."""
+
+    vpn: str = 'TFMS'
 
 
 class TrackingConfig(BaseModel):
@@ -131,25 +148,31 @@ class Config(BaseSettings):
     # Single-flight tracking
     tracking: TrackingConfig = Field(default_factory=TrackingConfig)
 
-    # Optional route feed
+    # Optional FAA feeds
     swift: SwiftConfig | None = None
+    tfms: TfmsConfig | None = None
 
-    @field_validator('swift', mode='wrap')
+    @field_validator('swift', 'tfms', mode='wrap')
     @classmethod
-    def _incomplete_swift_disables_routes(
-        cls, value, handler: ValidatorFunctionWrapHandler
+    def _incomplete_feed_is_turned_off(
+        cls, value, handler: ValidatorFunctionWrapHandler, info: ValidationInfo
     ):
-        # Route data is optional, so a half-filled [swift] section turns it off
+        # The feeds are optional, so a half-filled section turns its feed off
         # with a warning instead of stopping the app.
         try:
             return handler(value)
         except ValidationError as error:
+            section = info.field_name
             logger.warning(
-                'Route data is turned off because the [swift] settings are '
-                'incomplete:\n%s\nFill these in (in config.toml or as IPS_SWIFT_* '
-                'environment variables), or comment the entire [swift] section '
+                '%s is turned off because the [%s] settings are '
+                'incomplete:\n%s\nFill these in (in config.toml or as IPS_%s_* '
+                'environment variables), or comment the entire [%s] section '
                 'to hide this warning.',
+                FEED_PURPOSES[section],
+                section,
                 describe_errors(error),
+                section.upper(),
+                section,
             )
             return None
 
@@ -212,6 +235,7 @@ def unknown_env_vars(environ) -> list[str]:
         if isinstance(nested, type) and issubclass(nested, BaseModel):
             known.update(f'{name}_{sub}' for sub in nested.model_fields)
     known.update(f'swift_{sub}' for sub in SwiftConfig.model_fields)
+    known.update(f'tfms_{sub}' for sub in TfmsConfig.model_fields)
     return sorted(
         key
         for key in environ

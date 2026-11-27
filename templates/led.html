@@ -883,7 +883,7 @@
         var airlineLogo = document.getElementById("airline-logo"),
           planeFallback = document.getElementById("plane-fallback"),
           callsign = document.getElementById("callsign");
-          function updateLogo(cs, h, category) {
+          function updateLogo(cs, h, category, majorCarrier) {
           var requestId = ++logoRequestId;
           currentHeading = h;
           genericIcon = false;
@@ -903,7 +903,7 @@
             });
             return;
           }
-          InPlaneSightAirlines.getIcon(cs).then(function (icon) {
+          InPlaneSightAirlines.getIcon(cs, majorCarrier).then(function (icon) {
             if (requestId !== logoRequestId) return;
             if (icon) {
             genericIcon = false;
@@ -972,12 +972,14 @@
           routeProgress = ac[0].progress;
           showFlight(ac[0], "", logoKeyFor(ac[0]));
         }
-        // Includes the airline code and helicopter flag, as a callsign or
-        // category can arrive after the aircraft is first seen.
+        // Includes the airline codes and helicopter flag, as a callsign,
+        // major carrier or category can arrive after the aircraft is first
+        // seen.
         function logoKeyFor(a) {
           return [
             a.icao,
             InPlaneSightAirlines.getCode(a.callsign) || "",
+            a.major_carrier || "",
             InPlaneSightAirlines.isHelicopter(a.category),
           ].join(":");
         }
@@ -1047,7 +1049,7 @@
         fitHeadlineText();
         scheduleLedTextRender();
         if (logoKey !== prevIcao) {
-          updateLogo(a.callsign, a.heading, a.category);
+          updateLogo(a.callsign, a.heading, a.category, a.major_carrier);
           prevIcao = logoKey;
         } else if (genericIcon) {
           airlineLogo.style.transform = "rotate(" + (a.heading || 0) + "deg)";

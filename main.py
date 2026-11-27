@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from config import Config, ConfigError
+from config import FEED_PURPOSES, Config, ConfigError
 from sources import (
     AdsbFiSource,
     AdsbLolSource,
@@ -25,10 +25,12 @@ from sources.internet import lookup_callsign
 from sources.logging_config import get_logger
 from sources.swift_routes import RouteIndex
 from sources.swift_subscriber import SwiftSubscriber, solace_available
+from sources.tfms_carriers import MajorCarrierIndex
 from sources.tracked_routes import TrackedRoutes
 from sources.tracking import FlightTracker
 
-# Settings the browser pages may see. Never include anything from `swift`.
+# Settings the browser pages may see. Never include anything from `swift` or
+# `tfms`.
 PUBLIC_CONFIG_FIELDS = {
     'lat',
     'lon',
@@ -68,6 +70,7 @@ logging.getLogger().setLevel(config.log_level)
 source = build_source(config)
 logger = get_logger(__name__)
 route_index: RouteIndex | None = None
+carrier_index: MajorCarrierIndex | None = None
 route_ttl_seconds = round(
     (config.swift.route_ttl_hours if config.swift else 20) * 60 * 60
 )
@@ -110,33 +113,50 @@ async def advance_tracking() -> None:
             logger.exception('Tracking update failed')
 
 
+def feed_available(section: str) -> bool:
+    if getattr(config, section) is None:
+        return False
+    if not solace_available():
+        logger.error(
+            '%s is turned off: the [%s] section is set but the solace '
+            'package is not installed. Run `uv sync --extra swift`.',
+            FEED_PURPOSES[section],
+            section,
+        )
+        return False
+    return True
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global route_index
-    subscriber = None
-    if config.swift is not None and not solace_available():
-        logger.error(
-            'Route data is turned off: the [swift] section is set but the '
-            'solace package is not installed. Run `uv sync --extra swift`.'
-        )
-    elif config.swift is not None:
+    global route_index, carrier_index
+    subscribers = []
+    if feed_available('swift'):
         route_index = RouteIndex(
             ttl_seconds=route_ttl_seconds,
             on_finished=forget_tracked_route,
         )
-        subscriber = SwiftSubscriber(
-            config.swift, route_index, config.log_level
+        subscribers.append(
+            SwiftSubscriber(config.swift, route_index, config.log_level)
         )
+    if feed_available('tfms'):
+        carrier_index = MajorCarrierIndex()
+        subscribers.append(
+            SwiftSubscriber(
+                config.tfms, carrier_index, config.log_level, name='TFMS'
+            )
+        )
+    for subscriber in subscribers:
         subscriber.start()
-        logger.info('SWIFT Flight FIXM subscriber enabled')
     tracking_task = asyncio.create_task(advance_tracking())
     try:
         yield
     finally:
         tracking_task.cancel()
-        if subscriber is not None:
+        for subscriber in subscribers:
             subscriber.stop()
         route_index = None
+        carrier_index = None
 
 
 app = FastAPI(lifespan=lifespan)
@@ -195,7 +215,9 @@ def get_aircraft():
             {'error': 'Aircraft data is unavailable'}, status_code=503
         )
     # The board shows aircraft flying overhead, not traffic at the airport.
-    aircraft = add_routes([item for item in aircraft if not item.on_ground])
+    aircraft = add_carriers(
+        add_routes([item for item in aircraft if not item.on_ground])
+    )
     if route_index is not None:
         logger.debug(
             'Routes known for %d of %d aircraft with callsigns (%d stored)',
@@ -229,6 +251,22 @@ def add_routes(aircraft: list[Aircraft]) -> list[Aircraft]:
             item,
             *routes.get(
                 ' '.join((item.callsign or '').split()).upper(), (None, None)
+            ),
+        )
+        for item in aircraft
+    ]
+
+
+def add_carriers(aircraft: list[Aircraft]) -> list[Aircraft]:
+    """Fill in the airline each flight flies for from TFMS, if enabled."""
+    if carrier_index is None:
+        return aircraft
+    carriers = carrier_index.lookup_many([item.callsign for item in aircraft])
+    return [
+        replace(
+            item,
+            major_carrier=carriers.get(
+                ' '.join((item.callsign or '').split()).upper()
             ),
         )
         for item in aircraft
@@ -288,7 +326,7 @@ def tracking_response(state: dict | None) -> dict:
         return {'tracking': False}
     response = {'tracking': True, **state}
     if state['aircraft'] is not None:
-        aircraft = add_routes([Aircraft(**state['aircraft'])])[0]
+        aircraft = add_carriers(add_routes([Aircraft(**state['aircraft'])]))[0]
         if aircraft.origin and aircraft.destination:
             tracked_routes.remember(
                 state['callsign'],

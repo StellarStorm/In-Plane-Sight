@@ -44,3 +44,13 @@ max_hours = 24       # never track longer than this
 # username = ""
 # password = ""
 # route_ttl_hours = 20  # hours a route is kept after the FAA last updated it
+
+# Optional FAA TFMS Flight Data feed, for the airline a regional flight flies
+# for (e.g. Republic Airways flying as American Eagle). Uncomment to enable;
+# queue, username and password are then required.
+# [tfms]
+# host = "tcps://ems1.swim.faa.gov:55443"
+# vpn = "TFMS"
+# queue = ""
+# username = ""
+# password = ""

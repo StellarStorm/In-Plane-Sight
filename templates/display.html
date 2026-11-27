@@ -271,7 +271,7 @@
       return cell;
     }
 
-      function makeLogoCell(callsign, category) {
+      function makeLogoCell(callsign, category, majorCarrier) {
       var cell = document.createElement('td');
       var canvas = document.createElement('canvas');
       cell.className = 'cell-logo';
@@ -283,6 +283,7 @@
         canvas: canvas,
         callsign: callsign,
         category: category,
+        majorCarrier: majorCarrier,
         heading: null
       };
     }
@@ -313,7 +314,7 @@
         showLogoFallback(logo, null);
         return;
       }
-      InPlaneSightAirlines.getIcon(logo.callsign).then(function (icon) {
+      InPlaneSightAirlines.getIcon(logo.callsign, logo.majorCarrier).then(function (icon) {
         if (!icon) {
           showLogoFallback(logo, logo.heading);
           return;
@@ -363,7 +364,7 @@
 
       aircraft.forEach(function (item) {
         var row = document.createElement('tr');
-        var logo = makeLogoCell(item.callsign, item.category);
+        var logo = makeLogoCell(item.callsign, item.category, item.major_carrier);
         logo.heading = item.heading;
         var speed = item.speed_kts != null ? item.speed_kts + ' kt' : '--';
         var heading = item.heading != null

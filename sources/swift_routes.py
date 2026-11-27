@@ -160,6 +160,12 @@ class RouteIndex:
             self._last_cleanup_at = now
             return len(expired_ids)
 
+    def handle_message(
+        self, payload: str | bytes, headers: Mapping[str, object]
+    ) -> None:
+        for update in parse_fixm_message(payload, headers):
+            self.apply(update)
+
     def apply(self, update: FlightRouteUpdate) -> None:
         self.expire()
         if update.status in self.TERMINAL_STATUSES:

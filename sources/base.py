@@ -20,6 +20,7 @@ class Aircraft:
     origin_display: str | None = None
     destination_display: str | None = None
     on_ground: bool = False
+    major_carrier: str | None = None
 
 
 class SourceError(Exception):

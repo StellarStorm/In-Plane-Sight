@@ -88,7 +88,11 @@
         };
 
         if (!icon.alias) {
-          return mergeAliasMetadata(icon, displayMetadata);
+          // artworkCode names whose logo it is, which differs from code for
+          // an airline that borrows another's logo by alias.
+          return Object.assign(mergeAliasMetadata(icon, displayMetadata), {
+            artworkCode: code
+          });
         }
 
         return resolveAlias(
@@ -137,8 +141,27 @@
     return request;
   }
 
-  function getIcon(callsign) {
-    return load(getCode(callsign));
+  // majorCarrier is the airline the flight flies for, from the FAA (such as
+  // AAL for a Republic Airways flight sold as American Eagle). When it names
+  // another airline, that airline's logo replaces the operator's. The FAA
+  // also uses codes that are not airlines, such as XAA or XXX for private
+  // flights; with no icon for the code, the operator's own logo is kept.
+  function getIcon(callsign, majorCarrier) {
+    var code = getCode(callsign);
+    return load(code).then(function (icon) {
+      // An alias already showing that airline keeps the operator's label,
+      // such as "Envoy Air / American Eagle".
+      if (
+        !majorCarrier ||
+        majorCarrier === code ||
+        (icon && icon.artworkCode === majorCarrier)
+      ) {
+        return icon;
+      }
+      return load(majorCarrier).then(function (majorIcon) {
+        return majorIcon || icon;
+      });
+    });
   }
 
   // Real LEDs vary slightly in brightness. Returns a fixed factor in

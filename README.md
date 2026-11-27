@@ -79,7 +79,7 @@ Any setting can be overridden at run time with an environment variable. Use the 
 IPS_RADIUS_NM=30 IPS_TIME_FORMAT=12 IPS_PORT=9000 python main.py
 ```
 
-This also works for the `[swift]` settings, for example `IPS_SWIFT_PASSWORD` or `IPS_SWIFT_CA_DIR`.
+This also works for the `[swift]` and `[tfms]` settings, for example `IPS_SWIFT_PASSWORD`, `IPS_SWIFT_CA_DIR` or `IPS_TFMS_PASSWORD`.
 
 Environment variables take precedence over `config.toml`. A misspelled `IPS_` variable stops the app with an error, just like a misspelled setting in the file.
 
@@ -188,6 +188,28 @@ The broker's certificate is checked against the Mozilla root certificates instal
 - With `log_level = "DEBUG"`, each `/aircraft` request logs how many aircraft had a known route and how many routes are stored.
 - SCDS does not provide aircraft positions. Positions always come from the ADS-B source.
 - If a callsign matches more than one route, no route is shown.
+
+## Regional Airline Data (Optional)
+
+Regional airlines fly under their own callsigns. Some, such as Envoy (`ENY`), fly for only one airline and always show that airline's logo. Others, such as Republic Airways (`RPA`) and SkyWest (`SKW`), fly for United, Delta and American, so the callsign alone cannot tell which logo to show. The FAA's TFMS Flight Data feed reports the airline each flight flies for, and the app uses it to show the right logo.
+
+1. On the SWIFT Portal (see [Signing Up for the Feed](#signing-up-for-the-feed)), create another SCDS subscription and choose TFMS, then the R14 Flight Data service.
+2. When it is active, copy its queue name, username and password, and add them in a `[tfms]` section in `config.toml`:
+
+```toml
+[tfms]
+host = "tcps://ems1.swim.faa.gov:55443"
+vpn = "TFMS"
+queue = "your-tfms-queue-name"
+username = "your-subscription-username"
+password = "your-subscription-password"
+```
+
+It needs the same `swift` extra as route data, and works like the `[swift]` section: `queue`, `username` and `password` are required, `host` and `vpn` default to the values shown, `ca_dir` is supported, and the password can be set with `IPS_TFMS_PASSWORD` instead.
+
+- When the feed says a flight flies for another airline, the flight shows that airline's logo, never the operator's own, even for operators with a logo of their own (a Wheels Up flight flown for Delta shows Delta's). The FAA also reports codes that are not airlines, such as `XAA` or `XXX` for private flights, so a code with no icon keeps the operator's own logo (or the generic one). A flight the feed has not reported in the last hour, or reports under two different airlines at once, keeps its usual logo (or the generic one), so a wrong logo is never guessed.
+- The TFMS feed cannot be filtered, so the app receives every flight in the US: up to about 1 MB/s of XML at busy times. Both feeds are compressed, which cuts that to roughly 0.2 MB/s, and the app reads only a few attributes from each message rather than parsing the XML, so it uses little CPU. It still adds up to a few hundred GB a month, which may matter on a metered connection.
+- Do not run another consumer on the same queue at the same time.
 
 ## Data Use
 
