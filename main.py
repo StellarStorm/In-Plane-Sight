@@ -24,8 +24,14 @@ from sources.geo import distance_nm
 from sources.internet import lookup_callsign
 from sources.logging_config import get_logger
 from sources.swift_routes import RouteIndex
-from sources.swift_subscriber import SwiftSubscriber, solace_available
+from sources.swift_subscriber import (
+    FeedConsumers,
+    SwiftSubscriber,
+    solace_available,
+)
 from sources.tfms_carriers import MajorCarrierIndex
+from sources.tfms_departures import DepartureIndex
+from sources.tfms_routes import TfmsRouteIndex
 from sources.tracked_routes import TrackedRoutes
 from sources.tracking import FlightTracker
 
@@ -71,6 +77,8 @@ source = build_source(config)
 logger = get_logger(__name__)
 route_index: RouteIndex | None = None
 carrier_index: MajorCarrierIndex | None = None
+departure_index: DepartureIndex | None = None
+tfms_route_index: TfmsRouteIndex | None = None
 route_ttl_seconds = round(
     (config.swift.route_ttl_hours if config.swift else 20) * 60 * 60
 )
@@ -129,7 +137,7 @@ def feed_available(section: str) -> bool:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global route_index, carrier_index
+    global route_index, carrier_index, departure_index, tfms_route_index
     subscribers = []
     if feed_available('swift'):
         route_index = RouteIndex(
@@ -141,9 +149,14 @@ async def lifespan(app: FastAPI):
         )
     if feed_available('tfms'):
         carrier_index = MajorCarrierIndex()
+        departure_index = DepartureIndex()
+        tfms_route_index = TfmsRouteIndex()
         subscribers.append(
             SwiftSubscriber(
-                config.tfms, carrier_index, config.log_level, name='TFMS'
+                config.tfms,
+                FeedConsumers(carrier_index, departure_index, tfms_route_index),
+                config.log_level,
+                name='TFMS',
             )
         )
     for subscriber in subscribers:
@@ -157,6 +170,8 @@ async def lifespan(app: FastAPI):
             subscriber.stop()
         route_index = None
         carrier_index = None
+        departure_index = None
+        tfms_route_index = None
 
 
 app = FastAPI(lifespan=lifespan)
@@ -196,7 +211,7 @@ def track_view():
 def get_config():
     return {
         **config.model_dump(include=PUBLIC_CONFIG_FIELDS),
-        'route_enrichment_enabled': route_index is not None,
+        'route_enrichment_enabled': routes_enabled(),
     }
 
 
@@ -241,11 +256,21 @@ def with_progress(aircraft: Aircraft) -> dict:
     }
 
 
+def routes_enabled() -> bool:
+    return route_index is not None or tfms_route_index is not None
+
+
 def add_routes(aircraft: list[Aircraft]) -> list[Aircraft]:
-    """Fill in origin and destination from the SWIFT feed, if enabled."""
-    if route_index is None:
+    """Fill in origin and destination from the FDPS and TFMS feeds, if
+    enabled. FDPS has the filed route, so it wins when the two disagree."""
+    if not routes_enabled():
         return aircraft
-    routes = route_index.lookup_many([item.callsign for item in aircraft])
+    callsigns = [item.callsign for item in aircraft]
+    routes = {}
+    if tfms_route_index is not None:
+        routes.update(tfms_route_index.lookup_many(callsigns))
+    if route_index is not None:
+        routes.update(route_index.lookup_many(callsigns))
     return [
         with_route(
             item,
@@ -314,7 +339,7 @@ def stop_tracking():
 
 def with_saved_route(aircraft: Aircraft, callsign: str | None) -> Aircraft:
     """Fall back to the route saved while tracking when the FAA has none."""
-    if route_index is None or aircraft.destination:
+    if not routes_enabled() or aircraft.destination:
         return aircraft
     saved = tracked_routes.get(callsign or '', aircraft.icao)
     return with_route(aircraft, *saved) if saved else aircraft
@@ -325,6 +350,8 @@ def tracking_response(state: dict | None) -> dict:
     if state is None:
         return {'tracking': False}
     response = {'tracking': True, **state}
+    if state['status'] == 'waiting':
+        response['departure'] = departure_for(state['callsign'])
     if state['aircraft'] is not None:
         aircraft = add_carriers(add_routes([Aircraft(**state['aircraft'])]))[0]
         if aircraft.origin and aircraft.destination:
@@ -347,6 +374,24 @@ def tracking_response(state: dict | None) -> dict:
             state['status'],
         )
     return response
+
+
+def departure_for(callsign: str) -> dict | None:
+    """When the flight takes off, from TFMS, for a flight ADS-B has not
+    seen yet."""
+    if departure_index is None:
+        return None
+    departure = departure_index.lookup(callsign)
+    if departure is None:
+        return None
+    return {
+        'time': departure.time,
+        'kind': departure.kind,
+        'origin': departure.origin,
+        'destination': departure.destination,
+        'origin_display': airport_display_code(departure.origin),
+        'destination_display': airport_display_code(departure.destination),
+    }
 
 
 def route_progress(

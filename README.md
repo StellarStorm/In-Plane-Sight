@@ -151,7 +151,7 @@ The app only needs each flight's origin and destination, which do not change dur
 | Flight Plan Update Information  | Picks up diversions and route changes.    |
 | Flight Amendment Information    | Picks up diversions and route changes.    |
 
-A flight that took off before the app started has no route until it lands (unless it took off while the app was stopped, since the queue keeps those messages), except a flight you were tracking (see below). To cover overhead flights straight after a restart, you can also add track messages for just the en route centres around you (for example `ZNY` near New York). `Track Messages - 1 Min Update` is much lighter than `Track Messages - ALL`.
+A flight that took off before the app started has no route until it lands (unless it took off while the app was stopped, since the queue keeps those messages), except a flight you were tracking (see below). To cover overhead flights straight after a restart, you can also add track messages for just the en route centres around you (for example `ZNY` near New York). `Track Messages - 1 Min Update` is much lighter than `Track Messages - ALL`. With [regional airline data](#regional-airline-data-optional) set up, track messages are not needed: TFMS gives every airborne flight its route within a minute or two.
 
 ### Enabling Route Data
 
@@ -208,6 +208,8 @@ password = "your-subscription-password"
 It needs the same `swift` extra as route data, and works like the `[swift]` section: `queue`, `username` and `password` are required, `host` and `vpn` default to the values shown, `ca_dir` is supported, and the password can be set with `IPS_TFMS_PASSWORD` instead.
 
 - When the feed says a flight flies for another airline, the flight shows that airline's logo, never the operator's own, even for operators with a logo of their own (a Wheels Up flight flown for Delta shows Delta's). The FAA also reports codes that are not airlines, such as `XAA` or `XXX` for private flights, so a code with no icon keeps the operator's own logo (or the generic one). A flight the feed has not reported in the last hour, or reports under two different airlines at once, keeps its usual logo (or the generic one), so a wrong logo is never guessed.
+- Airborne flights the route feed has no route for get theirs from TFMS instead, usually within a minute or two of the app starting. When both feeds have a route and they disagree, the route feed's is shown. A TFMS route is dropped after 10 minutes without an update, so a flight that lands or diverts does not keep it for long. Without a `[swift]` section, TFMS alone provides routes.
+- While a tracked flight has not appeared on ADS-B yet, `/track` shows its departure time from the feed: planned (from the airline's timetable or flight plan), estimated (once the airline or air traffic control updates it), or the actual takeoff time. The feed only sends a flight when its times change, so for a while after the app starts, some flights show no time yet.
 - The TFMS feed cannot be filtered, so the app receives every flight in the US: up to about 1 MB/s of XML at busy times. Both feeds are compressed, which cuts that to roughly 0.2 MB/s, and the app reads only a few attributes from each message rather than parsing the XML, so it uses little CPU. It still adds up to a few hundred GB a month, which may matter on a metered connection.
 - Do not run another consumer on the same queue at the same time.
 

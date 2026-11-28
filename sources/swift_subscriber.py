@@ -24,6 +24,23 @@ class FeedConsumer(Protocol):
     def expire(self) -> object: ...
 
 
+class FeedConsumers:
+    """Several consumers reading one feed."""
+
+    def __init__(self, *consumers: FeedConsumer):
+        self._consumers = consumers
+
+    def handle_message(
+        self, payload: str | bytes, headers: Mapping[str, object]
+    ) -> None:
+        for consumer in self._consumers:
+            consumer.handle_message(payload, headers)
+
+    def expire(self) -> None:
+        for consumer in self._consumers:
+            consumer.expire()
+
+
 def solace_available() -> bool:
     """Whether the solace package (the optional swift extra) is installed."""
     return importlib.util.find_spec('solace') is not None

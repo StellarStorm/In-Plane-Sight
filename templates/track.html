@@ -247,6 +247,26 @@
         arrived: "Arrived",
       };
 
+      var DEPARTURE_TEXT = {
+        planned: "Planned departure ",
+        estimated: "Estimated departure ",
+        departed: "Departed ",
+      };
+
+      function statusText(state) {
+        var departure = state.departure;
+        if (state.status === "airborne" && state.phase) {
+          return state.phase[0].toUpperCase() + state.phase.slice(1);
+        }
+        if (state.status === "waiting" && departure) {
+          return (
+            DEPARTURE_TEXT[departure.kind] +
+            InPlaneSight.formatDepartureTime(new Date(departure.time * 1000))
+          );
+        }
+        return STATUS_TEXT[state.status] || state.status;
+      }
+
       function showError(message) {
         errorEl.textContent = message || "";
         errorEl.style.display = message ? "block" : "none";
@@ -289,14 +309,25 @@
         document.getElementById("current-callsign").textContent =
           state.callsign;
         document.getElementById("current-status").textContent =
-          state.status === "airborne" && state.phase
-            ? state.phase[0].toUpperCase() + state.phase.slice(1)
-            : STATUS_TEXT[state.status] || state.status;
+          statusText(state);
         showProgress(state);
         var details = document.getElementById("current-details");
         details.replaceChildren();
         if (state.flight !== state.callsign) {
           addDetail(details, "Entered", state.flight);
+        }
+        var departure = state.departure;
+        if (state.status === "waiting" && departure) {
+          if (departure.origin && departure.destination) {
+            addDetail(
+              details,
+              "Route",
+              (departure.origin_display || departure.origin) +
+                " → " +
+                (departure.destination_display || departure.destination),
+            );
+          }
+          addDetail(details, "Not yet seen", "Waiting for it to appear on ADS-B");
         }
         if (a) {
           if (a.origin && a.destination && state.progress == null) {

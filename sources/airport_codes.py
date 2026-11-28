@@ -13,6 +13,11 @@ def _airports_by_icao() -> dict[str, dict[str, str]]:
 
 
 @lru_cache(maxsize=1)
+def _airports_by_iata() -> dict[str, dict[str, str]]:
+    return airportsdata.load('IATA')
+
+
+@lru_cache(maxsize=1)
 def _airports_by_lid() -> dict[str, dict[str, str]]:
     return airportsdata.load('LID')
 
@@ -26,6 +31,17 @@ def _airport(code: str | None) -> dict | None:
     return _airports_by_icao().get(normalized) or _airports_by_lid().get(
         normalized
     )
+
+
+def airport_icao(code: str | None) -> str | None:
+    """The ICAO code for an airport given by ICAO code, FAA location id or,
+    failing those, IATA code, as TFMS sends DTW for KDTW and YYZ for CYYZ.
+    Unknown codes are kept as given."""
+    normalized = (code or '').strip().upper()
+    if not normalized:
+        return None
+    airport = _airport(normalized) or _airports_by_iata().get(normalized)
+    return (airport or {}).get('icao') or normalized
 
 
 def airport_display_code(icao: str | None) -> str | None:

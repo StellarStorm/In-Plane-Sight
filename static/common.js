@@ -35,5 +35,18 @@ window.InPlaneSight = {
             second: '2-digit',
             hour12: this.timeFormat === '12'
         });
+    },
+
+    // Hours and minutes, with the weekday when it is not today.
+    formatDepartureTime(date) {
+        var options = {
+            hour: this.timeFormat === '12' ? 'numeric' : '2-digit',
+            minute: '2-digit',
+            hour12: this.timeFormat === '12'
+        };
+        if (date.toDateString() !== new Date().toDateString()) {
+            options.weekday = 'short';
+        }
+        return date.toLocaleString([], options);
     }
 };
